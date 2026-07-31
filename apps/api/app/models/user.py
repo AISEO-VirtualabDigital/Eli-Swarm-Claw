@@ -22,6 +22,9 @@ class User(Base):
     is_verified = Column(Boolean, default=False)
     is_superuser = Column(Boolean, default=False)
     
+    # First login password change requirement
+    must_change_password = Column(Boolean, default=False)
+    
     # Subscription & billing
     plan_name = Column(String(50), default="free")  # free, starter, pro, agency, enterprise
     subscription_status = Column(String(50), default="inactive")  # inactive, active, cancelled, past_due
@@ -46,6 +49,30 @@ class User(Base):
     organizations = relationship("Organization", back_populates="owner", foreign_keys="Organization.owner_id")
     workspaces = relationship("Workspace", back_populates="user")
     projects = relationship("Project", back_populates="user")
+    emails = relationship("UserEmail", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email})>"
+
+
+class UserEmail(Base):
+    """User email addresses (primary and secondary/alias)."""
+    
+    __tablename__ = "user_emails"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    email = Column(String(255), nullable=False, index=True)
+    email_type = Column(String(50), default="secondary")  # primary, secondary, alias, notification
+    is_primary = Column(Boolean, default=False)
+    is_verified = Column(Boolean, default=False)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="emails")
+    
+    def __repr__(self) -> str:
+        return f"<UserEmail(id={self.id}, email={self.email}, type={self.email_type})>"

@@ -44,7 +44,7 @@ class IndexingJob(Base):
     last_content_change = Column(DateTime)
     
     # Additional data
-    metadata = Column(JSON, default=dict)
+    extra_metadata = Column("metadata", JSON, default=dict)
     notes = Column(Text)
     
     # Timestamps
