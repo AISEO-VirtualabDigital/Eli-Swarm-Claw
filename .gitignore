@@ -1,42 +1,63 @@
 ```
-# Dependencies
-node_modules/
-
-# Build outputs
-dist/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 build/
-target/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Environment variables
-.env
-.env.local
-.env.*
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+.env/
 
-# IDE and editor files
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*.tmp
 
 # Logs
 *.log
 
-# Python specific
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.pytest_cache/
-.mypy_cache/
+# Environment variables
+.env
+.env.local
+*.env.*
+
+# Coverage
 .coverage
 htmlcov/
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Database
+*.sqlite
+*.sqlite3
+.dynamodb/
 
 # OS generated files
 .DS_Store
@@ -46,50 +67,4 @@ htmlcov/
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-# Compression and archives
-*.zip
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.gz
-*.rar
-*.7z
-*.bz2
-*.xz
-*.zst
-
-# Coverage reports
-coverage/
-htmlcov/
-
-# Compiled binaries
-*.exe
-*.dll
-*.so
-*.a
-*.o
-*.obj
-*.out
-*.class
-
-# Runtime data
-logs/
-*.pid
-*.seed
-*.pid.lock
-
-# Debug files
-*.stackdump
-
-# Temporary folders
-tmp/
-temp/
-
-# Database
-*.db
-*.db-journal
-
-# Local configuration
-local.properties
 ```
