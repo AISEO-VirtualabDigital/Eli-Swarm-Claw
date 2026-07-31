@@ -1,7 +1,49 @@
-(docs/INDEXING_GUIDE.md and docs/INDEXING_IMPLEMENTATION_SUMMARY.md are documentation files, not build artifacts or temp files)
+# Documentation builds and outputs
+docs/*.html
+docs/_build/
+docs/api/
+docs/build/
 
-(apps/api/app/schemas/indexing.py, apps/api/app/services/indexing.py, and apps/api/app/api/indexing.py are source code files)
+# Common Python artifacts (if applicable to docs)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-Since all the changed files are source code (.py) and documentation (.md) files, and there are no build artifacts, dependencies, or temporary files in the changes, no additional ignore rules are needed beyond what might already exist.
+# Build artifacts
+build/
+dist/
+*.egg-info/
 
-(empty - no output)
+# Temporary files
+*.tmp
+*.swp
+
+# Environment files
+.env
+.env.local
+*.env.*
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Editors/IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Cache directories
+.mypy_cache/
+.pytest_cache/
+__pycache__/
+.sphinx/
+doctrees/
+_static/
