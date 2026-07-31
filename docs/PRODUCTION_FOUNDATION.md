@@ -1,333 +1,352 @@
 # Eli Claw Production Foundation
 
-## Implementation Summary
+## Overview
 
-This document describes the production foundation components added to Eli Claw platform.
+This document describes the production-ready foundation for Eli Claw's AI media generation system. The architecture is **VPS-first**, meaning it's designed to be self-hosted on a single VPS before scaling to cloud services.
 
-### 1. Database Migrations (Alembic)
+## Architecture
 
-**Files Created:**
-- `alembic/env.py` - Migration environment configuration
-- `alembic.ini` - Alembic settings
-
-**Usage:**
-```bash
-# Generate new migration
-alembic revision --autogenerate -m "Add media tables"
-
-# Apply migrations
-alembic upgrade head
-
-# Downgrade
-alembic downgrade -1
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      FastAPI Backend                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │ Media Jobs   │  │ Batch Jobs   │  │ Webhooks     │      │
+│  │ API          │  │ API          │  │ API          │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                            │
+        ┌───────────────────┼───────────────────┐
+        ▼                   ▼                   ▼
+┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+│   Redis       │  │  PostgreSQL   │  │   Storage     │
+│   (Queue)     │  │  (Database)   │  │   (Local/MinIO)│
+└───────────────┘  └───────────────┘  └───────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Celery Workers                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │ Media Gen    │  │ Batch Proc   │  │ Notifications│      │
+│  │ Queue        │  │ Queue        │  │ Queue        │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Provider Integrations                       │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
+│  │Stability │ │ OpenAI   │ │ RunwayML │ │Replicate │       │
+│  │ AI       │ │ DALL-E   │ │          │ │          │       │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 2. Provider Abstraction Layer
+## Components
 
-**Files Created:**
-- `eliseo/providers/base.py` - Base provider interface
-- `eliseo/providers/mock_provider.py` - Mock provider for testing
+### 1. Provider Abstraction Layer
 
-**Supported Providers (Interface Ready):**
-- OpenAI DALL-E
-- Stability AI
-- RunwayML
-- Replicate
-- ElevenLabs
-- Google Vertex AI
+Located in: `/workspace/backend/eliseo/providers/`
 
-**Features:**
-- Standardized request/response models
-- Automatic retry logic
-- Rate limit handling
-- Cost tracking
-- Health checks
-- Fallback support
+**Base Classes:**
+- `BaseProvider` - Abstract interface for all providers
+- `ProviderConfig` - Configuration model
+- `GenerationRequest` - Standardized request format
+- `GenerationResponse` - Standardized response format
 
-### 3. Storage Service
+**Implemented Providers:**
+- `MockProvider` - For testing without API keys
+- `StabilityAIProvider` - Stability AI image generation
 
-**Files Created:**
-- `eliseo/services/storage/base.py` - Storage abstraction
-- `eliseo/services/storage/local_provider.py` - Local filesystem provider
+**Placeholder Providers:**
+- `OpenAIImageProvider` - DALL-E 3 integration
+- `RunwayProvider` - Video generation
+- `ReplicateProvider` - Multiple models
 
-**Storage Providers:**
-- Local (VPS-first, default)
-- MinIO (S3-compatible, self-hosted)
-- AWS S3 (future)
-- Google Cloud Storage (future)
-- Cloudflare R2 (future)
-- Backblaze B2 (future)
+**Usage Example:**
+```python
+from eliseo.providers.base import ProviderConfig, ProviderType
+from eliseo.providers.stability_ai import StabilityAIProvider
 
-**Features:**
-- Async file upload/download
-- File validation
-- Automatic folder organization
-- URL generation
-- Cleanup utilities
+config = ProviderConfig(
+    provider_type=ProviderType.STABILITY_AI,
+    api_key="sk-your-key",
+    model_name="stable-diffusion-xl-1024-v1-0",
+)
 
-### 4. Content Moderation
+provider = StabilityAIProvider(config)
+await provider.initialize()
 
-**Files Created:**
-- `eliseo/services/moderation.py` - Moderation service
-
-**Features:**
-- Rule-based local moderation
-- Custom blocklist/allowlist
-- Category detection (sexual, violence, self-harm, hate, illegal)
-- Severity levels (safe, low_risk, medium_risk, high_risk, blocked)
-- Configurable blocking behavior
-- Admin review queue support
-- User-friendly rejection messages
-
-### 5. Celery Task Queue
-
-**Files Created:**
-- `eliseo/celery_config.py` - Celery configuration
-- `eliseo/tasks/media_generation.py` - Image/video generation tasks
-- `eliseo/tasks/batch_processing.py` - Batch job processing
-- `eliseo/tasks/notifications.py` - Webhooks and notifications
-
-**Task Queues:**
-- `default` - General tasks
-- `media` - Image/video generation
-- `batch` - Batch processing
-- `notifications` - Email/webhook delivery
-
-**Features:**
-- Async job processing
-- Automatic retries with exponential backoff
-- Job status tracking
-- Batch processing support
-- Webhook delivery with signatures
-- Email notifications
-
-### 6. Testing Suite
-
-**Files Created:**
-- `tests/providers/test_providers.py` - Provider tests (10 tests)
-- `tests/services/test_moderation.py` - Moderation tests (14 tests)
-
-**Test Coverage:**
-- Provider initialization
-- Image/video generation
-- Job status checking
-- Job cancellation
-- Cost estimation
-- Health checks
-- Safe prompt detection
-- Unsafe content blocking
-- Custom blocklist/allowlist
-- Moderation service integration
-
-**Run Tests:**
-```bash
-pytest tests/providers/ tests/services/ -v
+response = await provider.generate_image(
+    GenerationRequest(prompt="A beautiful sunset")
+)
 ```
+
+### 2. Storage Service
+
+Located in: `/workspace/backend/eliseo/storage/`
+
+**Providers:**
+- `LocalStorageProvider` - VPS filesystem (default)
+- `MinIOStorageProvider` - S3-compatible object storage
+
+**File Structure:**
+```
+/app/storage/media/
+└── organizations/
+    └── {org_id}/
+        └── projects/
+            └── {project_id}/
+                └── media/
+                    └── {job_id}/
+                        └── {filename}
+```
+
+**Usage Example:**
+```python
+from eliseo.storage.service import LocalStorageProvider
+
+storage = LocalStorageProvider("/app/storage/media")
+
+result = await storage.upload(
+    file=file_object,
+    filename="image.png",
+    content_type="image/png",
+    organization_id=1,
+    project_id=42,
+    job_id="job_123",
+)
+```
+
+### 3. Content Moderation
+
+Located in `/workspace/backend/eliseo/moderation/`
+
+**Providers:**
+- `RuleBasedModerationProvider` - Blocklist/pattern matching (no API required)
+- `OpenAIModerationProvider` - OpenAI Moderation API
+
+**Categories Checked:**
+- Sexual content
+- Violence
+- Self-harm
+- Hate speech
+- Illegal activity
+- Copyright
+- Impersonation
+- Political manipulation
+
+**Usage Example:**
+```python
+from eliseo.moderation.service import (
+    ModerationService,
+    RuleBasedModerationProvider,
+)
+
+provider = RuleBasedModerationProvider()
+service = ModerationService(provider, block_unsafe=True)
+
+result = await service.check_prompt("Generate an image of...")
+
+if result.status == "blocked":
+    print(f"Blocked: {result.flagged_categories}")
+```
+
+### 4. Celery Task Queue
+
+Located in: `/workspace/backend/eliseo/tasks/`
+
+**Queues:**
+- `media_generation` - Image/video generation jobs
+- `batch_processing` - Batch job processing
+- `notifications` - Webhook and email delivery
+
+**Tasks:**
+- `generate_media_job` - Process single media generation
+- `process_batch_job` - Process batch of generations
+- `send_webhook_delivery` - Send webhook notifications
+
+**Configuration:**
+```python
+# .env
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/0
+```
+
+### 5. Database Models
+
+Key models for media generation:
+
+**MediaJob:**
+- Tracks individual generation requests
+- Status: queued, processing, completed, failed, cancelled
+- Stores prompt, parameters, provider info
+
+**MediaAsset:**
+- Stores generated media metadata
+- Links to storage location
+- Includes SEO fields (alt text, caption, etc.)
+
+**BatchJob:**
+- Groups multiple generation jobs
+- Tracks overall progress
+- Aggregates results
+
+**Webhook:**
+- Configures external notifications
+- Supports signing secrets
+- Tracks delivery attempts
 
 ## Environment Variables
 
-Create `.env` file:
+See `.env.example` for complete list. Key variables:
 
 ```bash
-# Database
-DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/eliseo
-
-# Redis (Celery broker)
-CELERY_BROKER_URL=redis://localhost:6379/0
-CELERY_RESULT_BACKEND=redis://localhost:6379/0
+# Provider Keys
+STABILITY_API_KEY=sk-...
+OPENAI_API_KEY=sk-...
 
 # Storage
-STORAGE_PROVIDER=local
-STORAGE_BASE_PATH=./storage
-STORAGE_PUBLIC_URL=https://your-domain.com/storage
+MEDIA_STORAGE_PROVIDER=local
+MINIO_ENDPOINT=localhost:9000
+
+# Queue
+REDIS_URL=redis://redis:6379/0
+CELERY_BROKER_URL=redis://redis:6379/0
 
 # Moderation
 MODERATION_ENABLED=true
-MODERATION_PROVIDER=local
 BLOCK_UNSAFE_PROMPTS=true
-
-# Provider API Keys (add as needed)
-OPENAI_API_KEY=sk-...
-STABILITY_API_KEY=...
-RUNWAY_API_KEY=...
-REPLICATE_API_TOKEN=...
-
-# Security
-SECRET_KEY=your-secret-key-here
-JWT_SECRET=your-jwt-secret-here
 ```
 
-## Docker Compose Setup
+## Deployment
 
-Create `docker-compose.yml`:
-
-```yaml
-version: '3.8'
-
-services:
-  api:
-    build: ./backend
-    command: uvicorn eliseo.main:app --host 0.0.0.0 --port 8000
-    env_file: .env
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
-      - storage_data:/app/storage
-    depends_on:
-      - postgres
-      - redis
-
-  celery_worker:
-    build: ./backend
-    command: celery -A eliseo.celery_config worker --loglevel=info
-    env_file: .env
-    volumes:
-      - ./backend:/app
-      - storage_data:/app/storage
-    depends_on:
-      - postgres
-      - redis
-
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: eliseo
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-
-  # Optional: MinIO for S3-compatible storage
-  minio:
-    image: minio/minio
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin123
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
-
-volumes:
-  postgres_data:
-  redis_data:
-  storage_data:
-  minio_data:
-```
-
-## Running the System
-
-### Development Mode
+### Local Development
 
 ```bash
-# Start dependencies
-docker-compose up postgres redis
+# Start infrastructure
+cd infra
+docker-compose up -d postgres redis
 
-# Install dependencies
-pip install -r requirements.txt
+# Run API
+cd ../apps/api
+uvicorn app.main:app --reload
+
+# Run Celery worker (separate terminal)
+cd ../../backend
+celery -A eliseo.celery_config:celery_app worker -l info -Q media_generation,batch_processing,notifications
+```
+
+### VPS Production
+
+1. **Prerequisites:**
+   - Ubuntu 22.04+ VPS with 4GB+ RAM
+   - Docker & Docker Compose installed
+   - Domain configured
+
+2. **Setup:**
+```bash
+# Clone repository
+git clone <repo> /opt/eliclaw
+cd /opt/eliclaw
+
+# Copy environment files
+cp .env.example .env
+# Edit .env with your values
+
+# Start all services
+docker-compose -f infra/docker-compose.prod.yml up -d
 
 # Run migrations
-alembic upgrade head
-
-# Start API
-uvicorn eliseo.main:app --reload
-
-# Start Celery worker (separate terminal)
-celery -A eliseo.celery_config worker --loglevel=debug
-```
-
-### Production Mode
-
-```bash
-# Build and start all services
-docker-compose -f docker-compose.prod.yml up -d
-
-# View logs
-docker-compose logs -f
-
-# Run migrations in container
 docker-compose exec api alembic upgrade head
 ```
 
-## API Endpoints (New)
+3. **Services:**
+   - API: Port 8000 (behind nginx)
+   - PostgreSQL: Internal
+   - Redis: Internal
+   - MinIO: Port 9000 (optional)
+   - Celery Workers: Background
 
-### Media Generation
+## API Endpoints
 
+### Media Jobs
 ```
-POST   /api/v1/media/generate/image     - Generate image
-POST   /api/v1/media/generate/video     - Generate video
-GET    /api/v1/media/jobs/{job_id}      - Get job status
-DELETE /api/v1/media/jobs/{job_id}      - Cancel job
-GET    /api/v1/media/assets             - List generated assets
-GET    /api/v1/media/assets/{asset_id}  - Get asset details
+POST   /api/v1/media/jobs           # Create generation job
+GET    /api/v1/media/jobs           # List jobs
+GET    /api/v1/media/jobs/{id}      # Get job details
+POST   /api/v1/media/jobs/{id}/cancel
+POST   /api/v1/media/jobs/{id}/retry
 ```
 
-### Batch Processing
-
+### Media Assets
 ```
-POST   /api/v1/media/batch              - Create batch job
-GET    /api/v1/media/batch/{batch_id}   - Get batch status
-POST   /api/v1/media/batch/{batch_id}/retry - Retry failed items
+GET    /api/v1/media/assets         # List assets
+GET    /api/v1/media/assets/{id}    # Get asset
+PATCH  /api/v1/media/assets/{id}    # Update metadata
+DELETE /api/v1/media/assets/{id}    # Delete asset
+```
+
+### Batch Jobs
+```
+POST   /api/v1/media/batches        # Create batch
+GET    /api/v1/media/batches        # List batches
+GET    /api/v1/media/batches/{id}   # Get batch status
+POST   /api/v1/media/batches/{id}/cancel
+POST   /api/v1/media/batches/{id}/retry-failed
 ```
 
 ### Webhooks
+```
+POST   /api/v1/webhooks             # Create webhook
+GET    /api/v1/webhooks             # List webhooks
+PATCH  /api/v1/webhooks/{id}        # Update webhook
+DELETE /api/v1/webhooks/{id}        # Delete webhook
+POST   /api/v1/webhooks/{id}/test   # Test webhook
+GET    /api/v1/webhooks/{id}/deliveries
+```
 
+## Testing
+
+All tests use mock providers - no API keys required:
+
+```bash
+# Run all tests
+pytest backend/tests/ -v
+
+# Run specific test categories
+pytest backend/tests/providers/ -v
+pytest backend/tests/services/ -v
 ```
-POST   /api/v1/webhooks                 - Create webhook
-GET    /api/v1/webhooks                 - List webhooks
-DELETE /api/v1/webhooks/{webhook_id}    - Delete webhook
-```
+
+## Security Considerations
+
+1. **API Keys:** Never commit to version control. Use environment variables only.
+2. **Moderation:** Always enable in production (`MODERATION_ENABLED=true`)
+3. **Tenant Isolation:** All queries filtered by organization_id
+4. **Rate Limiting:** Implement at API gateway level
+5. **Storage:** Use signed URLs for private assets
 
 ## Next Steps
 
-### Immediate Priorities
+1. Add real API keys to `.env` (not committed)
+2. Configure Stability AI as first provider
+3. Test single image generation end-to-end
+4. Build frontend UI components
+5. Deploy to VPS
 
-1. **Real Provider Integration** - Add actual API implementations:
-   - Stability AI provider
-   - OpenAI DALL-E provider
-   - RunwayML provider
+## Troubleshooting
 
-2. **Database Models** - Create SQLAlchemy models for:
-   - MediaJob
-   - MediaAsset
-   - BatchJob
-   - Webhook
-   - Notification
+**Provider initialization fails:**
+- Check API key is set correctly
+- Verify network connectivity
+- Check provider status page
 
-3. **API Endpoints** - Implement FastAPI routes for all endpoints
+**Celery tasks not processing:**
+- Ensure Redis is running
+- Check worker logs: `celery -A eliseo.celery_config:celery_app worker -l debug`
+- Verify queue names match
 
-4. **Frontend UI** - Build React components for:
-   - Media generator interface
-   - Job status viewer
-   - Asset gallery
-   - Batch management
-
-### Future Enhancements
-
-1. **Advanced Moderation** - Integrate OpenAI Moderation API
-2. **Cloud Storage** - Add S3/GCS providers
-3. **Cost Optimization** - Implement provider selection based on cost/quality
-4. **Analytics Dashboard** - Track usage, costs, success rates
-5. **Rate Limiting** - Per-user and per-organization limits
-6. **Caching** - Redis caching for frequent requests
-
-## Security Notes
-
-- Never commit API keys to version control
-- Use environment variables or secrets manager
-- Enable HTTPS in production
-- Implement proper CORS configuration
-- Add rate limiting to prevent abuse
-- Regular security audits recommended
+**Storage errors:**
+- Check directory permissions for local storage
+- Verify MinIO credentials if using object storage
+- Ensure disk space available
