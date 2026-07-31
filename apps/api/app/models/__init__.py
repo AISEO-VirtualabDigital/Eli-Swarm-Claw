@@ -16,6 +16,9 @@ from .citation import AICitationCheck
 from .recommendation import Recommendation
 from .competitor import Competitor
 
+# AI Studio - Generative Media Engine
+from .media import MediaProvider, MediaJob, MediaAsset, MediaMetrics, MediaType, GenerationStatus, ProviderStatus
+
 # New SaaS modules
 from .project_management import Campaign, Milestone, Task, Subtask, TaskComment, TaskAttachment, TaskStatus, TaskPriority
 from .parasite_seo import ParasiteOpportunity, ParasitePlatform
@@ -43,6 +46,15 @@ __all__ = [
     "AICitationCheck",
     "Recommendation",
     "Competitor",
+    
+    # AI Studio - Generative Media
+    "MediaProvider",
+    "MediaJob",
+    "MediaAsset",
+    "MediaMetrics",
+    "MediaType",
+    "GenerationStatus",
+    "ProviderStatus",
     
     # Project Management
     "Campaign",

@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.database import init_db, close_db
 from app.api import health, projects, domains, crawl, audit, keywords, entities, indexing, citations, recommendations, reports
+from app.api import media  # AI Studio - Generative Media Engine
 
 
 @asynccontextmanager
@@ -59,6 +60,9 @@ def create_app() -> FastAPI:
     app.include_router(citations.router, prefix=f"{settings.API_V1_PREFIX}/citations", tags=["Citations"])
     app.include_router(recommendations.router, prefix=f"{settings.API_V1_PREFIX}/recommendations", tags=["Recommendations"])
     app.include_router(reports.router, prefix=f"{settings.API_V1_PREFIX}/reports", tags=["Reports"])
+    
+    # AI Studio - Generative Media Engine
+    app.include_router(media.router)
     
     return app
 
