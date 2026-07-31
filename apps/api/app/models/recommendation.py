@@ -50,7 +50,7 @@ class Recommendation(Base):
     completed_at = Column(DateTime)
     
     # Additional data
-    metadata = Column(JSON, default=dict)
+    extra_metadata = Column("metadata", JSON, default=dict)
     related_issues = Column(JSON, default=list)
     
     def __repr__(self) -> str:

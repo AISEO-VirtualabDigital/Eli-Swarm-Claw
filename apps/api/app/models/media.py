@@ -138,7 +138,7 @@ class MediaJob(Base):
     error_details = Column(JSON)
     
     # Metadata
-    metadata = Column(JSON, default=dict)
+    extra_metadata = Column("metadata", JSON, default=dict)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

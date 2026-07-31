@@ -52,7 +52,7 @@ class Asset(Base):
     
     # Additional data
     recommendations = Column(JSON, default=list)
-    metadata = Column(JSON, default=dict)
+    extra_metadata = Column("metadata", JSON, default=dict)
     
     # Relationships
     project = relationship("Project")

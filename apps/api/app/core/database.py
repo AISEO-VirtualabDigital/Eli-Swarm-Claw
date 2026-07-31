@@ -4,7 +4,7 @@ Uses SQLAlchemy with async support.
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import NullPool
 from typing import AsyncGenerator
 
@@ -25,10 +25,32 @@ engine = create_async_engine(
     pool_pre_ping=True,
 )
 
-# Session factory
+# Async session factory
 AsyncSessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
+
+# Sync session factory (for scripts and migrations) - use sync create_engine
+from sqlalchemy import create_engine as sync_create_engine
+sync_db_url = db_url.replace("+asyncpg", "+psycopg2", 1) if "+asyncpg" in db_url else db_url
+if sync_db_url.startswith("postgresql://"):
+    sync_db_url = sync_db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+sync_engine_instance = sync_create_engine(
+    sync_db_url,
+    echo=settings.DEBUG,
+    pool_size=settings.DATABASE_POOL_SIZE,
+    max_overflow=settings.DATABASE_MAX_OVERFLOW,
+    pool_pre_ping=True,
+)
+
+SessionLocal = sessionmaker(
+    bind=sync_engine_instance,
+    class_=Session,
     expire_on_commit=False,
     autocommit=False,
     autoflush=False,
