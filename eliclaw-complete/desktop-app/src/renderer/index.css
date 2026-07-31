@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-dark-900 text-white;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom scrollbar for desktop */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary-500;
+  }
+
+  /* Selection color */
+  ::selection {
+    @apply bg-primary-500/30 text-white;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-dark-800/80 backdrop-blur-xl border border-dark-700/50 rounded-2xl;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-400 to-cyan-400 bg-clip-text text-transparent;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white font-semibold rounded-xl 
+           transition-all duration-200 shadow-lg shadow-primary-600/25 hover:shadow-primary-500/40
+           active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-dark-700 hover:bg-dark-600 text-white font-semibold rounded-xl 
+           transition-all duration-200 border border-dark-600 hover:border-dark-500
+           active:scale-95;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-xl text-white 
+           placeholder-dark-500 focus:outline-none focus:border-primary-500 focus:ring-2 
+           focus:ring-primary-500/20 transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary-500/10 
+           hover:border-primary-500/30;
+  }
+
+  /* Desktop-specific title bar */
+  .title-bar {
+    -webkit-app-region: drag;
+    @apply h-10 flex items-center justify-between px-4 bg-dark-900/80 backdrop-blur-xl border-b border-dark-700/50;
+  }
+
+  .title-bar-button {
+    -webkit-app-region: no-drag;
+    @apply w-3 h-3 rounded-full transition-all duration-200;
+  }
+
+  /* Native feel for macOS */
+  .mac-title-bar {
+    @apply pl-20; /* Space for traffic lights */
+  }
+
+  /* Window controls for Windows/Linux */
+  .win-controls {
+    @apply flex items-center gap-2;
+  }
+
+  .win-control-btn {
+    @apply w-10 h-10 flex items-center justify-center text-dark-400 hover:text-white hover:bg-dark-700/50 transition-colors;
+  }
+
+  /* Offline indicator */
+  .offline-banner {
+    @apply fixed top-0 left-0 right-0 z-50 bg-yellow-500/10 border-b border-yellow-500/20 
+           text-yellow-400 text-sm text-center py-2;
+  }
+
+  /* Update available banner */
+  .update-banner {
+    @apply fixed top-0 left-0 right-0 z-50 bg-primary-500/10 border-b border-primary-500/20 
+           text-primary-400 text-sm text-center py-2 cursor-pointer hover:bg-primary-500/20 transition-colors;
+  }
+
+  /* Desktop menu */
+  .desktop-menu {
+    @apply absolute top-full left-0 mt-1 w-48 bg-dark-800 border border-dark-700 rounded-xl 
+           shadow-2xl shadow-black/50 py-1 z-50;
+  }
+
+  .desktop-menu-item {
+    @apply px-4 py-2 text-sm text-dark-300 hover:text-white hover:bg-dark-700 transition-colors 
+           flex items-center gap-2 cursor-pointer;
+  }
+
+  .desktop-menu-separator {
+    @apply my-1 border-t border-dark-700;
+  }
+
+  /* Keyboard shortcut badge */
+  .kbd {
+    @apply inline-flex items-center justify-center px-2 py-0.5 text-xs font-mono 
+           bg-dark-700 border border-dark-600 rounded text-dark-400;
+  }
+
+  /* Drag region for custom title bar */
+  .drag-region {
+    -webkit-app-region: drag;
+  }
+
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
