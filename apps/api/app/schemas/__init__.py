@@ -4,6 +4,31 @@ from pydantic import BaseModel, Field, HttpUrl
 from typing import Optional, List
 from datetime import datetime
 
+# Import AI Studio schemas
+from .media import (
+    MediaType,
+    GenerationStatus,
+    ProviderStatus,
+    MediaProviderBase,
+    MediaProviderCreate,
+    MediaProviderUpdate,
+    MediaProviderResponse,
+    MediaJobBase,
+    MediaJobCreate,
+    MediaJobUpdate,
+    MediaJobResponse,
+    MediaAssetBase,
+    MediaAssetCreate,
+    MediaAssetUpdate,
+    MediaAssetResponse,
+    MediaMetricsBase,
+    MediaMetricsResponse,
+    GenerateImageRequest,
+    GenerateVideoRequest,
+    JobStatusResponse,
+    GenerationMetricsResponse,
+)
+
 
 # Project Schemas
 class ProjectBase(BaseModel):
