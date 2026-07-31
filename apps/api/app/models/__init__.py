@@ -19,6 +19,15 @@ from .competitor import Competitor
 # AI Studio - Generative Media Engine
 from .media import MediaProvider, MediaJob, MediaAsset, MediaMetrics, MediaType, GenerationStatus, ProviderStatus
 
+# Additional SaaS modules
+from .saas_modules import (
+    BatchJob, BatchJobItem, BatchStatus,
+    Webhook, WebhookDelivery, WebhookEventType,
+    Report, ReportExport, ReportType,
+    WriterJob, WriterDraft, ContentType,
+    StorageFile, UsageEvent
+)
+
 # New SaaS modules
 from .project_management import Campaign, Milestone, Task, Subtask, TaskComment, TaskAttachment, TaskStatus, TaskPriority
 from .parasite_seo import ParasiteOpportunity, ParasitePlatform
@@ -55,6 +64,22 @@ __all__ = [
     "MediaType",
     "GenerationStatus",
     "ProviderStatus",
+    
+    # Additional SaaS modules
+    "BatchJob",
+    "BatchJobItem",
+    "BatchStatus",
+    "Webhook",
+    "WebhookDelivery",
+    "WebhookEventType",
+    "Report",
+    "ReportExport",
+    "ReportType",
+    "WriterJob",
+    "WriterDraft",
+    "ContentType",
+    "StorageFile",
+    "UsageEvent",
     
     # Project Management
     "Campaign",

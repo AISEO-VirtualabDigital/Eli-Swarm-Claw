@@ -36,17 +36,22 @@ AsyncSessionLocal = async_sessionmaker(
 
 # Sync session factory (for scripts and migrations) - use sync create_engine
 from sqlalchemy import create_engine as sync_create_engine
-sync_db_url = db_url.replace("+asyncpg", "+psycopg2", 1) if "+asyncpg" in db_url else db_url
-if sync_db_url.startswith("postgresql://"):
-    sync_db_url = sync_db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 
-sync_engine_instance = sync_create_engine(
-    sync_db_url,
-    echo=settings.DEBUG,
-    pool_size=settings.DATABASE_POOL_SIZE,
-    max_overflow=settings.DATABASE_MAX_OVERFLOW,
-    pool_pre_ping=True,
-)
+# For Alembic migrations, we need a way to get the URL from env
+def get_sync_engine(db_url: str):
+    """Create a sync engine for migrations."""
+    # Convert async URL to sync if needed
+    sync_db_url = db_url.replace("+asyncpg", "+psycopg2", 1) if "+asyncpg" in db_url else db_url
+    if sync_db_url.startswith("postgresql://"):
+        sync_db_url = sync_db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+    
+    return sync_create_engine(
+        sync_db_url,
+        echo=False,
+        pool_pre_ping=True,
+    )
+
+sync_engine_instance = get_sync_engine(db_url)
 
 SessionLocal = sessionmaker(
     bind=sync_engine_instance,
