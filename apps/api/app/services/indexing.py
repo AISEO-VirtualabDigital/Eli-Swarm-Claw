@@ -30,7 +30,7 @@ class IndexingService:
             # Bing IndexNow
             "https://www.bing.com/indexnow",
         ]
-        self.user_agent = f"EliClaw/{settings.VERSION} (Compliant SEO Discovery Bot)"
+        self.user_agent = f"EliClaw/{settings.APP_VERSION} (Compliant SEO Discovery Bot)"
     
     async def submit_to_indexnow(
         self, 
