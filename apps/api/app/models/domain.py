@@ -39,7 +39,7 @@ class Domain(Base):
     
     # Additional data
     notes = Column(Text)
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)  # Renamed from 'metadata' to avoid reserved word conflict
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

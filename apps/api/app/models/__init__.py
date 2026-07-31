@@ -16,7 +16,16 @@ from .citation import AICitationCheck
 from .recommendation import Recommendation
 from .competitor import Competitor
 
+# New SaaS modules
+from .project_management import Campaign, Milestone, Task, Subtask, TaskComment, TaskAttachment, TaskStatus, TaskPriority
+from .parasite_seo import ParasiteOpportunity, ParasitePlatform
+from .reddit import RedditFinding, SubredditProfile, RedditLeadSignal
+from .youtube import YouTubeVideo, YouTubeKeyword, YouTubePlaylist
+from .social import SocialPost, SocialProfile, SocialKeyword, GBPPost
+from .repositories import RepositoryScan, RepurposingPlan, PublicAPIConnector, APIKeyStatus, LicenseType
+
 __all__ = [
+    # Core models
     "User",
     "Organization",
     "Workspace",
@@ -34,4 +43,41 @@ __all__ = [
     "AICitationCheck",
     "Recommendation",
     "Competitor",
+    
+    # Project Management
+    "Campaign",
+    "Milestone",
+    "Task",
+    "Subtask",
+    "TaskComment",
+    "TaskAttachment",
+    "TaskStatus",
+    "TaskPriority",
+    
+    # Parasite SEO
+    "ParasiteOpportunity",
+    "ParasitePlatform",
+    
+    # Reddit Research
+    "RedditFinding",
+    "SubredditProfile",
+    "RedditLeadSignal",
+    
+    # YouTube SEO
+    "YouTubeVideo",
+    "YouTubeKeyword",
+    "YouTubePlaylist",
+    
+    # Social SEO
+    "SocialPost",
+    "SocialProfile",
+    "SocialKeyword",
+    "GBPPost",
+    
+    # Repository & API
+    "RepositoryScan",
+    "RepurposingPlan",
+    "PublicAPIConnector",
+    "APIKeyStatus",
+    "LicenseType",
 ]
