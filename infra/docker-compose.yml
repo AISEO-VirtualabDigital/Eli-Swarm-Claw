@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    container_name: eliclaw-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://eliclaw:eliclaw_password@db:5432/eliclaw
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - API_V1_PREFIX=/api/v1
+      - APP_NAME=Eli Claw
+      - APP_VERSION=0.1.0
+      - CORS_ORIGINS=["http://localhost:3000","http://localhost:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ../apps/api/app:/app/app
+    networks:
+      - eliclaw-network
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: eliclaw-db
+    environment:
+      - POSTGRES_USER=eliclaw
+      - POSTGRES_PASSWORD=eliclaw_password
+      - POSTGRES_DB=eliclaw
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eliclaw"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eliclaw-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: eliclaw-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - eliclaw-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  eliclaw-network:
+    driver: bridge
