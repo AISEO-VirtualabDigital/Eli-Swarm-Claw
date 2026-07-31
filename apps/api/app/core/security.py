@@ -158,3 +158,13 @@ def check_url_safety(url: str) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or unsafe URL. Private/internal URLs are not allowed."
         )
+
+
+def verify_password_hash(plain_text: str, hashed_text: str) -> bool:
+    """Verify a hash (for API keys, tokens, etc)."""
+    return pwd_context.verify(plain_text, hashed_text)
+
+
+def hash_secret(secret: str) -> str:
+    """Hash a secret value (API key, webhook secret, etc)."""
+    return pwd_context.hash(secret)

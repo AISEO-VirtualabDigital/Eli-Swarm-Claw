@@ -1,10 +1,19 @@
 """User model for authentication and account management."""
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from datetime import datetime
+import enum
 
 from app.core.database import Base
+
+
+class Role(str, enum.Enum):
+    """User roles within an organization."""
+    VIEWER = "viewer"
+    WRITER = "writer"
+    ADMIN = "admin"
+    OWNER = "owner"
 
 
 class User(Base):
@@ -50,6 +59,8 @@ class User(Base):
     workspaces = relationship("Workspace", back_populates="user")
     projects = relationship("Project", back_populates="user")
     emails = relationship("UserEmail", back_populates="user", cascade="all, delete-orphan")
+    memberships = relationship("Membership", back_populates="user", cascade="all, delete-orphan")
+    api_keys = relationship("ApiKey", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email})>"
@@ -76,3 +87,33 @@ class UserEmail(Base):
     
     def __repr__(self) -> str:
         return f"<UserEmail(id={self.id}, email={self.email}, type={self.email_type})>"
+
+
+class Membership(Base):
+    """User membership in an organization with role-based access."""
+    
+    __tablename__ = "memberships"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
+    
+    # Roles (can have multiple, stored as array in Postgres or comma-separated)
+    # For simplicity, we store primary role here
+    role = Column(SQLEnum(Role), nullable=False, default=Role.VIEWER)
+    
+    # Additional permissions can be added as needed
+    invited_by = Column(Integer, ForeignKey("users.id"))
+    accepted_at = Column(DateTime)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships - specify foreign_keys to avoid ambiguity
+    user = relationship("User", back_populates="memberships", foreign_keys=[user_id])
+    organization = relationship("Organization", back_populates="memberships")
+    inviter = relationship("User", foreign_keys=[invited_by], overlaps="user,memberships,organization")
+    
+    def __repr__(self) -> str:
+        return f"<Membership(user_id={self.user_id}, org_id={self.organization_id}, role={self.role})>"

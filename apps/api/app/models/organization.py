@@ -32,6 +32,8 @@ class Organization(Base):
     # Relationships
     owner = relationship("User", back_populates="organizations", foreign_keys=[owner_id])
     workspaces = relationship("Workspace", back_populates="organization", cascade="all, delete-orphan")
+    memberships = relationship("Membership", back_populates="organization", cascade="all, delete-orphan")
+    api_keys = relationship("ApiKey", back_populates="organization", cascade="all, delete-orphan")
     
     def __repr__(self) -> str:
         return f"<Organization(id={self.id}, name={self.name})>"
