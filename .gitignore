@@ -41,3 +41,5 @@ htmlcov/
 .DS_Store
 Thumbs.db
 ```
+# Secrets
+eliclaw-complete/server/.env
