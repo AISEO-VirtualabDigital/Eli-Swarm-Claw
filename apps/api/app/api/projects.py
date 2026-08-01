@@ -7,7 +7,7 @@ from typing import List
 
 from app.core.database import get_db
 from app.models import Project, User
-from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
+from app.schemas import ProjectCreate, ProjectUpdate, ProjectResponse
 
 router = APIRouter()
 
