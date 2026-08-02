@@ -1,8 +1,8 @@
 use crate::{
-    AuthenticatedBoundaryEnvelope, AuthenticationKeyRing, BoundaryEnvelope, BoundaryError,
-    BoundaryProcessingOutcome, BoundaryProcessor, InMemoryReplayStore,
-    InMemoryVerificationKeyStore, PythonBoundaryRequest, ReplayStore, SigningKeyStore,
-    VerificationKeyStore,
+    AuthenticatedBoundaryEnvelope, AuthenticationKeyRing, BoundaryAuditEvent, BoundaryAuditSink,
+    BoundaryEnvelope, BoundaryError, BoundaryProcessingOutcome, BoundaryProcessor,
+    InMemoryReplayStore, InMemoryVerificationKeyStore, PythonBoundaryRequest, ReplayStore,
+    SigningKeyStore, VerificationKeyStore,
 };
 
 /// Boundary-level facade for signing and processing authenticated envelopes.
@@ -52,6 +52,23 @@ where
             .process_with_receipt(authenticated, now_unix_ms)
     }
 
+    pub fn process_with_audit<A>(
+        &mut self,
+        authenticated: AuthenticatedBoundaryEnvelope,
+        now_unix_ms: u64,
+        audit_sink: &mut A,
+    ) -> Result<BoundaryProcessingOutcome, BoundaryError>
+    where
+        A: BoundaryAuditSink,
+    {
+        let outcome = self.process_with_receipt(authenticated, now_unix_ms)?;
+        let audit_event = BoundaryAuditEvent::accepted(&outcome);
+
+        audit_sink.record(audit_event);
+
+        Ok(outcome)
+    }
+
     #[must_use]
     pub fn processor(&self) -> &BoundaryProcessor<K, R> {
         &self.processor
@@ -76,7 +93,8 @@ mod tests {
     use super::*;
     use crate::{
         AuthenticationKey, AuthenticationKeyMetadata, BoundaryOperation, CorrelationId,
-        GenerationRequest, IdempotencyKey, KeyId, ManagedAuthenticationKey,
+        GenerationRequest, IdempotencyKey, InMemoryBoundaryAuditSink, KeyId,
+        ManagedAuthenticationKey,
     };
     use eli_core::AgentTaskAnchorId;
 
@@ -179,6 +197,61 @@ mod tests {
             "idem-gateway-outcome"
         );
         assert_eq!(outcome.receipt().key_id().as_str(), "active-key");
+    }
+
+    #[test]
+    fn gateway_process_with_audit_records_accepted_event() {
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
+            .expect("key ring must be valid");
+
+        let mut gateway = BoundaryGateway::new(ring);
+        let mut audit_sink = InMemoryBoundaryAuditSink::new();
+
+        let authenticated = gateway
+            .sign(boundary_envelope(
+                "corr-gateway-audit",
+                "idem-gateway-audit",
+            ))
+            .expect("gateway signing must succeed");
+
+        let outcome = gateway
+            .process_with_audit(authenticated, PROCESSING_TIME_UNIX_MS, &mut audit_sink)
+            .expect("gateway processing with audit must succeed");
+
+        assert_eq!(outcome.request().agent_legacy_id, Some(42));
+        assert_eq!(audit_sink.len(), 1);
+        assert_eq!(
+            audit_sink.events()[0].correlation_id().as_str(),
+            "corr-gateway-audit"
+        );
+        assert_eq!(
+            audit_sink.events()[0].idempotency_key().as_str(),
+            "idem-gateway-audit"
+        );
+        assert_eq!(audit_sink.events()[0].key_id().as_str(), "active-key");
+    }
+
+    #[test]
+    fn gateway_failed_processing_does_not_record_audit_event() {
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
+            .expect("key ring must be valid");
+
+        let authenticated = AuthenticatedBoundaryEnvelope::sign(
+            boundary_envelope("corr-gateway-unknown", "idem-gateway-unknown"),
+            key_id("unknown-key"),
+            &authentication_key(9),
+        )
+        .expect("unknown-key envelope can be locally signed");
+
+        let mut gateway = BoundaryGateway::new(ring);
+        let mut audit_sink = InMemoryBoundaryAuditSink::new();
+
+        gateway
+            .process_with_audit(authenticated, PROCESSING_TIME_UNIX_MS, &mut audit_sink)
+            .expect_err("unknown key must fail closed");
+
+        assert!(audit_sink.is_empty());
+        assert!(gateway.processor().replay_store().is_empty());
     }
 
     #[test]

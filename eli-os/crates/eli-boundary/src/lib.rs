@@ -324,3 +324,6 @@ pub use decision::*;
 
 mod audit;
 pub use audit::*;
+
+mod audit_sink;
+pub use audit_sink::*;
