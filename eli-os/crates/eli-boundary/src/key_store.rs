@@ -1,17 +1,25 @@
 use crate::{AuthenticationKey, AuthenticationKeyRing, KeyId};
 
-/// Resolves authentication keys used to verify boundary envelopes.
+/// Resolves authentication keys authorized to verify boundary envelopes.
 ///
-/// Implementations must return only keys that are currently authorized for
-/// verification. Unknown, retired, or otherwise unusable keys return `None`.
+/// Implementations must return only active or verification-only keys.
+/// Unknown, retired, or otherwise unusable keys return `None`.
 pub trait VerificationKeyStore {
     fn verification_key(&self, key_id: &KeyId) -> Option<&AuthenticationKey>;
 }
 
-/// In-memory verification-key store backed by `AuthenticationKeyRing`.
+/// Resolves the currently active authentication signing key.
 ///
-/// The active key and verification-only previous keys remain usable for
-/// verification according to key-ring lifecycle rules.
+/// Implementations must never return retired or verification-only keys for
+/// signing. Returning `None` causes signing to fail closed.
+pub trait SigningKeyStore {
+    fn active_signing_key(&self) -> Option<(&KeyId, &AuthenticationKey)>;
+}
+
+/// In-memory authentication-key store backed by `AuthenticationKeyRing`.
+///
+/// The active key may sign and verify. Previous verification-only keys may
+/// verify but cannot sign.
 #[derive(Clone, Debug)]
 pub struct InMemoryVerificationKeyStore {
     key_ring: AuthenticationKeyRing,
@@ -37,6 +45,18 @@ impl InMemoryVerificationKeyStore {
 impl VerificationKeyStore for InMemoryVerificationKeyStore {
     fn verification_key(&self, key_id: &KeyId) -> Option<&AuthenticationKey> {
         self.key_ring.verification_key(key_id)
+    }
+}
+
+impl SigningKeyStore for InMemoryVerificationKeyStore {
+    fn active_signing_key(&self) -> Option<(&KeyId, &AuthenticationKey)> {
+        let active = self.key_ring.active();
+
+        if !active.can_sign() {
+            return None;
+        }
+
+        Some((&active.metadata().key_id, active.key()))
     }
 }
 
@@ -71,7 +91,7 @@ mod tests {
     }
 
     #[test]
-    fn active_key_is_resolved() {
+    fn active_key_is_resolved_for_verification() {
         let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 100, 100))
             .expect("key ring must be valid");
 
@@ -103,5 +123,38 @@ mod tests {
         let store = InMemoryVerificationKeyStore::new(ring);
 
         assert!(store.verification_key(&key_id("unknown-key")).is_none());
+    }
+
+    #[test]
+    fn active_key_is_resolved_for_signing() {
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 100, 100))
+            .expect("key ring must be valid");
+
+        let store = InMemoryVerificationKeyStore::new(ring);
+
+        let (resolved_id, _) = store
+            .active_signing_key()
+            .expect("active signing key must be available");
+
+        assert_eq!(resolved_id.as_str(), "active-key");
+    }
+
+    #[test]
+    fn rotation_changes_the_active_signing_key() {
+        let current = managed_active_key("previous-key", 1, 100, 100);
+        let next = managed_active_key("active-key", 2, 200, 200);
+
+        let mut ring = AuthenticationKeyRing::new(current).expect("key ring must be valid");
+
+        ring.rotate(next, 200).expect("key rotation must succeed");
+
+        let store = InMemoryVerificationKeyStore::new(ring);
+
+        let (resolved_id, _) = store
+            .active_signing_key()
+            .expect("rotated active signing key must be available");
+
+        assert_eq!(resolved_id.as_str(), "active-key");
+        assert!(store.verification_key(&key_id("previous-key")).is_some());
     }
 }

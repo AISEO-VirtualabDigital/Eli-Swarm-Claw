@@ -1,5 +1,5 @@
 use crate::key_rotation::KeyId;
-use crate::{BoundaryEnvelope, BoundaryError, BoundaryErrorCode};
+use crate::{BoundaryEnvelope, BoundaryError, BoundaryErrorCode, SigningKeyStore};
 use hmac::{Hmac, Mac};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
@@ -66,6 +66,20 @@ impl AuthenticatedBoundaryEnvelope {
         })
     }
 
+    pub fn sign_with_store<S>(
+        envelope: BoundaryEnvelope,
+        signing_store: &S,
+    ) -> Result<Self, BoundaryError>
+    where
+        S: SigningKeyStore + ?Sized,
+    {
+        let (key_id, key) = signing_store.active_signing_key().ok_or_else(|| {
+            authentication_failure("no active authentication signing key is available")
+        })?;
+
+        Self::sign(envelope, key_id.clone(), key)
+    }
+
     pub fn verify(&self, key: &AuthenticationKey) -> Result<(), BoundaryError> {
         if self.authentication_tag.trim().is_empty() {
             return Err(authentication_failure("boundary envelope is unsigned"));
@@ -121,7 +135,9 @@ fn authentication_failure(message: &str) -> BoundaryError {
 mod tests {
     use super::*;
     use crate::{
-        BoundaryOperation, CorrelationId, GenerationRequest, IdempotencyKey, PythonBoundaryRequest,
+        AuthenticationKeyMetadata, AuthenticationKeyRing, BoundaryOperation, CorrelationId,
+        GenerationRequest, IdempotencyKey, InMemoryVerificationKeyStore, ManagedAuthenticationKey,
+        PythonBoundaryRequest,
     };
     use eli_core::AgentTaskAnchorId;
 
@@ -137,6 +153,22 @@ mod tests {
 
     fn test_key_id() -> KeyId {
         KeyId::new("test-key").expect("valid test key ID")
+    }
+
+    fn signing_store(key_id_value: &str, key: AuthenticationKey) -> InMemoryVerificationKeyStore {
+        let metadata = AuthenticationKeyMetadata::active(
+            KeyId::new(key_id_value).expect("valid signing key ID"),
+            100,
+            100,
+        )
+        .expect("active metadata must be valid");
+
+        let managed = ManagedAuthenticationKey::new(metadata, key)
+            .expect("managed signing key must be valid");
+
+        let ring = AuthenticationKeyRing::new(managed).expect("signing key ring must be valid");
+
+        InMemoryVerificationKeyStore::new(ring)
     }
 
     fn boundary_envelope() -> BoundaryEnvelope {
@@ -167,6 +199,39 @@ mod tests {
 
         assert_eq!(authenticated.key_id.as_str(), "test-key");
         assert_eq!(authenticated.verify(&key), Ok(()));
+    }
+
+    #[test]
+    fn signing_store_uses_active_key_and_key_id() {
+        let key = authentication_key();
+        let store = signing_store("store-key", key.clone());
+
+        let authenticated =
+            AuthenticatedBoundaryEnvelope::sign_with_store(boundary_envelope(), &store)
+                .expect("store-backed signing must succeed");
+
+        assert_eq!(authenticated.key_id.as_str(), "store-key");
+        assert_eq!(authenticated.verify(&key), Ok(()));
+    }
+
+    struct EmptySigningKeyStore;
+
+    impl SigningKeyStore for EmptySigningKeyStore {
+        fn active_signing_key(&self) -> Option<(&KeyId, &AuthenticationKey)> {
+            None
+        }
+    }
+
+    #[test]
+    fn signing_without_active_key_fails_closed() {
+        let error = AuthenticatedBoundaryEnvelope::sign_with_store(
+            boundary_envelope(),
+            &EmptySigningKeyStore,
+        )
+        .expect_err("missing active signing key must fail");
+
+        assert_eq!(error.code, BoundaryErrorCode::InvalidRequest);
+        assert!(!error.retryable);
     }
 
     #[test]
