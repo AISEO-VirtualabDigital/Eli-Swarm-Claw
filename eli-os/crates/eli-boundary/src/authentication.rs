@@ -1,3 +1,4 @@
+use crate::key_rotation::KeyId;
 use crate::{BoundaryEnvelope, BoundaryError, BoundaryErrorCode};
 use hmac::{Hmac, Mac};
 use serde::{Deserialize, Serialize};
@@ -46,18 +47,21 @@ impl fmt::Debug for AuthenticationKey {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AuthenticatedBoundaryEnvelope {
     pub envelope: BoundaryEnvelope,
+    pub key_id: KeyId,
     pub authentication_tag: String,
 }
 
 impl AuthenticatedBoundaryEnvelope {
     pub fn sign(
         envelope: BoundaryEnvelope,
+        key_id: KeyId,
         key: &AuthenticationKey,
     ) -> Result<Self, BoundaryError> {
         let authentication_tag = calculate_authentication_tag(&envelope, key)?;
 
         Ok(Self {
             envelope,
+            key_id,
             authentication_tag,
         })
     }
@@ -131,6 +135,10 @@ mod tests {
             .expect("valid authentication key")
     }
 
+    fn test_key_id() -> KeyId {
+        KeyId::new("test-key").expect("valid test key ID")
+    }
+
     fn boundary_envelope() -> BoundaryEnvelope {
         let request = PythonBoundaryRequest::generation(
             AgentTaskAnchorId::new(),
@@ -152,17 +160,22 @@ mod tests {
     #[test]
     fn signed_envelope_verifies_with_correct_key() {
         let key = authentication_key();
-        let authenticated =
-            AuthenticatedBoundaryEnvelope::sign(boundary_envelope(), &key).expect("sign envelope");
 
+        let authenticated =
+            AuthenticatedBoundaryEnvelope::sign(boundary_envelope(), test_key_id(), &key)
+                .expect("sign envelope");
+
+        assert_eq!(authenticated.key_id.as_str(), "test-key");
         assert_eq!(authenticated.verify(&key), Ok(()));
     }
 
     #[test]
     fn modified_payload_is_rejected() {
         let key = authentication_key();
+
         let mut authenticated =
-            AuthenticatedBoundaryEnvelope::sign(boundary_envelope(), &key).expect("sign envelope");
+            AuthenticatedBoundaryEnvelope::sign(boundary_envelope(), test_key_id(), &key)
+                .expect("sign envelope");
 
         authenticated
             .envelope
@@ -185,8 +198,9 @@ mod tests {
         let signing_key = authentication_key();
         let verification_key = different_authentication_key();
 
-        let authenticated = AuthenticatedBoundaryEnvelope::sign(boundary_envelope(), &signing_key)
-            .expect("sign envelope");
+        let authenticated =
+            AuthenticatedBoundaryEnvelope::sign(boundary_envelope(), test_key_id(), &signing_key)
+                .expect("sign envelope");
 
         let error = authenticated
             .verify(&verification_key)
@@ -199,6 +213,7 @@ mod tests {
     fn unsigned_envelope_is_rejected() {
         let authenticated = AuthenticatedBoundaryEnvelope {
             envelope: boundary_envelope(),
+            key_id: test_key_id(),
             authentication_tag: String::new(),
         };
 
@@ -213,6 +228,7 @@ mod tests {
     fn malformed_authentication_tag_is_rejected() {
         let authenticated = AuthenticatedBoundaryEnvelope {
             envelope: boundary_envelope(),
+            key_id: test_key_id(),
             authentication_tag: "not-hexadecimal".to_owned(),
         };
 
