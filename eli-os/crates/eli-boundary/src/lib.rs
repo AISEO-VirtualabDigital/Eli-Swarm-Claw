@@ -327,3 +327,6 @@ pub use audit::*;
 
 mod audit_sink;
 pub use audit_sink::*;
+
+mod audited_gateway;
+pub use audited_gateway::*;
