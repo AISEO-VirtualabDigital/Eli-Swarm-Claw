@@ -1074,6 +1074,10 @@ pub trait RuntimeExecutionRepository {
         &mut self,
         event: &RuntimeExecutionAuditEvent,
     ) -> Result<(), BoundaryError>;
+
+    fn state(&self) -> RuntimePilotState;
+
+    fn snapshot(&self) -> RuntimeExecutionAuditSnapshot;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
@@ -1197,6 +1201,391 @@ impl RuntimeExecutionRepository for InMemoryPilotStateStore {
     ) -> Result<(), BoundaryError> {
         self.record_audit_event(event);
         Ok(())
+    }
+
+    fn state(&self) -> RuntimePilotState {
+        self.state.clone()
+    }
+
+    fn snapshot(&self) -> RuntimeExecutionAuditSnapshot {
+        self.snapshot()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PilotHealthStatus {
+    Healthy,
+    Degraded,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PilotHealthResponse {
+    status: PilotHealthStatus,
+    message: String,
+}
+
+impl PilotHealthResponse {
+    #[must_use]
+    pub fn healthy(message: impl Into<String>) -> Self {
+        Self {
+            status: PilotHealthStatus::Healthy,
+            message: message.into(),
+        }
+    }
+
+    #[must_use]
+    pub fn degraded(message: impl Into<String>) -> Self {
+        Self {
+            status: PilotHealthStatus::Degraded,
+            message: message.into(),
+        }
+    }
+
+    #[must_use]
+    pub fn status(&self) -> &PilotHealthStatus {
+        &self.status
+    }
+
+    #[must_use]
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PilotStatusResponse {
+    health: PilotHealthResponse,
+    total_submitted_commands: usize,
+    approved_count: usize,
+    completed_count: usize,
+    blocked_count: usize,
+    latest_command: Option<RuntimeExecutionCommand>,
+    latest_result: Option<RuntimeExecutionResult>,
+}
+
+impl PilotStatusResponse {
+    #[must_use]
+    pub fn new(
+        health: PilotHealthResponse,
+        total_submitted_commands: usize,
+        approved_count: usize,
+        completed_count: usize,
+        blocked_count: usize,
+        latest_command: Option<RuntimeExecutionCommand>,
+        latest_result: Option<RuntimeExecutionResult>,
+    ) -> Self {
+        Self {
+            health,
+            total_submitted_commands,
+            approved_count,
+            completed_count,
+            blocked_count,
+            latest_command,
+            latest_result,
+        }
+    }
+
+    #[must_use]
+    pub fn health(&self) -> &PilotHealthResponse {
+        &self.health
+    }
+
+    #[must_use]
+    pub fn total_submitted_commands(&self) -> usize {
+        self.total_submitted_commands
+    }
+
+    #[must_use]
+    pub fn approved_count(&self) -> usize {
+        self.approved_count
+    }
+
+    #[must_use]
+    pub fn completed_count(&self) -> usize {
+        self.completed_count
+    }
+
+    #[must_use]
+    pub fn blocked_count(&self) -> usize {
+        self.blocked_count
+    }
+
+    #[must_use]
+    pub fn latest_command(&self) -> Option<&RuntimeExecutionCommand> {
+        self.latest_command.as_ref()
+    }
+
+    #[must_use]
+    pub fn latest_result(&self) -> Option<&RuntimeExecutionResult> {
+        self.latest_result.as_ref()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PilotDryRunSubmission {
+    command: RuntimeExecutionCommand,
+    approval: Option<RuntimeExecutionApprovalReceipt>,
+}
+
+impl PilotDryRunSubmission {
+    #[must_use]
+    pub fn new(
+        command: RuntimeExecutionCommand,
+        approval: Option<RuntimeExecutionApprovalReceipt>,
+    ) -> Self {
+        Self { command, approval }
+    }
+
+    #[must_use]
+    pub fn command(&self) -> &RuntimeExecutionCommand {
+        &self.command
+    }
+
+    #[must_use]
+    pub fn approval(&self) -> Option<&RuntimeExecutionApprovalReceipt> {
+        self.approval.as_ref()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PilotCommandResult {
+    command: RuntimeExecutionCommand,
+    result: RuntimeExecutionResult,
+    persisted: bool,
+}
+
+impl PilotCommandResult {
+    #[must_use]
+    pub fn new(
+        command: RuntimeExecutionCommand,
+        result: RuntimeExecutionResult,
+        persisted: bool,
+    ) -> Self {
+        Self {
+            command,
+            result,
+            persisted,
+        }
+    }
+
+    #[must_use]
+    pub fn command(&self) -> &RuntimeExecutionCommand {
+        &self.command
+    }
+
+    #[must_use]
+    pub fn result(&self) -> &RuntimeExecutionResult {
+        &self.result
+    }
+
+    #[must_use]
+    pub fn persisted(&self) -> bool {
+        self.persisted
+    }
+}
+
+pub struct LocalPilotRunner<S = InMemoryPilotStateStore> {
+    controller: DryRunRuntimeController,
+    store: RefCell<S>,
+    submitted_commands: usize,
+    latest_command: Option<RuntimeExecutionCommand>,
+    latest_result: Option<RuntimeExecutionResult>,
+}
+
+impl<S> LocalPilotRunner<S>
+where
+    S: RuntimeExecutionRepository,
+{
+    #[must_use]
+    pub fn new(controller: DryRunRuntimeController, store: S) -> Self {
+        Self {
+            controller,
+            store: RefCell::new(store),
+            submitted_commands: 0,
+            latest_command: None,
+            latest_result: None,
+        }
+    }
+
+    #[must_use]
+    pub fn controller(&self) -> &DryRunRuntimeController {
+        &self.controller
+    }
+
+    #[must_use]
+    pub fn state(&self) -> RuntimePilotState {
+        self.store.borrow().state()
+    }
+
+    pub fn submit(&mut self, submission: PilotDryRunSubmission) -> PilotCommandResult {
+        self.submitted_commands += 1;
+        let command = submission.command().clone();
+        let result = self
+            .controller
+            .execute(submission.command(), submission.approval());
+
+        if let Some(approval) = submission.approval() {
+            self.store
+                .borrow_mut()
+                .store_execution_approval(approval)
+                .ok();
+        }
+
+        self.store.borrow_mut().store_execution_result(&result).ok();
+
+        let event = match result.status() {
+            RuntimeExecutionStatus::DryRunCompleted => {
+                RuntimeExecutionAuditEvent::Completed(result.clone())
+            }
+            RuntimeExecutionStatus::BlockedRequiresApproval
+            | RuntimeExecutionStatus::BlockedDenied
+            | RuntimeExecutionStatus::Failed => RuntimeExecutionAuditEvent::Blocked(result.clone()),
+        };
+
+        self.store
+            .borrow_mut()
+            .store_execution_audit_event(&event)
+            .ok();
+
+        self.latest_command = Some(command.clone());
+        self.latest_result = Some(result.clone());
+
+        PilotCommandResult::new(command, result, true)
+    }
+
+    #[must_use]
+    pub fn status(&self) -> PilotStatusResponse {
+        let store = self.store.borrow();
+        let snapshot = store.snapshot();
+        let state = store.state();
+
+        PilotStatusResponse::new(
+            PilotHealthResponse::healthy("pilot runner is ready"),
+            self.submitted_commands,
+            state.approval_count(),
+            snapshot.completed_count(),
+            snapshot.blocked_count(),
+            self.latest_command.clone(),
+            self.latest_result.clone(),
+        )
+    }
+}
+
+#[cfg(test)]
+mod phase_6_local_pilot_runner_tests {
+    use super::*;
+
+    #[test]
+    fn runner_reports_healthy_status_when_ready() {
+        let controller = DryRunRuntimeController::new(
+            SafeRuntimeExecutionPolicy,
+            DryRunRuntimeExecutor::default(),
+            InMemoryRuntimeExecutionAuditSink::new(),
+        );
+        let runner = LocalPilotRunner::new(controller, InMemoryPilotStateStore::new());
+
+        let status = runner.status();
+        assert!(matches!(
+            status.health().status(),
+            PilotHealthStatus::Healthy
+        ));
+        assert_eq!(status.total_submitted_commands(), 0);
+    }
+
+    #[test]
+    fn runner_records_approved_dry_run_completion() {
+        let controller = DryRunRuntimeController::new(
+            SafeRuntimeExecutionPolicy,
+            DryRunRuntimeExecutor::default(),
+            InMemoryRuntimeExecutionAuditSink::new(),
+        );
+        let mut runner = LocalPilotRunner::new(controller, InMemoryPilotStateStore::new());
+        let approval = RuntimeExecutionApprovalReceipt::new(
+            "corr-pilot-approved",
+            "idem-pilot-approved",
+            "human-operator",
+            7_000,
+        );
+        let submission = PilotDryRunSubmission::new(
+            RuntimeExecutionCommand::dry_run(
+                "corr-pilot-approved",
+                "idem-pilot-approved",
+                "approved preview",
+            ),
+            Some(approval),
+        );
+
+        let result = runner.submit(submission);
+
+        assert_eq!(
+            result.result().status(),
+            &RuntimeExecutionStatus::DryRunCompleted
+        );
+        let status = runner.status();
+        assert_eq!(status.total_submitted_commands(), 1);
+        assert_eq!(status.completed_count(), 1);
+        assert_eq!(status.approved_count(), 1);
+    }
+
+    #[test]
+    fn runner_blocks_unapproved_dry_run_and_keeps_counts() {
+        let controller = DryRunRuntimeController::new(
+            SafeRuntimeExecutionPolicy,
+            DryRunRuntimeExecutor::default(),
+            InMemoryRuntimeExecutionAuditSink::new(),
+        );
+        let mut runner = LocalPilotRunner::new(controller, InMemoryPilotStateStore::new());
+        let submission = PilotDryRunSubmission::new(
+            RuntimeExecutionCommand::dry_run(
+                "corr-pilot-blocked",
+                "idem-pilot-blocked",
+                "blocked preview",
+            ),
+            None,
+        );
+
+        let result = runner.submit(submission);
+
+        assert_eq!(
+            result.result().status(),
+            &RuntimeExecutionStatus::BlockedRequiresApproval
+        );
+        let status = runner.status();
+        assert_eq!(status.total_submitted_commands(), 1);
+        assert_eq!(status.blocked_count(), 1);
+    }
+
+    #[test]
+    fn runner_denies_live_execution_without_executing_it() {
+        let controller = DryRunRuntimeController::new(
+            SafeRuntimeExecutionPolicy,
+            DryRunRuntimeExecutor::default(),
+            InMemoryRuntimeExecutionAuditSink::new(),
+        );
+        let mut runner = LocalPilotRunner::new(controller, InMemoryPilotStateStore::new());
+        let submission = PilotDryRunSubmission::new(
+            RuntimeExecutionCommand::new(
+                "corr-pilot-live",
+                "idem-pilot-live",
+                RuntimeExecutionKind::ShellCommand,
+                "attempt shell execution",
+                true,
+            ),
+            None,
+        );
+
+        let result = runner.submit(submission);
+
+        assert_eq!(
+            result.result().status(),
+            &RuntimeExecutionStatus::BlockedDenied
+        );
+        let status = runner.status();
+        assert_eq!(status.blocked_count(), 1);
+        assert_eq!(
+            status.latest_result().unwrap().status(),
+            &RuntimeExecutionStatus::BlockedDenied
+        );
     }
 }
 
