@@ -1,9 +1,9 @@
 use crate::{
     AuthenticatedBoundaryEnvelope, AuthenticationKeyRing, BoundaryAuditEvent, BoundaryAuditReport,
-    BoundaryAuditSink, BoundaryAuditSnapshot, BoundaryEnvelope, BoundaryError, BoundaryGateway,
-    BoundaryProcessingOutcome, InMemoryBoundaryAuditSink, InMemoryReplayStore,
-    InMemoryVerificationKeyStore, PythonBoundaryRequest, ReplayStore, SigningKeyStore,
-    VerificationKeyStore,
+    BoundaryAuditReportVerdict, BoundaryAuditSink, BoundaryAuditSnapshot, BoundaryEnvelope,
+    BoundaryError, BoundaryGateway, BoundaryProcessingOutcome, InMemoryBoundaryAuditSink,
+    InMemoryReplayStore, InMemoryVerificationKeyStore, PythonBoundaryRequest, ReplayStore,
+    SigningKeyStore, VerificationKeyStore,
 };
 
 /// Boundary gateway wrapper with an owned audit sink.
@@ -117,6 +117,11 @@ where
     #[must_use]
     pub fn audit_report(&self) -> BoundaryAuditReport {
         self.audit_sink.report()
+    }
+
+    #[must_use]
+    pub fn audit_verdict(&self) -> BoundaryAuditReportVerdict {
+        self.audit_report().verdict()
     }
 }
 
@@ -365,5 +370,59 @@ mod tests {
         assert_eq!(report.accepted_count(), 0);
         assert_eq!(report.rejected_count(), 0);
         assert!(report.events().is_empty());
+    }
+    #[test]
+    fn audited_gateway_verdict_is_empty_before_processing() {
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
+            .expect("key ring must be valid");
+
+        let gateway = AuditedBoundaryGateway::new(ring);
+
+        assert_eq!(gateway.audit_verdict(), BoundaryAuditReportVerdict::Empty);
+    }
+
+    #[test]
+    fn audited_gateway_verdict_is_accepted_only_after_successes() {
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
+            .expect("key ring must be valid");
+
+        let mut gateway = AuditedBoundaryGateway::new(ring);
+
+        let accepted = gateway
+            .sign(boundary_envelope("corr-verdict-ok", "idem-verdict-ok"))
+            .expect("audited gateway signing must succeed");
+
+        gateway
+            .process_with_full_audit(accepted, PROCESSING_TIME_UNIX_MS)
+            .expect("accepted envelope must succeed");
+
+        assert_eq!(
+            gateway.audit_verdict(),
+            BoundaryAuditReportVerdict::AcceptedOnly
+        );
+    }
+
+    #[test]
+    fn audited_gateway_verdict_detects_rejections() {
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
+            .expect("key ring must be valid");
+
+        let mut gateway = AuditedBoundaryGateway::new(ring);
+
+        let rejected = AuthenticatedBoundaryEnvelope::sign(
+            boundary_envelope("corr-verdict-fail", "idem-verdict-fail"),
+            key_id("unknown-key"),
+            &authentication_key(9),
+        )
+        .expect("unknown-key envelope can be locally signed");
+
+        gateway
+            .process_with_full_audit(rejected, PROCESSING_TIME_UNIX_MS)
+            .expect_err("unknown key must fail closed");
+
+        assert_eq!(
+            gateway.audit_verdict(),
+            BoundaryAuditReportVerdict::ContainsRejections
+        );
     }
 }
