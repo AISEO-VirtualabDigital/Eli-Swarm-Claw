@@ -52,6 +52,11 @@ dependencies = [
 [[package]]
 name = "eli-telemetry"
 version = "0.1.0"
+dependencies = [
+ "eli-core",
+ "eli-domain",
+ "serde",
+]
 
 [[package]]
 name = "futures-core"

@@ -1,7 +1,7 @@
 use eli_core::PolicyDecisionId;
 use eli_domain::{
-    AgentTaskAnchor, AgentTaskAnchorStatus, AuthorityLevel, HumanOrder, HumanOrderStatus,
-    PolicyDecision, PolicyOutcome, PolicySubject, WorkflowDefinition,
+    AgentTaskAnchor, AgentTaskAnchorStatus, AuthorityLevel, HumanOrder, PolicyDecision,
+    PolicyOutcome, PolicySubject, WorkflowDefinition,
 };
 use serde::{Deserialize, Serialize};
 
@@ -92,7 +92,9 @@ impl PolicyEngine {
 mod tests {
     use super::*;
     use eli_core::{AgentTaskAnchorId, ContextSnapshotId, HumanOrderId, WorkflowDefinitionId};
-    use eli_domain::{HumanAuthority, HumanOrderPriority, WorkflowExecutor, WorkflowStep};
+    use eli_domain::{
+        HumanAuthority, HumanOrderPriority, HumanOrderStatus, WorkflowExecutor, WorkflowStep,
+    };
 
     #[test]
     fn human_absolute_order_is_allowed() {
