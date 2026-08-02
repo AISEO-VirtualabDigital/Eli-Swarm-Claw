@@ -7,3 +7,6 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+eli-core = { path = "../eli-core" }
+eli-domain = { path = "../eli-domain" }
+serde.workspace = true
