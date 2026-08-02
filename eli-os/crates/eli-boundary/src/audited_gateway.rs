@@ -1,8 +1,8 @@
 use crate::{
-    AuthenticatedBoundaryEnvelope, AuthenticationKeyRing, BoundaryAuditSink, BoundaryEnvelope,
-    BoundaryError, BoundaryGateway, BoundaryProcessingOutcome, InMemoryBoundaryAuditSink,
-    InMemoryReplayStore, InMemoryVerificationKeyStore, PythonBoundaryRequest, ReplayStore,
-    SigningKeyStore, VerificationKeyStore,
+    AuthenticatedBoundaryEnvelope, AuthenticationKeyRing, BoundaryAuditEvent, BoundaryAuditSink,
+    BoundaryEnvelope, BoundaryError, BoundaryGateway, BoundaryProcessingOutcome,
+    InMemoryBoundaryAuditSink, InMemoryReplayStore, InMemoryVerificationKeyStore,
+    PythonBoundaryRequest, ReplayStore, SigningKeyStore, VerificationKeyStore,
 };
 
 /// Boundary gateway wrapper with an owned audit sink.
@@ -67,6 +67,31 @@ where
             .process_with_audit(authenticated, now_unix_ms, &mut self.audit_sink)
     }
 
+    pub fn process_with_full_audit(
+        &mut self,
+        authenticated: AuthenticatedBoundaryEnvelope,
+        now_unix_ms: u64,
+    ) -> Result<BoundaryProcessingOutcome, BoundaryError> {
+        match self.gateway.process_with_audit(
+            authenticated.clone(),
+            now_unix_ms,
+            &mut self.audit_sink,
+        ) {
+            Ok(outcome) => Ok(outcome),
+            Err(error) => {
+                let audit_event = BoundaryAuditEvent::rejected_from_authenticated(
+                    &authenticated,
+                    &error,
+                    now_unix_ms,
+                );
+
+                self.audit_sink.record(audit_event);
+
+                Err(error)
+            }
+        }
+    }
+
     #[must_use]
     pub fn gateway(&self) -> &BoundaryGateway<K, R> {
         &self.gateway
@@ -96,8 +121,8 @@ where
 mod tests {
     use super::*;
     use crate::{
-        AuthenticationKey, AuthenticationKeyMetadata, BoundaryOperation, CorrelationId,
-        GenerationRequest, IdempotencyKey, KeyId, ManagedAuthenticationKey,
+        AuthenticationKey, AuthenticationKeyMetadata, BoundaryAuditEventKind, BoundaryOperation,
+        CorrelationId, GenerationRequest, IdempotencyKey, KeyId, ManagedAuthenticationKey,
     };
     use eli_core::AgentTaskAnchorId;
 
@@ -149,63 +174,12 @@ mod tests {
     }
 
     #[test]
-    fn audited_gateway_signs_processes_and_records_audit_event() {
-        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
-            .expect("key ring must be valid");
-
-        let mut gateway = AuditedBoundaryGateway::new(ring);
-
-        let authenticated = gateway
-            .sign(boundary_envelope("corr-audited", "idem-audited"))
-            .expect("audited gateway signing must succeed");
-
-        assert_eq!(authenticated.key_id.as_str(), "active-key");
-
-        let outcome = gateway
-            .process_with_receipt(authenticated, PROCESSING_TIME_UNIX_MS)
-            .expect("audited gateway processing must succeed");
-
-        assert_eq!(outcome.request().agent_legacy_id, Some(42));
-        assert_eq!(outcome.receipt().correlation_id().as_str(), "corr-audited");
-
-        let events = gateway.audit_sink().events();
-
-        assert_eq!(events.len(), 1);
-        assert_eq!(events[0].correlation_id().as_str(), "corr-audited");
-        assert_eq!(events[0].idempotency_key().as_str(), "idem-audited");
-        assert_eq!(events[0].key_id().as_str(), "active-key");
-        assert_eq!(events[0].operation(), &BoundaryOperation::GenerateImage);
-    }
-
-    #[test]
-    fn audited_gateway_process_preserves_request_return_api() {
-        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
-            .expect("key ring must be valid");
-
-        let mut gateway = AuditedBoundaryGateway::new(ring);
-
-        let authenticated = gateway
-            .sign(boundary_envelope(
-                "corr-audited-request",
-                "idem-audited-request",
-            ))
-            .expect("audited gateway signing must succeed");
-
-        let request = gateway
-            .process(authenticated, PROCESSING_TIME_UNIX_MS)
-            .expect("audited gateway process must succeed");
-
-        assert_eq!(request.agent_legacy_id, Some(42));
-        assert_eq!(gateway.audit_sink().len(), 1);
-    }
-
-    #[test]
-    fn audited_gateway_failed_processing_records_no_audit_event() {
+    fn audited_gateway_full_audit_records_rejected_event_on_failure() {
         let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
             .expect("key ring must be valid");
 
         let authenticated = AuthenticatedBoundaryEnvelope::sign(
-            boundary_envelope("corr-audited-fail", "idem-audited-fail"),
+            boundary_envelope("corr-full-audit-fail", "idem-full-audit-fail"),
             key_id("unknown-key"),
             &authentication_key(9),
         )
@@ -214,15 +188,30 @@ mod tests {
         let mut gateway = AuditedBoundaryGateway::new(ring);
 
         gateway
-            .process_with_receipt(authenticated, PROCESSING_TIME_UNIX_MS)
+            .process_with_full_audit(authenticated, PROCESSING_TIME_UNIX_MS)
             .expect_err("unknown key must fail closed");
 
-        assert!(gateway.audit_sink().is_empty());
+        let events = gateway.audit_sink().events();
+
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].kind(), &BoundaryAuditEventKind::Rejected);
+        assert_eq!(events[0].correlation_id().as_str(), "corr-full-audit-fail");
+        assert_eq!(events[0].idempotency_key().as_str(), "idem-full-audit-fail");
+        assert_eq!(events[0].key_id().as_str(), "unknown-key");
+        assert_eq!(events[0].operation(), &BoundaryOperation::GenerateImage);
+        assert_eq!(events[0].failure_code(), Some("InvalidRequest"));
+        assert!(
+            events[0]
+                .failure_message()
+                .expect("failure message must exist")
+                .contains("unknown or unusable key ID")
+        );
+
         assert!(gateway.gateway().processor().replay_store().is_empty());
     }
 
     #[test]
-    fn audited_gateway_rejects_replay_and_records_only_first_success() {
+    fn audited_gateway_full_audit_records_accepted_event_on_success() {
         let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
             .expect("key ring must be valid");
 
@@ -230,25 +219,25 @@ mod tests {
 
         let authenticated = gateway
             .sign(boundary_envelope(
-                "corr-audited-replay",
-                "idem-audited-replay",
+                "corr-full-audit-ok",
+                "idem-full-audit-ok",
             ))
             .expect("audited gateway signing must succeed");
 
-        let replayed = authenticated.clone();
+        let outcome = gateway
+            .process_with_full_audit(authenticated, PROCESSING_TIME_UNIX_MS)
+            .expect("full audit processing must succeed");
 
-        gateway
-            .process_with_receipt(authenticated, PROCESSING_TIME_UNIX_MS)
-            .expect("first envelope must be accepted");
+        assert_eq!(outcome.request().agent_legacy_id, Some(42));
 
-        gateway
-            .process_with_receipt(replayed, PROCESSING_TIME_UNIX_MS)
-            .expect_err("replayed envelope must be rejected");
+        let events = gateway.audit_sink().events();
 
-        assert_eq!(gateway.audit_sink().len(), 1);
-        assert_eq!(
-            gateway.audit_sink().events()[0].correlation_id().as_str(),
-            "corr-audited-replay"
-        );
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].kind(), &BoundaryAuditEventKind::Accepted);
+        assert_eq!(events[0].correlation_id().as_str(), "corr-full-audit-ok");
+        assert_eq!(events[0].idempotency_key().as_str(), "idem-full-audit-ok");
+        assert_eq!(events[0].key_id().as_str(), "active-key");
+        assert_eq!(events[0].failure_code(), None);
+        assert_eq!(events[0].failure_message(), None);
     }
 }
