@@ -336,3 +336,6 @@ pub use audit_view::*;
 
 mod audit_report;
 pub use audit_report::*;
+
+mod audit_status;
+pub use audit_status::*;
