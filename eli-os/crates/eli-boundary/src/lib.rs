@@ -330,3 +330,6 @@ pub use audit_sink::*;
 
 mod audited_gateway;
 pub use audited_gateway::*;
+
+mod audit_view;
+pub use audit_view::*;
