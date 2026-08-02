@@ -312,3 +312,6 @@ pub use key_rotation::*;
 
 mod replay_store;
 pub use replay_store::*;
+
+mod key_store;
+pub use key_store::*;

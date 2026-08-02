@@ -1,7 +1,8 @@
 use crate::validation::ValidateBoundary;
 use crate::{
     AuthenticatedBoundaryEnvelope, AuthenticationKeyRing, BoundaryError, BoundaryErrorCode,
-    InMemoryReplayStore, PythonBoundaryRequest, ReplayStore,
+    InMemoryReplayStore, InMemoryVerificationKeyStore, PythonBoundaryRequest, ReplayStore,
+    VerificationKeyStore,
 };
 
 /// Processes authenticated Python–Rust boundary envelopes.
@@ -10,36 +11,37 @@ use crate::{
 ///
 /// 1. Resolve the verification key using the envelope key ID.
 /// 2. Verify cryptographic authentication.
-/// 3. Validate envelope protocol, schema, and timestamps.
-/// 4. Validate the enclosed boundary request.
-/// 5. Atomically check and consume the replay/idempotency key.
+/// 3. Validate protocol, schema, and timestamps.
+/// 4. Validate the enclosed request.
+/// 5. Atomically check and consume the replay key.
 /// 6. Return the validated request.
 ///
-/// Replay keys are consumed only after authentication and validation succeed.
+/// Authentication and validation failures never consume replay keys.
 #[derive(Debug)]
-pub struct BoundaryProcessor<S = InMemoryReplayStore> {
-    key_ring: AuthenticationKeyRing,
-    replay_store: S,
+pub struct BoundaryProcessor<K = InMemoryVerificationKeyStore, R = InMemoryReplayStore> {
+    key_store: K,
+    replay_store: R,
 }
 
-impl BoundaryProcessor<InMemoryReplayStore> {
+impl BoundaryProcessor<InMemoryVerificationKeyStore, InMemoryReplayStore> {
     #[must_use]
     pub fn new(key_ring: AuthenticationKeyRing) -> Self {
         Self {
-            key_ring,
+            key_store: InMemoryVerificationKeyStore::new(key_ring),
             replay_store: InMemoryReplayStore::new(),
         }
     }
 }
 
-impl<S> BoundaryProcessor<S>
+impl<K, R> BoundaryProcessor<K, R>
 where
-    S: ReplayStore,
+    K: VerificationKeyStore,
+    R: ReplayStore,
 {
     #[must_use]
-    pub fn with_replay_store(key_ring: AuthenticationKeyRing, replay_store: S) -> Self {
+    pub fn with_stores(key_store: K, replay_store: R) -> Self {
         Self {
-            key_ring,
+            key_store,
             replay_store,
         }
     }
@@ -50,7 +52,7 @@ where
         now_unix_ms: u64,
     ) -> Result<PythonBoundaryRequest, BoundaryError> {
         let verification_key = self
-            .key_ring
+            .key_store
             .verification_key(&authenticated.key_id)
             .ok_or_else(|| BoundaryError {
                 code: BoundaryErrorCode::InvalidRequest,
@@ -69,12 +71,12 @@ where
     }
 
     #[must_use]
-    pub fn key_ring(&self) -> &AuthenticationKeyRing {
-        &self.key_ring
+    pub fn key_store(&self) -> &K {
+        &self.key_store
     }
 
     #[must_use]
-    pub fn replay_store(&self) -> &S {
+    pub fn replay_store(&self) -> &R {
         &self.replay_store
     }
 }
@@ -114,7 +116,7 @@ mod tests {
         .expect("active key metadata must be valid");
 
         ManagedAuthenticationKey::new(metadata, authentication_key(seed))
-            .expect("managed authentication key must be valid")
+            .expect("managed key must be valid")
     }
 
     fn boundary_envelope(correlation_id: &str, idempotency_key: &str) -> BoundaryEnvelope {
@@ -139,7 +141,7 @@ mod tests {
     fn active_key_envelope_is_accepted() {
         let active_key = authentication_key(1);
 
-        let key_ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
             .expect("key ring must be valid");
 
         let authenticated = AuthenticatedBoundaryEnvelope::sign(
@@ -147,49 +149,47 @@ mod tests {
             key_id("active-key"),
             &active_key,
         )
-        .expect("active-key envelope must be signed");
+        .expect("envelope must be signed");
 
-        let mut processor = BoundaryProcessor::new(key_ring);
+        let mut processor = BoundaryProcessor::new(ring);
 
         let request = processor
             .process(authenticated, PROCESSING_TIME_UNIX_MS)
-            .expect("active-key envelope must be accepted");
+            .expect("envelope must be accepted");
 
         assert_eq!(request.agent_legacy_id, Some(42));
         assert_eq!(processor.replay_store().len(), 1);
     }
 
     #[test]
-    fn previous_key_envelope_is_accepted_after_rotation() {
+    fn previous_key_is_accepted_after_rotation() {
         let previous_key = authentication_key(1);
         let current = managed_active_key("previous-key", 1, 500, 500);
-        let next = managed_active_key("current-key", 2, 1_500, 1_500);
+        let next = managed_active_key("active-key", 2, 1_500, 1_500);
 
-        let mut key_ring = AuthenticationKeyRing::new(current).expect("key ring must be valid");
+        let mut ring = AuthenticationKeyRing::new(current).expect("key ring must be valid");
 
-        key_ring
-            .rotate(next, 1_500)
-            .expect("key rotation must succeed");
+        ring.rotate(next, 1_500).expect("rotation must succeed");
 
         let authenticated = AuthenticatedBoundaryEnvelope::sign(
             boundary_envelope("corr-previous", "idem-previous"),
             key_id("previous-key"),
             &previous_key,
         )
-        .expect("previous-key envelope must be signed");
+        .expect("envelope must be signed");
 
-        let mut processor = BoundaryProcessor::new(key_ring);
+        let mut processor = BoundaryProcessor::new(ring);
 
         processor
             .process(authenticated, PROCESSING_TIME_UNIX_MS)
-            .expect("verification-only previous key must remain usable");
+            .expect("verification-only key must remain usable");
 
         assert_eq!(processor.replay_store().len(), 1);
     }
 
     #[test]
-    fn unknown_key_id_does_not_consume_replay_key() {
-        let key_ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
+    fn unknown_key_does_not_consume_replay_key() {
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
             .expect("key ring must be valid");
 
         let authenticated = AuthenticatedBoundaryEnvelope::sign(
@@ -197,20 +197,20 @@ mod tests {
             key_id("unknown-key"),
             &authentication_key(9),
         )
-        .expect("unknown-key envelope can be locally signed");
+        .expect("envelope must be signed");
 
-        let mut processor = BoundaryProcessor::new(key_ring);
+        let mut processor = BoundaryProcessor::new(ring);
 
         processor
             .process(authenticated, PROCESSING_TIME_UNIX_MS)
-            .expect_err("unknown key ID must fail closed");
+            .expect_err("unknown key must fail");
 
         assert!(processor.replay_store().is_empty());
     }
 
     #[test]
     fn wrong_key_does_not_consume_replay_key() {
-        let key_ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
             .expect("key ring must be valid");
 
         let authenticated = AuthenticatedBoundaryEnvelope::sign(
@@ -218,22 +218,22 @@ mod tests {
             key_id("active-key"),
             &authentication_key(9),
         )
-        .expect("envelope must be locally signed");
+        .expect("envelope must be signed");
 
-        let mut processor = BoundaryProcessor::new(key_ring);
+        let mut processor = BoundaryProcessor::new(ring);
 
         processor
             .process(authenticated, PROCESSING_TIME_UNIX_MS)
-            .expect_err("wrong key must fail authentication");
+            .expect_err("wrong key must fail");
 
         assert!(processor.replay_store().is_empty());
     }
 
     #[test]
-    fn replayed_valid_envelope_is_rejected() {
+    fn replayed_envelope_is_rejected() {
         let active_key = authentication_key(1);
 
-        let key_ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
             .expect("key ring must be valid");
 
         let authenticated = AuthenticatedBoundaryEnvelope::sign(
@@ -241,18 +241,18 @@ mod tests {
             key_id("active-key"),
             &active_key,
         )
-        .expect("valid envelope must be signed");
+        .expect("envelope must be signed");
 
         let replayed = authenticated.clone();
-        let mut processor = BoundaryProcessor::new(key_ring);
+        let mut processor = BoundaryProcessor::new(ring);
 
         processor
             .process(authenticated, PROCESSING_TIME_UNIX_MS)
-            .expect("first request must be accepted");
+            .expect("first request must pass");
 
         processor
             .process(replayed, PROCESSING_TIME_UNIX_MS)
-            .expect_err("replayed request must fail");
+            .expect_err("replay must fail");
 
         assert_eq!(processor.replay_store().len(), 1);
     }
