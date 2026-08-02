@@ -321,3 +321,6 @@ pub use gateway::*;
 
 mod decision;
 pub use decision::*;
+
+mod audit;
+pub use audit::*;
