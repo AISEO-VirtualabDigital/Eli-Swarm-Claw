@@ -2,6 +2,7 @@ use eli_boundary::{
     BoundaryDecisionReceipt, BoundaryError, BoundaryErrorCode, BoundaryProcessingOutcome,
     PythonBoundaryRequest,
 };
+use std::cell::RefCell;
 
 #[derive(Debug)]
 pub struct RuntimeTaskHandoff {
@@ -807,6 +808,257 @@ where
     }
 }
 
+pub trait RuntimeExecutionAuditSink {
+    fn record(&mut self, event: RuntimeExecutionAuditEvent);
+
+    #[must_use]
+    fn snapshot(&self) -> RuntimeExecutionAuditSnapshot;
+
+    #[must_use]
+    fn report(&self) -> RuntimeExecutionAuditReport;
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RuntimeExecutionAuditSnapshot {
+    total_count: usize,
+    approved_count: usize,
+    completed_count: usize,
+    blocked_count: usize,
+    events: Vec<RuntimeExecutionAuditEvent>,
+}
+
+impl RuntimeExecutionAuditSnapshot {
+    #[must_use]
+    pub fn new(events: &[RuntimeExecutionAuditEvent]) -> Self {
+        let mut approved_count = 0;
+        let mut completed_count = 0;
+        let mut blocked_count = 0;
+
+        for event in events {
+            match event {
+                RuntimeExecutionAuditEvent::Approved(_) => approved_count += 1,
+                RuntimeExecutionAuditEvent::Completed(_) => completed_count += 1,
+                RuntimeExecutionAuditEvent::Blocked(_) => blocked_count += 1,
+            }
+        }
+
+        Self {
+            total_count: events.len(),
+            approved_count,
+            completed_count,
+            blocked_count,
+            events: events.to_vec(),
+        }
+    }
+
+    #[must_use]
+    pub fn total_count(&self) -> usize {
+        self.total_count
+    }
+
+    #[must_use]
+    pub fn approved_count(&self) -> usize {
+        self.approved_count
+    }
+
+    #[must_use]
+    pub fn completed_count(&self) -> usize {
+        self.completed_count
+    }
+
+    #[must_use]
+    pub fn blocked_count(&self) -> usize {
+        self.blocked_count
+    }
+
+    #[must_use]
+    pub fn events(&self) -> &[RuntimeExecutionAuditEvent] {
+        &self.events
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.total_count == 0
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RuntimeExecutionAuditReport {
+    snapshot: RuntimeExecutionAuditSnapshot,
+    events: Vec<RuntimeExecutionAuditEvent>,
+}
+
+impl RuntimeExecutionAuditReport {
+    #[must_use]
+    pub fn new(events: &[RuntimeExecutionAuditEvent]) -> Self {
+        Self {
+            snapshot: RuntimeExecutionAuditSnapshot::new(events),
+            events: events.to_vec(),
+        }
+    }
+
+    #[must_use]
+    pub fn snapshot(&self) -> &RuntimeExecutionAuditSnapshot {
+        &self.snapshot
+    }
+
+    #[must_use]
+    pub fn events(&self) -> &[RuntimeExecutionAuditEvent] {
+        &self.events
+    }
+
+    #[must_use]
+    pub fn total_count(&self) -> usize {
+        self.snapshot.total_count()
+    }
+
+    #[must_use]
+    pub fn approved_count(&self) -> usize {
+        self.snapshot.approved_count()
+    }
+
+    #[must_use]
+    pub fn completed_count(&self) -> usize {
+        self.snapshot.completed_count()
+    }
+
+    #[must_use]
+    pub fn blocked_count(&self) -> usize {
+        self.snapshot.blocked_count()
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct InMemoryRuntimeExecutionAuditSink {
+    events: Vec<RuntimeExecutionAuditEvent>,
+}
+
+impl InMemoryRuntimeExecutionAuditSink {
+    #[must_use]
+    pub fn new() -> Self {
+        Self { events: Vec::new() }
+    }
+
+    #[must_use]
+    pub fn events(&self) -> &[RuntimeExecutionAuditEvent] {
+        &self.events
+    }
+
+    #[must_use]
+    pub fn snapshot(&self) -> RuntimeExecutionAuditSnapshot {
+        RuntimeExecutionAuditSnapshot::new(&self.events)
+    }
+
+    #[must_use]
+    pub fn report(&self) -> RuntimeExecutionAuditReport {
+        RuntimeExecutionAuditReport::new(&self.events)
+    }
+
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.events.len()
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.events.is_empty()
+    }
+}
+
+impl RuntimeExecutionAuditSink for InMemoryRuntimeExecutionAuditSink {
+    fn record(&mut self, event: RuntimeExecutionAuditEvent) {
+        self.events.push(event);
+    }
+
+    fn snapshot(&self) -> RuntimeExecutionAuditSnapshot {
+        RuntimeExecutionAuditSnapshot::new(&self.events)
+    }
+
+    fn report(&self) -> RuntimeExecutionAuditReport {
+        RuntimeExecutionAuditReport::new(&self.events)
+    }
+}
+
+pub struct DryRunRuntimeController<
+    P = SafeRuntimeExecutionPolicy,
+    E = DryRunRuntimeExecutor<SafeRuntimeExecutionPolicy>,
+    S = InMemoryRuntimeExecutionAuditSink,
+> {
+    policy: P,
+    executor: E,
+    sink: RefCell<S>,
+}
+
+impl<P, E, S> DryRunRuntimeController<P, E, S>
+where
+    P: RuntimeExecutionPolicy,
+    E: RuntimeExecutor,
+    S: RuntimeExecutionAuditSink,
+{
+    #[must_use]
+    pub fn new(policy: P, executor: E, sink: S) -> Self {
+        Self {
+            policy,
+            executor,
+            sink: RefCell::new(sink),
+        }
+    }
+
+    #[must_use]
+    pub fn policy(&self) -> &P {
+        &self.policy
+    }
+
+    #[must_use]
+    pub fn executor(&self) -> &E {
+        &self.executor
+    }
+
+    #[must_use]
+    pub fn snapshot(&self) -> RuntimeExecutionAuditSnapshot {
+        self.sink.borrow().snapshot()
+    }
+
+    #[must_use]
+    pub fn report(&self) -> RuntimeExecutionAuditReport {
+        self.sink.borrow().report()
+    }
+
+    pub fn execute(
+        &self,
+        command: &RuntimeExecutionCommand,
+        approval: Option<&RuntimeExecutionApprovalReceipt>,
+    ) -> RuntimeExecutionResult {
+        let permission = self.policy.evaluate(command);
+        let result = match permission {
+            RuntimeExecutionPermission::Allowed => self.executor.execute(command, None),
+            RuntimeExecutionPermission::RequiresHumanApproval => {
+                if let Some(approval) = approval {
+                    self.sink
+                        .borrow_mut()
+                        .record(RuntimeExecutionAuditEvent::Approved(approval.clone()));
+                    self.executor.execute(command, Some(approval))
+                } else {
+                    self.executor.execute(command, None)
+                }
+            }
+            RuntimeExecutionPermission::Denied { .. } => self.executor.execute(command, None),
+        };
+
+        let event = match result.status() {
+            RuntimeExecutionStatus::DryRunCompleted => {
+                RuntimeExecutionAuditEvent::Completed(result.clone())
+            }
+            RuntimeExecutionStatus::BlockedRequiresApproval
+            | RuntimeExecutionStatus::BlockedDenied
+            | RuntimeExecutionStatus::Failed => RuntimeExecutionAuditEvent::Blocked(result.clone()),
+        };
+
+        self.sink.borrow_mut().record(event);
+        result
+    }
+}
+
 pub trait RuntimeExecutionRepository {
     fn store_execution_approval(
         &mut self,
@@ -822,6 +1074,180 @@ pub trait RuntimeExecutionRepository {
         &mut self,
         event: &RuntimeExecutionAuditEvent,
     ) -> Result<(), BoundaryError>;
+}
+
+#[cfg(test)]
+mod phase_4_observability_and_controller_tests {
+    use super::*;
+
+    #[test]
+    fn approved_dry_run_execution_records_approval_and_completion_audit_events() {
+        let sink = InMemoryRuntimeExecutionAuditSink::new();
+        let controller = DryRunRuntimeController::new(
+            SafeRuntimeExecutionPolicy,
+            DryRunRuntimeExecutor::default(),
+            sink,
+        );
+
+        let command = RuntimeExecutionCommand::dry_run(
+            "corr-phase-4-approved",
+            "idem-phase-4-approved",
+            "preview audit trail",
+        );
+        let approval = RuntimeExecutionApprovalReceipt::new(
+            "corr-phase-4-approved",
+            "idem-phase-4-approved",
+            "human-operator",
+            4_000,
+        );
+
+        let result = controller.execute(&command, Some(&approval));
+
+        assert_eq!(result.status(), &RuntimeExecutionStatus::DryRunCompleted);
+        assert_eq!(result.correlation_id(), "corr-phase-4-approved");
+        assert_eq!(result.idempotency_key(), "idem-phase-4-approved");
+
+        let snapshot = controller.snapshot();
+        assert_eq!(snapshot.total_count(), 2);
+        assert_eq!(snapshot.approved_count(), 1);
+        assert_eq!(snapshot.completed_count(), 1);
+        assert_eq!(snapshot.blocked_count(), 0);
+        assert_eq!(snapshot.events().len(), 2);
+        assert_eq!(
+            snapshot.events()[0].correlation_id(),
+            "corr-phase-4-approved"
+        );
+        assert_eq!(
+            snapshot.events()[1].correlation_id(),
+            "corr-phase-4-approved"
+        );
+    }
+
+    #[test]
+    fn unapproved_dry_run_execution_records_blocked_audit_event() {
+        let sink = InMemoryRuntimeExecutionAuditSink::new();
+        let controller = DryRunRuntimeController::new(
+            SafeRuntimeExecutionPolicy,
+            DryRunRuntimeExecutor::default(),
+            sink,
+        );
+
+        let command = RuntimeExecutionCommand::dry_run(
+            "corr-phase-4-blocked",
+            "idem-phase-4-blocked",
+            "preview blocked audit trail",
+        );
+
+        let result = controller.execute(&command, None);
+
+        assert_eq!(
+            result.status(),
+            &RuntimeExecutionStatus::BlockedRequiresApproval
+        );
+
+        let snapshot = controller.snapshot();
+        assert_eq!(snapshot.total_count(), 1);
+        assert_eq!(snapshot.approved_count(), 0);
+        assert_eq!(snapshot.completed_count(), 0);
+        assert_eq!(snapshot.blocked_count(), 1);
+    }
+
+    #[test]
+    fn denied_live_execution_kind_records_blocked_audit_event() {
+        let sink = InMemoryRuntimeExecutionAuditSink::new();
+        let controller = DryRunRuntimeController::new(
+            SafeRuntimeExecutionPolicy,
+            DryRunRuntimeExecutor::default(),
+            sink,
+        );
+
+        let command = RuntimeExecutionCommand::new(
+            "corr-phase-4-live-denied",
+            "idem-phase-4-live-denied",
+            RuntimeExecutionKind::ShellCommand,
+            "attempt shell execution",
+            true,
+        );
+
+        let result = controller.execute(&command, None);
+
+        assert_eq!(result.status(), &RuntimeExecutionStatus::BlockedDenied);
+
+        let snapshot = controller.snapshot();
+        assert_eq!(snapshot.total_count(), 1);
+        assert_eq!(snapshot.blocked_count(), 1);
+    }
+
+    #[test]
+    fn audit_snapshot_preserves_order() {
+        let sink = InMemoryRuntimeExecutionAuditSink::new();
+        let mut sink = sink;
+        sink.record(RuntimeExecutionAuditEvent::Blocked(
+            RuntimeExecutionResult::blocked_denied("corr-a", "idem-a", "blocked one"),
+        ));
+        sink.record(RuntimeExecutionAuditEvent::Approved(
+            RuntimeExecutionApprovalReceipt::new("corr-b", "idem-b", "human-operator", 5_000),
+        ));
+        sink.record(RuntimeExecutionAuditEvent::Completed(
+            RuntimeExecutionResult::dry_run_completed("corr-c", "idem-c", "completed one"),
+        ));
+
+        let snapshot = sink.snapshot();
+
+        assert_eq!(snapshot.events().len(), 3);
+        assert_eq!(snapshot.events()[0].correlation_id(), "corr-a");
+        assert_eq!(snapshot.events()[1].correlation_id(), "corr-b");
+        assert_eq!(snapshot.events()[2].correlation_id(), "corr-c");
+    }
+
+    #[test]
+    fn audit_report_counts_approved_completed_and_blocked_events() {
+        let sink = InMemoryRuntimeExecutionAuditSink::new();
+        let mut sink = sink;
+        sink.record(RuntimeExecutionAuditEvent::Approved(
+            RuntimeExecutionApprovalReceipt::new("corr-a", "idem-a", "human-operator", 1_000),
+        ));
+        sink.record(RuntimeExecutionAuditEvent::Completed(
+            RuntimeExecutionResult::dry_run_completed("corr-b", "idem-b", "completed one"),
+        ));
+        sink.record(RuntimeExecutionAuditEvent::Blocked(
+            RuntimeExecutionResult::blocked_denied("corr-c", "idem-c", "blocked one"),
+        ));
+
+        let report = sink.report();
+
+        assert_eq!(report.total_count(), 3);
+        assert_eq!(report.approved_count(), 1);
+        assert_eq!(report.completed_count(), 1);
+        assert_eq!(report.blocked_count(), 1);
+        assert_eq!(report.events().len(), 3);
+    }
+
+    #[test]
+    fn controller_does_not_perform_live_execution() {
+        let sink = InMemoryRuntimeExecutionAuditSink::new();
+        let controller = DryRunRuntimeController::new(
+            SafeRuntimeExecutionPolicy,
+            DryRunRuntimeExecutor::default(),
+            sink,
+        );
+
+        let command = RuntimeExecutionCommand::new(
+            "corr-phase-4-live",
+            "idem-phase-4-live",
+            RuntimeExecutionKind::ShellCommand,
+            "attempt shell command",
+            true,
+        );
+
+        let result = controller.execute(&command, None);
+
+        assert_eq!(result.status(), &RuntimeExecutionStatus::BlockedDenied);
+        assert!(result
+            .message()
+            .contains("outside the Phase 3 dry-run boundary"));
+        assert_eq!(controller.snapshot().blocked_count(), 1);
+    }
 }
 
 #[cfg(test)]
