@@ -31,6 +31,29 @@ impl BoundaryAuditReport {
     }
 
     #[must_use]
+    pub fn accepted_events(&self) -> Vec<&BoundaryAuditEventView> {
+        self.events
+            .iter()
+            .filter(|event| event.is_accepted())
+            .collect()
+    }
+
+    #[must_use]
+    pub fn rejected_events(&self) -> Vec<&BoundaryAuditEventView> {
+        self.events
+            .iter()
+            .filter(|event| event.is_rejected())
+            .collect()
+    }
+
+    #[must_use]
+    pub fn latest_event(&self) -> Option<&BoundaryAuditEventView> {
+        self.events
+            .iter()
+            .max_by_key(|event| event.processed_at_unix_ms())
+    }
+
+    #[must_use]
     pub fn total_count(&self) -> usize {
         self.snapshot.total_count()
     }
@@ -146,6 +169,9 @@ mod tests {
         assert_eq!(report.rejected_count(), 0);
         assert_eq!(report.latest_processed_at_unix_ms(), None);
         assert!(report.events().is_empty());
+        assert!(report.accepted_events().is_empty());
+        assert!(report.rejected_events().is_empty());
+        assert!(report.latest_event().is_none());
     }
 
     #[test]
@@ -189,5 +215,56 @@ mod tests {
             snapshot.latest_processed_at_unix_ms(),
             report.latest_processed_at_unix_ms()
         );
+    }
+
+    #[test]
+    fn report_returns_only_accepted_event_views() {
+        let events = vec![
+            accepted_event("corr-report-ok-1", "idem-report-ok-1", 2_000),
+            rejected_event("corr-report-fail", "idem-report-fail", 2_500),
+            accepted_event("corr-report-ok-2", "idem-report-ok-2", 3_000),
+        ];
+
+        let report = BoundaryAuditReport::new(&events);
+        let accepted_events = report.accepted_events();
+
+        assert_eq!(accepted_events.len(), 2);
+        assert_eq!(accepted_events[0].kind(), "accepted");
+        assert_eq!(accepted_events[0].correlation_id(), "corr-report-ok-1");
+        assert_eq!(accepted_events[1].kind(), "accepted");
+        assert_eq!(accepted_events[1].correlation_id(), "corr-report-ok-2");
+    }
+
+    #[test]
+    fn report_returns_only_rejected_event_views() {
+        let events = vec![
+            accepted_event("corr-report-ok", "idem-report-ok", 2_000),
+            rejected_event("corr-report-fail-1", "idem-report-fail-1", 2_500),
+            rejected_event("corr-report-fail-2", "idem-report-fail-2", 3_000),
+        ];
+
+        let report = BoundaryAuditReport::new(&events);
+        let rejected_events = report.rejected_events();
+
+        assert_eq!(rejected_events.len(), 2);
+        assert_eq!(rejected_events[0].kind(), "rejected");
+        assert_eq!(rejected_events[0].correlation_id(), "corr-report-fail-1");
+        assert_eq!(rejected_events[1].kind(), "rejected");
+        assert_eq!(rejected_events[1].correlation_id(), "corr-report-fail-2");
+    }
+
+    #[test]
+    fn report_latest_event_uses_latest_processed_timestamp() {
+        let events = vec![
+            accepted_event("corr-report-ok-1", "idem-report-ok-1", 4_000),
+            rejected_event("corr-report-fail", "idem-report-fail", 2_000),
+            accepted_event("corr-report-ok-2", "idem-report-ok-2", 3_000),
+        ];
+
+        let report = BoundaryAuditReport::new(&events);
+        let latest = report.latest_event().expect("latest event must exist");
+
+        assert_eq!(latest.correlation_id(), "corr-report-ok-1");
+        assert_eq!(latest.processed_at_unix_ms(), 4_000);
     }
 }
