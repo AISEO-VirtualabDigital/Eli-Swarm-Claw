@@ -1076,6 +1076,216 @@ pub trait RuntimeExecutionRepository {
     ) -> Result<(), BoundaryError>;
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub struct RuntimePilotState {
+    approvals: Vec<RuntimeExecutionApprovalReceipt>,
+    results: Vec<RuntimeExecutionResult>,
+    audit_events: Vec<RuntimeExecutionAuditEvent>,
+}
+
+impl RuntimePilotState {
+    #[must_use]
+    pub fn new(
+        approvals: Vec<RuntimeExecutionApprovalReceipt>,
+        results: Vec<RuntimeExecutionResult>,
+        audit_events: Vec<RuntimeExecutionAuditEvent>,
+    ) -> Self {
+        Self {
+            approvals,
+            results,
+            audit_events,
+        }
+    }
+
+    #[must_use]
+    pub fn approvals(&self) -> &[RuntimeExecutionApprovalReceipt] {
+        &self.approvals
+    }
+
+    #[must_use]
+    pub fn results(&self) -> &[RuntimeExecutionResult] {
+        &self.results
+    }
+
+    #[must_use]
+    pub fn audit_events(&self) -> &[RuntimeExecutionAuditEvent] {
+        &self.audit_events
+    }
+
+    #[must_use]
+    pub fn approval_count(&self) -> usize {
+        self.approvals.len()
+    }
+
+    #[must_use]
+    pub fn result_count(&self) -> usize {
+        self.results.len()
+    }
+
+    #[must_use]
+    pub fn audit_event_count(&self) -> usize {
+        self.audit_events.len()
+    }
+
+    #[must_use]
+    pub fn snapshot(&self) -> RuntimeExecutionAuditSnapshot {
+        RuntimeExecutionAuditSnapshot::new(&self.audit_events)
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct InMemoryPilotStateStore {
+    state: RuntimePilotState,
+}
+
+impl InMemoryPilotStateStore {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            state: RuntimePilotState::new(Vec::new(), Vec::new(), Vec::new()),
+        }
+    }
+
+    pub fn record_approval(&mut self, approval: &RuntimeExecutionApprovalReceipt) {
+        self.state.approvals.push(approval.clone());
+    }
+
+    pub fn record_result(&mut self, result: &RuntimeExecutionResult) {
+        self.state.results.push(result.clone());
+    }
+
+    pub fn record_audit_event(&mut self, event: &RuntimeExecutionAuditEvent) {
+        self.state.audit_events.push(event.clone());
+    }
+
+    #[must_use]
+    pub fn state(&self) -> &RuntimePilotState {
+        &self.state
+    }
+
+    #[must_use]
+    pub fn snapshot(&self) -> RuntimeExecutionAuditSnapshot {
+        self.state.snapshot()
+    }
+
+    #[must_use]
+    pub fn report(&self) -> RuntimeExecutionAuditReport {
+        RuntimeExecutionAuditReport::new(&self.state.audit_events)
+    }
+}
+
+impl RuntimeExecutionRepository for InMemoryPilotStateStore {
+    fn store_execution_approval(
+        &mut self,
+        receipt: &RuntimeExecutionApprovalReceipt,
+    ) -> Result<(), BoundaryError> {
+        self.record_approval(receipt);
+        Ok(())
+    }
+
+    fn store_execution_result(
+        &mut self,
+        result: &RuntimeExecutionResult,
+    ) -> Result<(), BoundaryError> {
+        self.record_result(result);
+        Ok(())
+    }
+
+    fn store_execution_audit_event(
+        &mut self,
+        event: &RuntimeExecutionAuditEvent,
+    ) -> Result<(), BoundaryError> {
+        self.record_audit_event(event);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod phase_5_pilot_persistence_tests {
+    use super::*;
+    #[test]
+    fn in_memory_store_records_approvals() {
+        let mut store = InMemoryPilotStateStore::new();
+        let approval = RuntimeExecutionApprovalReceipt::new(
+            "corr-pilot-approval",
+            "idem-pilot-approval",
+            "human-operator",
+            6_000,
+        );
+
+        store.record_approval(&approval);
+
+        let state = store.state();
+        assert_eq!(state.approval_count(), 1);
+        assert_eq!(state.audit_event_count(), 0);
+    }
+
+    #[test]
+    fn in_memory_store_records_execution_results() {
+        let mut store = InMemoryPilotStateStore::new();
+        let result = RuntimeExecutionResult::dry_run_completed(
+            "corr-pilot-result",
+            "idem-pilot-result",
+            "dry-run completed",
+        );
+
+        store.record_result(&result);
+
+        let state = store.state();
+        assert_eq!(state.result_count(), 1);
+        assert_eq!(state.snapshot().total_count(), 0);
+    }
+
+    #[test]
+    fn in_memory_store_records_blocked_events() {
+        let mut store = InMemoryPilotStateStore::new();
+        let blocked = RuntimeExecutionAuditEvent::Blocked(RuntimeExecutionResult::blocked_denied(
+            "corr-pilot-blocked",
+            "idem-pilot-blocked",
+            "blocked by policy",
+        ));
+
+        store.record_audit_event(&blocked);
+
+        let state = store.state();
+        assert_eq!(state.audit_event_count(), 1);
+        assert_eq!(state.snapshot().blocked_count(), 1);
+    }
+
+    #[test]
+    fn snapshot_counts_remain_correct() {
+        let mut store = InMemoryPilotStateStore::new();
+        store.record_audit_event(&RuntimeExecutionAuditEvent::Approved(
+            RuntimeExecutionApprovalReceipt::new("corr-a", "idem-a", "human-operator", 1_000),
+        ));
+        store.record_audit_event(&RuntimeExecutionAuditEvent::Completed(
+            RuntimeExecutionResult::dry_run_completed("corr-b", "idem-b", "completed one"),
+        ));
+        store.record_audit_event(&RuntimeExecutionAuditEvent::Blocked(
+            RuntimeExecutionResult::blocked_denied("corr-c", "idem-c", "blocked one"),
+        ));
+
+        let snapshot = store.snapshot();
+        assert_eq!(snapshot.total_count(), 3);
+        assert_eq!(snapshot.approved_count(), 1);
+        assert_eq!(snapshot.completed_count(), 1);
+        assert_eq!(snapshot.blocked_count(), 1);
+    }
+
+    #[test]
+    fn persistence_layer_does_not_execute_work() {
+        let mut store = InMemoryPilotStateStore::new();
+        let result =
+            RuntimeExecutionResult::blocked_denied("corr-no-work", "idem-no-work", "dry-run only");
+
+        store.record_result(&result);
+
+        let snapshot = store.snapshot();
+        assert_eq!(snapshot.total_count(), 0);
+        assert_eq!(snapshot.blocked_count(), 0);
+    }
+}
+
 #[cfg(test)]
 mod phase_4_observability_and_controller_tests {
     use super::*;
