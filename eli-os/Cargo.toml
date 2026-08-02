@@ -1,5 +1,5 @@
 [workspace]
-members = [
+members = ["crates/eli-boundary",
   "crates/eli-core",
   "crates/eli-domain",
   "crates/eli-policy",
@@ -19,3 +19,5 @@ repository = "https://github.com/AISEO-VirtualabDigital/Eli-Swarm-Claw"
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 ulid = { version = "1", features = ["serde"] }
+
+serde_json = "1"
