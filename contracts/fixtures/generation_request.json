@@ -1,0 +1,24 @@
+{
+  "protocol_version": 1,
+  "agent_task_anchor_id": "01J00000000000000000000000",
+  "project_legacy_id": 101,
+  "domain_legacy_id": 202,
+  "agent_legacy_id": 42,
+  "operation": "generate_image",
+  "generation_request": {
+    "prompt": "Create an SEO audit graphic",
+    "negative_prompt": null,
+    "width": 1024,
+    "height": 1024,
+    "steps": 30,
+    "guidance_scale": 7.5,
+    "seed": null,
+    "model": null,
+    "style_preset": null,
+    "batch_size": 1,
+    "output_format": "png",
+    "extra_params": null
+  },
+  "provider_config": null,
+  "external_job_id": null
+}
