@@ -1,6 +1,6 @@
 use crate::{
-    AuthenticatedBoundaryEnvelope, AuthenticationKeyRing, BoundaryAuditEvent, BoundaryAuditSink,
-    BoundaryAuditSnapshot, BoundaryEnvelope, BoundaryError, BoundaryGateway,
+    AuthenticatedBoundaryEnvelope, AuthenticationKeyRing, BoundaryAuditEvent, BoundaryAuditReport,
+    BoundaryAuditSink, BoundaryAuditSnapshot, BoundaryEnvelope, BoundaryError, BoundaryGateway,
     BoundaryProcessingOutcome, InMemoryBoundaryAuditSink, InMemoryReplayStore,
     InMemoryVerificationKeyStore, PythonBoundaryRequest, ReplayStore, SigningKeyStore,
     VerificationKeyStore,
@@ -112,6 +112,11 @@ where
     #[must_use]
     pub fn audit_snapshot(&self) -> BoundaryAuditSnapshot {
         self.audit_sink.snapshot()
+    }
+
+    #[must_use]
+    pub fn audit_report(&self) -> BoundaryAuditReport {
+        self.audit_sink.report()
     }
 }
 
@@ -302,5 +307,63 @@ mod tests {
             snapshot.latest_processed_at_unix_ms(),
             Some(PROCESSING_TIME_UNIX_MS + 500)
         );
+    }
+    #[test]
+    fn audited_gateway_report_projects_snapshot_and_event_views() {
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
+            .expect("key ring must be valid");
+
+        let mut gateway = AuditedBoundaryGateway::new(ring);
+
+        let accepted = gateway
+            .sign(boundary_envelope("corr-report-ok", "idem-report-ok"))
+            .expect("audited gateway signing must succeed");
+
+        gateway
+            .process_with_full_audit(accepted, PROCESSING_TIME_UNIX_MS)
+            .expect("accepted envelope must succeed");
+
+        let rejected = AuthenticatedBoundaryEnvelope::sign(
+            boundary_envelope("corr-report-fail", "idem-report-fail"),
+            key_id("unknown-key"),
+            &authentication_key(9),
+        )
+        .expect("unknown-key envelope can be locally signed");
+
+        gateway
+            .process_with_full_audit(rejected, PROCESSING_TIME_UNIX_MS + 500)
+            .expect_err("unknown key must fail closed");
+
+        let report = gateway.audit_report();
+
+        assert_eq!(report.total_count(), 2);
+        assert_eq!(report.accepted_count(), 1);
+        assert_eq!(report.rejected_count(), 1);
+        assert_eq!(
+            report.latest_processed_at_unix_ms(),
+            Some(PROCESSING_TIME_UNIX_MS + 500)
+        );
+
+        assert_eq!(report.events().len(), 2);
+        assert_eq!(report.events()[0].kind(), "accepted");
+        assert_eq!(report.events()[0].correlation_id(), "corr-report-ok");
+        assert_eq!(report.events()[1].kind(), "rejected");
+        assert_eq!(report.events()[1].correlation_id(), "corr-report-fail");
+        assert_eq!(report.events()[1].failure_code(), Some("InvalidRequest"));
+    }
+
+    #[test]
+    fn audited_gateway_empty_report_has_no_events() {
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
+            .expect("key ring must be valid");
+
+        let gateway = AuditedBoundaryGateway::new(ring);
+        let report = gateway.audit_report();
+
+        assert!(report.is_empty());
+        assert_eq!(report.total_count(), 0);
+        assert_eq!(report.accepted_count(), 0);
+        assert_eq!(report.rejected_count(), 0);
+        assert!(report.events().is_empty());
     }
 }
