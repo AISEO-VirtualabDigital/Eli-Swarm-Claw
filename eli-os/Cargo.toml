@@ -1,0 +1,21 @@
+[workspace]
+members = [
+  "crates/eli-core",
+  "crates/eli-domain",
+  "crates/eli-policy",
+  "crates/eli-security",
+  "crates/eli-telemetry"
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Joseph Rainer <aiseo.virtualabdigital@gmail.com>"]
+license = "Proprietary"
+repository = "https://github.com/AISEO-VirtualabDigital/Eli-Swarm-Claw"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+ulid = { version = "1", features = ["serde"] }
