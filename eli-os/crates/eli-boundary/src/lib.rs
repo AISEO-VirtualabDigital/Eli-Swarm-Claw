@@ -309,3 +309,6 @@ pub use processor::*;
 
 mod key_rotation;
 pub use key_rotation::*;
+
+mod replay_store;
+pub use replay_store::*;
