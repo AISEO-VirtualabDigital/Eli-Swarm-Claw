@@ -1,5 +1,16 @@
 use crate::{BoundaryAuditEvent, BoundaryAuditEventView, BoundaryAuditSnapshot};
 
+/// Read-only verdict for a boundary audit report.
+///
+/// This is an in-memory classification only. It does not persist data,
+/// emit logs, expose HTTP, call Python, route work, or execute tasks.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum BoundaryAuditReportVerdict {
+    Empty,
+    AcceptedOnly,
+    ContainsRejections,
+}
+
 /// Read-only boundary audit report.
 ///
 /// This combines a snapshot summary with safe event views for later UI,
@@ -51,6 +62,27 @@ impl BoundaryAuditReport {
         self.events
             .iter()
             .max_by_key(|event| event.processed_at_unix_ms())
+    }
+
+    #[must_use]
+    pub fn has_accepted_events(&self) -> bool {
+        self.accepted_count() > 0
+    }
+
+    #[must_use]
+    pub fn has_rejected_events(&self) -> bool {
+        self.rejected_count() > 0
+    }
+
+    #[must_use]
+    pub fn verdict(&self) -> BoundaryAuditReportVerdict {
+        if self.is_empty() {
+            BoundaryAuditReportVerdict::Empty
+        } else if self.has_rejected_events() {
+            BoundaryAuditReportVerdict::ContainsRejections
+        } else {
+            BoundaryAuditReportVerdict::AcceptedOnly
+        }
     }
 
     #[must_use]
@@ -172,6 +204,9 @@ mod tests {
         assert!(report.accepted_events().is_empty());
         assert!(report.rejected_events().is_empty());
         assert!(report.latest_event().is_none());
+        assert!(!report.has_accepted_events());
+        assert!(!report.has_rejected_events());
+        assert_eq!(report.verdict(), BoundaryAuditReportVerdict::Empty);
     }
 
     #[test]
@@ -266,5 +301,36 @@ mod tests {
 
         assert_eq!(latest.correlation_id(), "corr-report-ok-1");
         assert_eq!(latest.processed_at_unix_ms(), 4_000);
+    }
+
+    #[test]
+    fn report_verdict_is_accepted_only_when_no_rejections_exist() {
+        let events = vec![
+            accepted_event("corr-report-ok-1", "idem-report-ok-1", 2_000),
+            accepted_event("corr-report-ok-2", "idem-report-ok-2", 3_000),
+        ];
+
+        let report = BoundaryAuditReport::new(&events);
+
+        assert!(report.has_accepted_events());
+        assert!(!report.has_rejected_events());
+        assert_eq!(report.verdict(), BoundaryAuditReportVerdict::AcceptedOnly);
+    }
+
+    #[test]
+    fn report_verdict_detects_rejections() {
+        let events = vec![
+            accepted_event("corr-report-ok", "idem-report-ok", 2_000),
+            rejected_event("corr-report-fail", "idem-report-fail", 2_500),
+        ];
+
+        let report = BoundaryAuditReport::new(&events);
+
+        assert!(report.has_accepted_events());
+        assert!(report.has_rejected_events());
+        assert_eq!(
+            report.verdict(),
+            BoundaryAuditReportVerdict::ContainsRejections
+        );
     }
 }
