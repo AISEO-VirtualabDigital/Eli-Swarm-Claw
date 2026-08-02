@@ -1,5 +1,6 @@
 [workspace]
 members = ["crates/eli-boundary",
+    "crates/eli-runtime",
   "crates/eli-core",
   "crates/eli-domain",
   "crates/eli-policy",

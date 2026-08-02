@@ -94,6 +94,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "eli-runtime"
+version = "0.1.0"
+dependencies = [
+ "eli-boundary",
+]
+
+[[package]]
 name = "eli-security"
 version = "0.1.0"
 dependencies = [
