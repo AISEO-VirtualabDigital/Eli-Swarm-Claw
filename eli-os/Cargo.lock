@@ -26,6 +26,10 @@ dependencies = [
 [[package]]
 name = "eli-domain"
 version = "0.1.0"
+dependencies = [
+ "eli-core",
+ "serde",
+]
 
 [[package]]
 name = "eli-policy"
