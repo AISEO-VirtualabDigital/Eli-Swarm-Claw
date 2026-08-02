@@ -6,6 +6,23 @@ A lightweight, subdomain-ready pilot control panel for Eli.
 
 Open the file [apps/eli-pilot-control/index.html](apps/eli-pilot-control/index.html) directly in a browser, or serve the folder with any simple static file server from the repository root.
 
+For a minimal local preview, run:
+
+```bash
+python3 apps/eli-pilot-control/static-server.py
+```
+
+Then open http://127.0.0.1:8080.
+
+## Static deployment scaffold
+
+This folder now includes placeholder-only deployment files for a future subdomain:
+
+- [.env.example](.env.example) for placeholder domain and API settings
+- [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for the deployment checklist
+- [nginx-subdomain.conf](nginx-subdomain.conf) as a reverse-proxy template
+- [static-server.py](static-server.py) for simple local previewing
+
 ## How the mock API adapter works
 
 The panel uses [apps/eli-pilot-control/mock-api.js](apps/eli-pilot-control/mock-api.js) as a local adapter that simulates the documented endpoints from [apps/eli-pilot-control/API_CONTRACT.md](apps/eli-pilot-control/API_CONTRACT.md):
