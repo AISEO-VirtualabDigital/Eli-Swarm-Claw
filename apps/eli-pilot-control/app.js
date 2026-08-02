@@ -5,10 +5,10 @@ const initialState = {
     lastUpdated: 'just now',
   },
   status: {
-    submittedCommands: 0,
-    approvedCount: 0,
-    completedCount: 0,
-    blockedCount: 0,
+    total_submitted_commands: 0,
+    approved_count: 0,
+    completed_count: 0,
+    blocked_count: 0,
   },
   latestResult: {
     status: 'Idle',
@@ -22,18 +22,60 @@ const initialState = {
   ],
   pilotState: {
     mode: 'Dry Run Only',
-    approvalMode: 'manual review',
-    lastCommand: 'None',
+    approval_mode: 'manual review',
+    latest_command: 'None',
+  },
+  ui: {
+    isLoading: false,
+    state: 'success',
+    message: 'Pilot control panel ready.',
   },
 };
 
 let state = structuredClone(initialState);
+const api = createMockPilotApiAdapter();
+
+function applyHealth(payload) {
+  state.health = {
+    status: payload.status || 'healthy',
+    message: payload.message || 'Pilot runner ready',
+    lastUpdated: new Date().toLocaleTimeString(),
+  };
+}
+
+function applyStatus(payload) {
+  state.status = {
+    total_submitted_commands: payload.total_submitted_commands || 0,
+    approved_count: payload.approved_count || 0,
+    completed_count: payload.completed_count || 0,
+    blocked_count: payload.blocked_count || 0,
+  };
+}
+
+function applyAuditReport(payload) {
+  state.audit = [
+    {
+      label: 'audit-report',
+      detail: `approved=${payload.approved_count || 0}, completed=${payload.completed_count || 0}, blocked=${payload.blocked_count || 0}`,
+    },
+    ...state.audit,
+  ];
+}
+
+function applyPilotState(payload) {
+  state.pilotState = {
+    mode: payload.mode || 'Dry Run Only',
+    approval_mode: payload.approval_mode || 'manual review',
+    latest_command: payload.latest_command || 'None',
+  };
+}
 
 function render() {
   renderHealthPanel();
   renderLatestResult();
   renderAudit();
   renderSummary();
+  renderBanner();
 }
 
 function renderHealthPanel() {
@@ -47,7 +89,7 @@ function renderHealthPanel() {
       <dt>Last update</dt>
       <dd>${state.health.lastUpdated}</dd>
       <dt>Submitted commands</dt>
-      <dd>${state.status.submittedCommands}</dd>
+      <dd>${state.status.total_submitted_commands}</dd>
     </div>
   `;
 }
@@ -55,6 +97,7 @@ function renderHealthPanel() {
 function renderLatestResult() {
   const container = document.getElementById('latestResult');
   container.textContent = `${state.latestResult.status}\n${state.latestResult.message}`;
+  container.dataset.state = state.ui.state;
 }
 
 function renderAudit() {
@@ -73,76 +116,110 @@ function renderSummary() {
     </div>
     <div class="summary-card">
       <span>Approval mode</span>
-      <strong>${state.pilotState.approvalMode}</strong>
+      <strong>${state.pilotState.approval_mode}</strong>
     </div>
     <div class="summary-card">
       <span>Completed</span>
-      <strong>${state.status.completedCount}</strong>
+      <strong>${state.status.completed_count}</strong>
     </div>
     <div class="summary-card">
       <span>Blocked</span>
-      <strong>${state.status.blockedCount}</strong>
+      <strong>${state.status.blocked_count}</strong>
     </div>
     <div class="summary-card">
       <span>Last command</span>
-      <strong>${state.pilotState.lastCommand}</strong>
+      <strong>${state.pilotState.latest_command}</strong>
     </div>
   `;
 }
 
-function submitDryRun(event) {
+function renderBanner() {
+  const badge = document.getElementById('modeBadge');
+  badge.textContent = `Pilot Mode / Dry Run Only · ${state.ui.state.toUpperCase()}`;
+}
+
+async function refreshPanel() {
+  state.ui.isLoading = true;
+  state.ui.state = 'loading';
+  state.ui.message = 'Loading pilot data...';
+  render();
+
+  try {
+    const [health, status, auditReport, pilotState] = await Promise.all([
+      api.getHealth(),
+      api.getStatus(),
+      api.getAuditReport(),
+      api.getPilotState(),
+    ]);
+
+    applyHealth(health);
+    applyStatus(status);
+    applyAuditReport(auditReport);
+    applyPilotState(pilotState);
+    state.ui.state = 'success';
+    state.ui.message = 'Pilot data refreshed.';
+  } catch (error) {
+    state.ui.state = 'error';
+    state.ui.message = error.message || 'Unable to refresh pilot data.';
+  } finally {
+    state.ui.isLoading = false;
+    render();
+  }
+}
+
+async function submitDryRun(event) {
   event.preventDefault();
 
   const form = event.currentTarget;
   const command = document.getElementById('commandInput').value.trim();
   const approvalRequested = document.getElementById('approvalToggle').checked;
+  const submitButton = form.querySelector('button[type="submit"]');
 
-  state.status.submittedCommands += 1;
-  state.pilotState.lastCommand = command || 'empty command';
-
-  if (!command) {
-    state.latestResult = {
-      status: 'Blocked',
-      message: 'Command input is empty. Submission requires a dry-run description.',
-    };
-    state.status.blockedCount += 1;
-    state.audit.unshift({
-      label: 'blocked',
-      detail: 'Submission rejected because the command field was empty.',
-    });
-    render();
-    return;
-  }
-
-  if (approvalRequested) {
-    state.latestResult = {
-      status: 'Dry Run Approved',
-      message: `Approval requested for: ${command}`,
-    };
-    state.status.approvedCount += 1;
-    state.status.completedCount += 1;
-    state.audit.unshift({
-      label: 'approved',
-      detail: `Approval requested for ${command}`,
-    });
-  } else {
-    state.latestResult = {
-      status: 'Blocked',
-      message: `No approval was supplied for: ${command}`,
-    };
-    state.status.blockedCount += 1;
-    state.audit.unshift({
-      label: 'blocked',
-      detail: `Dry-run blocked pending approval for ${command}`,
-    });
-  }
-
-  state.health.lastUpdated = new Date().toLocaleTimeString();
+  state.ui.isLoading = true;
+  state.ui.state = 'loading';
+  state.ui.message = 'Submitting dry-run request...';
+  submitButton.disabled = true;
   render();
-  form.reset();
+
+  try {
+    const payload = await api.submitDryRun({
+      command,
+      approval_required: approvalRequested,
+    });
+
+    if (payload.status === 'blocked') {
+      state.ui.state = 'blocked';
+      state.ui.message = payload.message;
+      state.latestResult = {
+        status: 'Blocked',
+        message: payload.message,
+      };
+    } else {
+      state.ui.state = 'success';
+      state.ui.message = payload.message;
+      state.latestResult = {
+        status: payload.status === 'dry_run_approved' ? 'Dry Run Approved' : 'Accepted',
+        message: payload.message,
+      };
+    }
+
+    await refreshPanel();
+    form.reset();
+  } catch (error) {
+    state.ui.state = 'error';
+    state.ui.message = error.message || 'Pilot submission failed.';
+    state.latestResult = {
+      status: 'Error',
+      message: state.ui.message,
+    };
+    render();
+  } finally {
+    submitButton.disabled = false;
+  }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   render();
   document.getElementById('commandForm').addEventListener('submit', submitDryRun);
+  refreshPanel();
 });
