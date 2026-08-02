@@ -1,4 +1,4 @@
-use crate::{BoundaryAuditEvent, BoundaryAuditEventKind};
+use crate::{BoundaryAuditEvent, BoundaryAuditEventKind, BoundaryAuditReport};
 
 /// Boundary-layer audit-event sink.
 ///
@@ -123,6 +123,11 @@ impl InMemoryBoundaryAuditSink {
     }
 
     #[must_use]
+    pub fn report(&self) -> BoundaryAuditReport {
+        BoundaryAuditReport::new(&self.events)
+    }
+
+    #[must_use]
     pub fn len(&self) -> usize {
         self.events.len()
     }
@@ -226,6 +231,7 @@ mod tests {
         assert!(sink.is_empty());
         assert_eq!(sink.len(), 0);
         assert!(sink.snapshot().is_empty());
+        assert!(sink.report().is_empty());
         assert!(sink.accepted_events().is_empty());
         assert!(sink.rejected_events().is_empty());
         assert!(sink.latest_event().is_none());
@@ -267,6 +273,24 @@ mod tests {
         assert_eq!(snapshot.accepted_count(), 0);
         assert_eq!(snapshot.rejected_count(), 0);
         assert_eq!(snapshot.latest_processed_at_unix_ms(), None);
+    }
+
+    #[test]
+    fn report_projects_snapshot_and_event_views() {
+        let mut sink = InMemoryBoundaryAuditSink::new();
+
+        sink.record(accepted_audit_event("corr-ok-1", "idem-ok-1", 2_000));
+        sink.record(rejected_audit_event("corr-fail-1", "idem-fail-1", 2_500));
+
+        let report = sink.report();
+
+        assert_eq!(report.total_count(), 2);
+        assert_eq!(report.accepted_count(), 1);
+        assert_eq!(report.rejected_count(), 1);
+        assert_eq!(report.latest_processed_at_unix_ms(), Some(2_500));
+        assert_eq!(report.events().len(), 2);
+        assert_eq!(report.events()[0].kind(), "accepted");
+        assert_eq!(report.events()[1].kind(), "rejected");
     }
 
     #[test]

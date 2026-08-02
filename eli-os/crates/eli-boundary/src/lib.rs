@@ -333,3 +333,6 @@ pub use audited_gateway::*;
 
 mod audit_view;
 pub use audit_view::*;
+
+mod audit_report;
+pub use audit_report::*;
