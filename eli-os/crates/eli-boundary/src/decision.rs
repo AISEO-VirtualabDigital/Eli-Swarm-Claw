@@ -1,5 +1,6 @@
 use crate::{
     AuthenticatedBoundaryEnvelope, BoundaryEnvelope, CorrelationId, IdempotencyKey, KeyId,
+    PythonBoundaryRequest,
 };
 
 /// Immutable summary of an accepted boundary-processing decision.
@@ -79,6 +80,43 @@ impl BoundaryDecisionReceipt {
     }
 }
 
+/// Accepted boundary-processing output.
+///
+/// The request remains available for the next application layer, while the
+/// receipt carries the boundary decision metadata for later audit/logging.
+#[derive(Debug)]
+pub struct BoundaryProcessingOutcome {
+    request: PythonBoundaryRequest,
+    receipt: BoundaryDecisionReceipt,
+}
+
+impl BoundaryProcessingOutcome {
+    #[must_use]
+    pub fn accepted(request: PythonBoundaryRequest, receipt: BoundaryDecisionReceipt) -> Self {
+        Self { request, receipt }
+    }
+
+    #[must_use]
+    pub fn request(&self) -> &PythonBoundaryRequest {
+        &self.request
+    }
+
+    #[must_use]
+    pub fn receipt(&self) -> &BoundaryDecisionReceipt {
+        &self.receipt
+    }
+
+    #[must_use]
+    pub fn into_request(self) -> PythonBoundaryRequest {
+        self.request
+    }
+
+    #[must_use]
+    pub fn into_parts(self) -> (PythonBoundaryRequest, BoundaryDecisionReceipt) {
+        (self.request, self.receipt)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -145,5 +183,37 @@ mod tests {
         assert_eq!(receipt.idempotency_key().as_str(), "idem-decision");
         assert_eq!(receipt.key_id().as_str(), "manual-key");
         assert_eq!(receipt.processed_at_unix_ms(), 2_500);
+    }
+
+    #[test]
+    fn outcome_preserves_request_and_receipt() {
+        let request = boundary_envelope().request;
+        let receipt = BoundaryDecisionReceipt::from_envelope(
+            &boundary_envelope(),
+            key_id("active-key"),
+            2_000,
+        );
+
+        let outcome = BoundaryProcessingOutcome::accepted(request, receipt);
+
+        assert_eq!(outcome.request().agent_legacy_id, Some(42));
+        assert_eq!(outcome.receipt().key_id().as_str(), "active-key");
+        assert_eq!(outcome.receipt().processed_at_unix_ms(), 2_000);
+    }
+
+    #[test]
+    fn outcome_can_be_split_into_parts() {
+        let request = boundary_envelope().request;
+        let receipt = BoundaryDecisionReceipt::from_envelope(
+            &boundary_envelope(),
+            key_id("active-key"),
+            2_000,
+        );
+
+        let outcome = BoundaryProcessingOutcome::accepted(request, receipt);
+        let (request, receipt) = outcome.into_parts();
+
+        assert_eq!(request.agent_legacy_id, Some(42));
+        assert_eq!(receipt.key_id().as_str(), "active-key");
     }
 }

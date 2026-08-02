@@ -1,8 +1,8 @@
 use crate::validation::ValidateBoundary;
 use crate::{
-    AuthenticatedBoundaryEnvelope, AuthenticationKeyRing, BoundaryError, BoundaryErrorCode,
-    InMemoryReplayStore, InMemoryVerificationKeyStore, PythonBoundaryRequest, ReplayStore,
-    VerificationKeyStore,
+    AuthenticatedBoundaryEnvelope, AuthenticationKeyRing, BoundaryDecisionReceipt, BoundaryError,
+    BoundaryErrorCode, BoundaryProcessingOutcome, InMemoryReplayStore,
+    InMemoryVerificationKeyStore, PythonBoundaryRequest, ReplayStore, VerificationKeyStore,
 };
 
 /// Processes authenticated Python–Rust boundary envelopes.
@@ -14,7 +14,7 @@ use crate::{
 /// 3. Validate protocol, schema, and timestamps.
 /// 4. Validate the enclosed request.
 /// 5. Atomically check and consume the replay key.
-/// 6. Return the validated request.
+/// 6. Return the validated request or processing outcome.
 ///
 /// Authentication and validation failures never consume replay keys.
 #[derive(Debug)]
@@ -51,6 +51,15 @@ where
         authenticated: AuthenticatedBoundaryEnvelope,
         now_unix_ms: u64,
     ) -> Result<PythonBoundaryRequest, BoundaryError> {
+        self.process_with_receipt(authenticated, now_unix_ms)
+            .map(BoundaryProcessingOutcome::into_request)
+    }
+
+    pub fn process_with_receipt(
+        &mut self,
+        authenticated: AuthenticatedBoundaryEnvelope,
+        now_unix_ms: u64,
+    ) -> Result<BoundaryProcessingOutcome, BoundaryError> {
         let verification_key = self
             .key_store
             .verification_key(&authenticated.key_id)
@@ -67,7 +76,10 @@ where
         self.replay_store
             .check_and_consume(&authenticated.envelope, now_unix_ms)?;
 
-        Ok(authenticated.envelope.request)
+        let receipt = BoundaryDecisionReceipt::accepted(&authenticated, now_unix_ms);
+        let request = authenticated.envelope.request;
+
+        Ok(BoundaryProcessingOutcome::accepted(request, receipt))
     }
 
     #[must_use]
@@ -158,6 +170,37 @@ mod tests {
             .expect("envelope must be accepted");
 
         assert_eq!(request.agent_legacy_id, Some(42));
+        assert_eq!(processor.replay_store().len(), 1);
+    }
+
+    #[test]
+    fn process_with_receipt_returns_request_and_receipt() {
+        let active_key = authentication_key(1);
+
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
+            .expect("key ring must be valid");
+
+        let authenticated = AuthenticatedBoundaryEnvelope::sign(
+            boundary_envelope("corr-outcome", "idem-outcome"),
+            key_id("active-key"),
+            &active_key,
+        )
+        .expect("envelope must be signed");
+
+        let mut processor = BoundaryProcessor::new(ring);
+
+        let outcome = processor
+            .process_with_receipt(authenticated, PROCESSING_TIME_UNIX_MS)
+            .expect("envelope must be accepted with receipt");
+
+        assert_eq!(outcome.request().agent_legacy_id, Some(42));
+        assert_eq!(outcome.receipt().correlation_id().as_str(), "corr-outcome");
+        assert_eq!(outcome.receipt().idempotency_key().as_str(), "idem-outcome");
+        assert_eq!(outcome.receipt().key_id().as_str(), "active-key");
+        assert_eq!(
+            outcome.receipt().processed_at_unix_ms(),
+            PROCESSING_TIME_UNIX_MS
+        );
         assert_eq!(processor.replay_store().len(), 1);
     }
 

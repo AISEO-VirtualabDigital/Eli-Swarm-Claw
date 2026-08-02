@@ -1,7 +1,8 @@
 use crate::{
     AuthenticatedBoundaryEnvelope, AuthenticationKeyRing, BoundaryEnvelope, BoundaryError,
-    BoundaryProcessor, InMemoryReplayStore, InMemoryVerificationKeyStore, PythonBoundaryRequest,
-    ReplayStore, SigningKeyStore, VerificationKeyStore,
+    BoundaryProcessingOutcome, BoundaryProcessor, InMemoryReplayStore,
+    InMemoryVerificationKeyStore, PythonBoundaryRequest, ReplayStore, SigningKeyStore,
+    VerificationKeyStore,
 };
 
 /// Boundary-level facade for signing and processing authenticated envelopes.
@@ -40,6 +41,15 @@ where
         now_unix_ms: u64,
     ) -> Result<PythonBoundaryRequest, BoundaryError> {
         self.processor.process(authenticated, now_unix_ms)
+    }
+
+    pub fn process_with_receipt(
+        &mut self,
+        authenticated: AuthenticatedBoundaryEnvelope,
+        now_unix_ms: u64,
+    ) -> Result<BoundaryProcessingOutcome, BoundaryError> {
+        self.processor
+            .process_with_receipt(authenticated, now_unix_ms)
     }
 
     #[must_use]
@@ -139,6 +149,36 @@ mod tests {
 
         assert_eq!(request.agent_legacy_id, Some(42));
         assert_eq!(gateway.processor().replay_store().len(), 1);
+    }
+
+    #[test]
+    fn gateway_process_with_receipt_returns_outcome() {
+        let ring = AuthenticationKeyRing::new(managed_active_key("active-key", 1, 500, 500))
+            .expect("key ring must be valid");
+
+        let mut gateway = BoundaryGateway::new(ring);
+
+        let authenticated = gateway
+            .sign(boundary_envelope(
+                "corr-gateway-outcome",
+                "idem-gateway-outcome",
+            ))
+            .expect("gateway signing must succeed");
+
+        let outcome = gateway
+            .process_with_receipt(authenticated, PROCESSING_TIME_UNIX_MS)
+            .expect("gateway processing outcome must succeed");
+
+        assert_eq!(outcome.request().agent_legacy_id, Some(42));
+        assert_eq!(
+            outcome.receipt().correlation_id().as_str(),
+            "corr-gateway-outcome"
+        );
+        assert_eq!(
+            outcome.receipt().idempotency_key().as_str(),
+            "idem-gateway-outcome"
+        );
+        assert_eq!(outcome.receipt().key_id().as_str(), "active-key");
     }
 
     #[test]
