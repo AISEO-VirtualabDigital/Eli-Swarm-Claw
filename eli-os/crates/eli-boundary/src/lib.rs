@@ -270,6 +270,30 @@ mod tests {
         assert_eq!(config.api_key, None);
     }
 }
+#[test]
+fn canonical_python_fixture_deserializes_in_rust() {
+    let fixture = include_str!("../../../../contracts/fixtures/generation_request.json");
 
+    let request: PythonBoundaryRequest =
+        serde_json::from_str(fixture).expect("deserialize canonical fixture");
+
+    assert_eq!(request.protocol_version, BOUNDARY_PROTOCOL_VERSION);
+    assert_eq!(request.project_legacy_id, Some(101));
+    assert_eq!(request.domain_legacy_id, Some(202));
+    assert_eq!(request.agent_legacy_id, Some(42));
+    assert_eq!(request.operation, BoundaryOperation::GenerateImage);
+
+    let generation = request
+        .generation_request
+        .expect("generation request must exist");
+
+    assert_eq!(generation.prompt, "Create an SEO audit graphic");
+    assert_eq!(generation.width, Some(1024));
+    assert_eq!(generation.height, Some(1024));
+    assert_eq!(generation.steps, Some(30));
+    assert_eq!(generation.guidance_scale, Some(7.5));
+    assert_eq!(generation.batch_size, Some(1));
+    assert_eq!(generation.output_format.as_deref(), Some("png"));
+}
 mod validation;
 pub use validation::*;
