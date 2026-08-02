@@ -300,3 +300,6 @@ pub use validation::*;
 
 mod integrity;
 pub use integrity::*;
+
+mod authentication;
+pub use authentication::*;
