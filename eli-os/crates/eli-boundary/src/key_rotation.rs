@@ -1,7 +1,8 @@
 use crate::{AuthenticationKey, BoundaryError, BoundaryErrorCode};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct KeyId(String);
 
 impl KeyId {
