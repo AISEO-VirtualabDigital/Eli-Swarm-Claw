@@ -95,6 +95,29 @@ impl InMemoryBoundaryAuditSink {
     }
 
     #[must_use]
+    pub fn accepted_events(&self) -> Vec<&BoundaryAuditEvent> {
+        self.events
+            .iter()
+            .filter(|event| event.kind() == &BoundaryAuditEventKind::Accepted)
+            .collect()
+    }
+
+    #[must_use]
+    pub fn rejected_events(&self) -> Vec<&BoundaryAuditEvent> {
+        self.events
+            .iter()
+            .filter(|event| event.kind() == &BoundaryAuditEventKind::Rejected)
+            .collect()
+    }
+
+    #[must_use]
+    pub fn latest_event(&self) -> Option<&BoundaryAuditEvent> {
+        self.events
+            .iter()
+            .max_by_key(|event| event.processed_at_unix_ms())
+    }
+
+    #[must_use]
     pub fn snapshot(&self) -> BoundaryAuditSnapshot {
         BoundaryAuditSnapshot::new(&self.events)
     }
@@ -156,8 +179,12 @@ mod tests {
         )
     }
 
-    fn accepted_audit_event(processed_at_unix_ms: u64) -> BoundaryAuditEvent {
-        let envelope = boundary_envelope("corr-audit-sink", "idem-audit-sink");
+    fn accepted_audit_event(
+        correlation_id: &str,
+        idempotency_key: &str,
+        processed_at_unix_ms: u64,
+    ) -> BoundaryAuditEvent {
+        let envelope = boundary_envelope(correlation_id, idempotency_key);
         let receipt = BoundaryDecisionReceipt::from_envelope(
             &envelope,
             key_id("active-key"),
@@ -167,9 +194,13 @@ mod tests {
         BoundaryAuditEvent::from_parts(&receipt, &envelope.request)
     }
 
-    fn rejected_audit_event(processed_at_unix_ms: u64) -> BoundaryAuditEvent {
+    fn rejected_audit_event(
+        correlation_id: &str,
+        idempotency_key: &str,
+        processed_at_unix_ms: u64,
+    ) -> BoundaryAuditEvent {
         let authenticated = AuthenticatedBoundaryEnvelope::sign(
-            boundary_envelope("corr-audit-rejected", "idem-audit-rejected"),
+            boundary_envelope(correlation_id, idempotency_key),
             key_id("unknown-key"),
             &authentication_key(),
         )
@@ -195,14 +226,25 @@ mod tests {
         assert!(sink.is_empty());
         assert_eq!(sink.len(), 0);
         assert!(sink.snapshot().is_empty());
+        assert!(sink.accepted_events().is_empty());
+        assert!(sink.rejected_events().is_empty());
+        assert!(sink.latest_event().is_none());
     }
 
     #[test]
     fn audit_sink_records_events_in_order() {
         let mut sink = InMemoryBoundaryAuditSink::new();
 
-        sink.record(accepted_audit_event(2_000));
-        sink.record(accepted_audit_event(2_500));
+        sink.record(accepted_audit_event(
+            "corr-audit-sink",
+            "idem-audit-sink",
+            2_000,
+        ));
+        sink.record(accepted_audit_event(
+            "corr-audit-sink-2",
+            "idem-audit-sink-2",
+            2_500,
+        ));
 
         assert_eq!(sink.len(), 2);
         assert_eq!(
@@ -211,7 +253,7 @@ mod tests {
         );
         assert_eq!(
             sink.events()[1].idempotency_key().as_str(),
-            "idem-audit-sink"
+            "idem-audit-sink-2"
         );
     }
 
@@ -231,9 +273,9 @@ mod tests {
     fn snapshot_counts_accepted_and_rejected_events() {
         let mut sink = InMemoryBoundaryAuditSink::new();
 
-        sink.record(accepted_audit_event(2_000));
-        sink.record(rejected_audit_event(2_500));
-        sink.record(accepted_audit_event(3_000));
+        sink.record(accepted_audit_event("corr-ok-1", "idem-ok-1", 2_000));
+        sink.record(rejected_audit_event("corr-fail-1", "idem-fail-1", 2_500));
+        sink.record(accepted_audit_event("corr-ok-2", "idem-ok-2", 3_000));
 
         let snapshot = sink.snapshot();
 
@@ -248,13 +290,57 @@ mod tests {
     fn snapshot_uses_latest_processed_timestamp_regardless_of_order() {
         let mut sink = InMemoryBoundaryAuditSink::new();
 
-        sink.record(accepted_audit_event(4_000));
-        sink.record(rejected_audit_event(2_000));
-        sink.record(accepted_audit_event(3_000));
+        sink.record(accepted_audit_event("corr-ok-1", "idem-ok-1", 4_000));
+        sink.record(rejected_audit_event("corr-fail-1", "idem-fail-1", 2_000));
+        sink.record(accepted_audit_event("corr-ok-2", "idem-ok-2", 3_000));
 
         let snapshot = sink.snapshot();
 
         assert_eq!(snapshot.total_count(), 3);
         assert_eq!(snapshot.latest_processed_at_unix_ms(), Some(4_000));
+    }
+
+    #[test]
+    fn accepted_events_returns_only_accepted_events() {
+        let mut sink = InMemoryBoundaryAuditSink::new();
+
+        sink.record(accepted_audit_event("corr-ok-1", "idem-ok-1", 2_000));
+        sink.record(rejected_audit_event("corr-fail-1", "idem-fail-1", 2_500));
+        sink.record(accepted_audit_event("corr-ok-2", "idem-ok-2", 3_000));
+
+        let accepted_events = sink.accepted_events();
+
+        assert_eq!(accepted_events.len(), 2);
+        assert_eq!(accepted_events[0].correlation_id().as_str(), "corr-ok-1");
+        assert_eq!(accepted_events[1].correlation_id().as_str(), "corr-ok-2");
+    }
+
+    #[test]
+    fn rejected_events_returns_only_rejected_events() {
+        let mut sink = InMemoryBoundaryAuditSink::new();
+
+        sink.record(accepted_audit_event("corr-ok-1", "idem-ok-1", 2_000));
+        sink.record(rejected_audit_event("corr-fail-1", "idem-fail-1", 2_500));
+        sink.record(rejected_audit_event("corr-fail-2", "idem-fail-2", 3_000));
+
+        let rejected_events = sink.rejected_events();
+
+        assert_eq!(rejected_events.len(), 2);
+        assert_eq!(rejected_events[0].correlation_id().as_str(), "corr-fail-1");
+        assert_eq!(rejected_events[1].correlation_id().as_str(), "corr-fail-2");
+    }
+
+    #[test]
+    fn latest_event_returns_event_with_latest_processed_timestamp() {
+        let mut sink = InMemoryBoundaryAuditSink::new();
+
+        sink.record(accepted_audit_event("corr-ok-1", "idem-ok-1", 4_000));
+        sink.record(rejected_audit_event("corr-fail-1", "idem-fail-1", 2_000));
+        sink.record(accepted_audit_event("corr-ok-2", "idem-ok-2", 3_000));
+
+        let latest = sink.latest_event().expect("latest event must exist");
+
+        assert_eq!(latest.correlation_id().as_str(), "corr-ok-1");
+        assert_eq!(latest.processed_at_unix_ms(), 4_000);
     }
 }
