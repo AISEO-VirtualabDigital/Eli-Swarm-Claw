@@ -306,3 +306,6 @@ pub use authentication::*;
 
 mod processor;
 pub use processor::*;
+
+mod key_rotation;
+pub use key_rotation::*;
