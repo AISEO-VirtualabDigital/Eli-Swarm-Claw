@@ -303,3 +303,6 @@ pub use integrity::*;
 
 mod authentication;
 pub use authentication::*;
+
+mod processor;
+pub use processor::*;
