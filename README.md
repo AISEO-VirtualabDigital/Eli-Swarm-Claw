@@ -74,6 +74,14 @@ The platform connects:
 - content brief generation
 - multi-agent SEO automation
 
+## Pilot RC1 Documentation
+
+A pilot-ready documentation package is available for the current dry-run-only release candidate:
+
+- [RELEASE.md](RELEASE.md)
+- [PILOT_TEST_PLAN.md](PILOT_TEST_PLAN.md)
+- [apps/eli-pilot-control/README.md](apps/eli-pilot-control/README.md)
+
 ## Core Features
 
 ### 1. Technical SEO Auditing
