@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Eli Pilot Control</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Subdomain-ready pilot control</p>
+          <h1>Eli Pilot Control</h1>
+          <p class="hero-copy">
+            Pilot Mode / Dry Run Only. This panel is the first control surface for a future
+            subdomain experience such as app.&lt;domain&gt; or eli.&lt;domain&gt;.
+          </p>
+        </div>
+        <div class="status-pill" id="modeBadge">Pilot Mode / Dry Run Only</div>
+      </header>
+
+      <section class="grid">
+        <article class="card">
+          <h2>Health &amp; Status</h2>
+          <dl class="status-list" id="healthPanel"></dl>
+        </article>
+
+        <article class="card">
+          <h2>Dry-Run Command</h2>
+          <form id="commandForm">
+            <label for="commandInput">Command</label>
+            <textarea id="commandInput" rows="5" placeholder="Describe the dry-run action"></textarea>
+
+            <label class="toggle-row" for="approvalToggle">
+              <input type="checkbox" id="approvalToggle" />
+              <span>Require approval before submission</span>
+            </label>
+
+            <button type="submit">Submit Dry Run</button>
+          </form>
+        </article>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>Latest Result</h2>
+          <div id="latestResult" class="result-box"></div>
+        </article>
+
+        <article class="card">
+          <h2>Audit / Report</h2>
+          <ul id="auditList" class="audit-list"></ul>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>Pilot State Summary</h2>
+        <div class="summary-grid" id="summaryGrid"></div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
