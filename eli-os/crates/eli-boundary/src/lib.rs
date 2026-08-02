@@ -297,3 +297,6 @@ fn canonical_python_fixture_deserializes_in_rust() {
 }
 mod validation;
 pub use validation::*;
+
+mod integrity;
+pub use integrity::*;
