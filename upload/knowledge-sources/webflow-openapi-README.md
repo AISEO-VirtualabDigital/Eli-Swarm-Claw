@@ -1,0 +1,33 @@
+---
+Source: https://github.com/webflow/openapi-spec
+Category: web-design
+Description: OpenAPI specification for the Webflow REST API
+Stars: 13
+Topics: business-critical-yes
+FetchedAt: 2026-08-04T18:30:38.310Z
+---
+
+# Webflow's REST API OpenAPI Description
+
+This repository contains [OpenAPI](https://www.openapis.org/) specifications for [Webflow's REST API](https://docs.developers.webflow.com/data).
+
+[Changelog](https://docs.developers.webflow.com/data/changelog)
+
+Files can be found in the `openapi` directory:
+
+- v2.yml: OpenAPI 3.1 spec matching the [public Webflow API.](https://docs.developers.webflow.com/data/v2.0.0/reference/introduction)
+- v2-beta.yml: OpenAPI 3.1 spec matching the [beta Webflow API.](https://docs.developers.webflow.com/data/v2.0.0-beta/reference/introduction)
+
+
+## Project Status
+This project is currently in GA. We expect the spec to be accurate, and it is currently in active development. If you've identified a mismatch between Webflow's API behavior and this specification, [please open an issue.](https://github.com/webflow/openapi/issues)
+
+## Contributing
+Because our specifications are automatically generated, we cannot accept pull requests. Please file issues with suggestions or bugs. Feedback about the APIs or features the specs describe should be directed to Webflow's [developer support team.](mailto:developers@webflow.com)
+
+## License
+webflow/openapi is licensed under the [MIT license](LICENSE.md)
+
+
+## Contact
+You may contact [developers@webflow.com](mailto:developers@webflow.com) with any questions related to this repository.

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+@page{size:794px 1123px;margin:0}
+html,body{width:794px;height:1123px;margin:0;padding:0;background:#121210;font-family:'Inter',sans-serif}
+.cover{position:relative;width:794px;height:1123px;background:#121210;border:none;outline:none;box-shadow:none}
+.bg{position:absolute;inset:0;overflow:hidden;z-index:1}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(197,186,140,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(197,186,140,0.03) 1px,transparent 1px);background-size:50px 50px}
+.bg-glow{position:absolute;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(212,192,128,0.07) 0%,transparent 70%);top:8%;left:3%}
+.line{position:absolute;left:95px;top:112px;width:5px;height:898px;background:linear-gradient(180deg,rgba(212,192,128,0.7),rgba(212,192,128,0.15));border-radius:3px;z-index:2}
+.dot{position:absolute;width:7px;height:7px;border-radius:50%;background:#d5c080;top:140px;left:114px;z-index:2}
+.content{position:absolute;z-index:3;left:148px;top:0;width:610px}
+.kicker{margin-top:180px;font-size:13pt;font-weight:400;letter-spacing:4pt;text-transform:uppercase;color:rgba(226,225,223,0.45);line-height:1.4}
+.title{margin-top:100px;font-size:44pt;font-weight:900;line-height:1.15;color:#e2e1df}
+.summary{margin-top:120px;font-size:14pt;font-weight:400;line-height:1.7;color:rgba(226,225,223,0.75)}
+.meta{margin-top:140px;font-size:12pt;font-weight:400;color:rgba(226,225,223,0.45);line-height:1.8}
+.footer{position:absolute;bottom:68px;left:148px;font-size:10pt;font-weight:400;letter-spacing:3pt;text-transform:uppercase;color:rgba(226,225,223,0.3);z-index:3}
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="bg"><div class="bg-grid"></div><div class="bg-glow"></div></div>
+  <div class="line"></div>
+  <div class="dot"></div>
+  <div class="content">
+    <div class="kicker">Architecture White Paper &mdash; Control Plane Redesign</div>
+    <div class="title">Eli-OS: Fixing the Blocking Problem</div>
+    <div class="summary">A comprehensive architectural blueprint for redesigning the Eli-OS Rust control plane from a rigid, fail-closed gatekeeper into a transparent, declarative, tiered enforcement system. This document covers the SKILL.md paradigm, tiered policy engine, IPC protocol redesign, and the integration of OpenClaw and Kimi K2.7 Code for the Full-Stack SEO Multi-Agent Swarm.</div>
+    <div class="meta">Joseph Rainer &mdash; AI Systems Architect<br>VirtuaLab Digital &mdash; AISEO<br>August 2026 &mdash; Version 1.0</div>
+  </div>
+  <div class="footer">Private &amp; Confidential &mdash; Eli-Swarm-Claw Project</div>
+</div>
+</body>
+</html>

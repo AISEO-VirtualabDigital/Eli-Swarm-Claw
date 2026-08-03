@@ -1,0 +1,738 @@
+     1→//! # eli-ipc-handler
+     2→//!
+     3→//! gRPC-based IPC handler for the Eli-OS control plane.
+     4→//!
+     5→//! This crate sits at the boundary between the agent runtime and the
+     6→//! control plane, exposing four RPCs over gRPC:
+     7→//!
+     8→//! 1. **`evaluate_request`** — Pre-flight policy check. The agent submits
+     9→//!    an [`IpcRequest`]; the handler evaluates it through the
+    10→//!    [`PolicyEngine`](eli_policy_engine::PolicyEngine) and returns an
+    11→//!    [`IpcResponse`] with the enforcement tier or violation detail.
+    12→//!
+    13→//! 2. **`report_result`** — Post-execution reporting. The agent sends
+    14→//!    back a [`ResultReport`] so the control plane can audit outcomes,
+    15→//!    track task completion, and update billing/metrics.
+    16→//!
+    17→//! 3. **`escalate`** — Out-of-band escalation. Agents (or the policy
+    18→//!    engine itself) can push [`EscalationEvent`] messages that require
+    19→//!    human operator attention.
+    20→//!
+    21→//! 4. **`heartbeat`** — Liveness and resource telemetry. The handler
+    22→//!    checks the reported resource usage against the agent's IPC policy
+    23→//!    and returns an optional warning if limits are being approached.
+    24→//!
+    25→//! ## Architecture
+    26→//!
+    27→//! ```text
+    28→//!   Agent Runtime                   Control Plane (this crate)
+    29→//!   ─────────────                   ──────────────────────────
+    30→//!
+    31→//!   ┌──────────┐  gRPC/TCP   ┌───────────────────┐
+    32→//!   │  Agent    │────────────▶│    IpcServer      │
+    33→//!   │  Process  │             │                   │
+    34→//!   └──────────┘             │  ┌─────────────┐  │
+    35→//!                             │  │ PolicyEngine │  │
+    36→//!   ┌──────────┐  pub/sub  │  │ (RwLock)     │  │
+    37→//!   │ Operator  │◀──────────│  └─────────────┘  │
+    38→//!   │ Dashboard │           │                   │
+    39→//!   └──────────┘           │  ┌─────────────┐  │
+    40→//!                             │  │  EventBus   │  │
+    41→//!                             │  │ (broadcast) │  │
+    42→//!                             │  └─────────────┘  │
+    43→//!                             └───────────────────┘
+    44→//! ```
+    45→//!
+    46→//! ## Required dependencies
+    47→//!
+    48→//! ```toml
+    49→//! [dependencies]
+    50→//! eli-policy-engine = { path = "../eli-policy-engine" }
+    51→//! eli-skill-parser = { path = "../eli-skill-parser" }
+    52→//! tonic = "0.11"
+    53→//! prost = "0.12"
+    54→//! tokio = { version = "1", features = ["full"] }
+    55→//! ulid = "1.1"
+    56→//! thiserror = "1"
+    57→//! serde = { version = "1", features = ["derive"] }
+    58→//! serde_json = "1"
+    59→//! tracing = "0.1"
+    60→//! ```
+    61→
+    62→use std::sync::Arc;
+    63→
+    64→use eli_policy_engine::{
+    65→    EnforcementTier, IpcRequest as PolicyIpcRequest, IpcResponse as PolicyIpcResponse,
+    66→    OperationType, PolicyEngine,
+    67→};
+    68→use thiserror::Error;
+    69→use tokio::sync::{broadcast, RwLock};
+    70→
+    71→// ---------------------------------------------------------------------------
+    72→// Error types
+    73→// ---------------------------------------------------------------------------
+    74→
+    75→/// Errors that can occur within the IPC handler.
+    76→#[derive(Debug, Error)]
+    77→pub enum IpcHandlerError {
+    78→    /// The policy engine returned an unexpected response variant.
+    79→    #[error("unexpected policy response: {0}")]
+    80→    UnexpectedPolicyResponse(String),
+    81→
+    82→    /// A broadcast channel error (e.g. no active subscribers).
+    83→    #[error("event bus error: {0}")]
+    84→    EventBusError(#[from] broadcast::error::SendError<AgentEvent>),
+    85→
+    86→    /// The requested agent has no associated resource limit data.
+    87→    #[error("no resource limits found for agent: {0}")]
+    88→    NoResourceLimits(String),
+    89→}
+    90→
+    91→// ---------------------------------------------------------------------------
+    92→// gRPC message types
+    93→// ---------------------------------------------------------------------------
+    94→
+    95→/// Incoming IPC request from an agent (gRPC-level representation).
+    96→///
+    97→/// Converted to [`PolicyIpcRequest`] before evaluation by the policy engine.
+    98→#[derive(Debug, Clone)]
+    99→pub struct IpcRequest {
+   100→    /// The agent's identity name (must match a SKILL.md manifest key).
+   101→    pub agent_id: String,
+   102→    /// What kind of operation the agent wants to perform.
+   103→    pub operation_type: String,
+   104→    /// The target resource: table name, endpoint URL, or command.
+   105→    pub target_resource: String,
+   106→    /// Optional request payload (JSON body, SQL, etc.).
+   107→    pub payload: Option<String>,
+   108→    /// Unique request identifier (ULID) for distributed tracing.
+   109→    pub request_ulid: String,
+   110→    /// Unix-epoch timestamp (seconds).
+   111→    pub timestamp: u64,
+   112→}
+   113→
+   114→/// Policy evaluation response, serialisable over gRPC.
+   115→#[derive(Debug, Clone)]
+   116→pub struct IpcResponse {
+   117→    /// The enforcement tier if the request was approved (e.g. `"GREEN"`).
+   118→    pub tier: Option<String>,
+   119→    /// Whether the request was approved.
+   120→    pub approved: bool,
+   121→    /// JSON-encoded violation details if the request was denied.
+   122→    pub violation_detail: Option<String>,
+   123→    /// Escalation reason if the request was escalated.
+   124→    pub escalation_reason: Option<String>,
+   125→}
+   126→
+   127→/// A post-execution result report from an agent.
+   128→#[derive(Debug, Clone)]
+   129→pub struct ResultReport {
+   130→    /// The reporting agent's identity name.
+   131→    pub agent_id: String,
+   132→    /// The task ID this result pertains to.
+   133→    pub task_id: String,
+   134→    /// Type of result: `"success"`, `"error"`, `"partial"`.
+   135→    pub result_type: String,
+   136→    /// The result payload (JSON).
+   137→    pub payload: String,
+   138→    /// Unix-epoch timestamp (seconds).
+   139→    pub timestamp: u64,
+   140→}
+   141→
+   142→/// Acknowledgement returned for `report_result` and `escalate` RPCs.
+   143→#[derive(Debug, Clone)]
+   144→pub struct Acknowledgement {
+   145→    /// Whether the operation was accepted by the control plane.
+   146→    pub success: bool,
+   147→    /// Human-readable status message.
+   148→    pub message: String,
+   149→    /// Audit-trail ULID for this acknowledgement.
+   150→    pub audit_ulid: String,
+   151→}
+   152→
+   153→/// An escalation event pushed by an agent or the policy engine.
+   154→#[derive(Debug, Clone)]
+   155→pub struct EscalationEvent {
+   156→    /// The agent that triggered the escalation.
+   157→    pub agent_id: String,
+   158→    /// Why the escalation was triggered.
+   159→    pub trigger_reason: String,
+   160→    /// Structured context (JSON) for the operator.
+   161→    pub context: String,
+   162→    /// Severity level: `"low"`, `"medium"`, `"high"`, `"critical"`.
+   163→    pub severity: String,
+   164→    /// Unix-epoch timestamp (seconds).
+   165→    pub timestamp: u64,
+   166→}
+   167→
+   168→/// Liveness and resource telemetry heartbeat from an agent.
+   169→#[derive(Debug, Clone)]
+   170→pub struct Heartbeat {
+   171→    /// The agent's identity name.
+   172→    pub agent_id: String,
+   173→    /// Current status: `"idle"`, `"processing"`, `"error"`, `"shutting_down"`.
+   174→    pub status: String,
+   175→    /// Number of tasks completed since last heartbeat.
+   176→    pub tasks_completed: u32,
+   177→    /// Current memory usage in megabytes.
+   178→    pub memory_usage_mb: f32,
+   179→}
+   180→
+   181→/// Acknowledgement for a heartbeat, with optional resource warning.
+   182→#[derive(Debug, Clone)]
+   183→pub struct HeartbeatAck {
+   184→    /// Whether the heartbeat was accepted.
+   185→    pub acknowledged: bool,
+   186→    /// Warning message if the agent is approaching or exceeding resource limits.
+   187→    pub resource_warning: Option<String>,
+   188→}
+   189→
+   190→// ---------------------------------------------------------------------------
+   191→// Event bus
+   192→// ---------------------------------------------------------------------------
+   193→
+   194→/// A domain event published to the control plane's event bus.
+   195→///
+   196→/// All agent interactions (requests, results, escalations, heartbeats)
+   197→/// are published as events so that operator dashboards, audit loggers,
+   198→/// and alerting systems can subscribe asynchronously.
+   199→#[derive(Debug, Clone)]
+   200→pub struct AgentEvent {
+   201→    /// Unique event identifier (ULID).
+   202→    pub event_ulid: String,
+   203→    /// The agent that published this event.
+   204→    pub publisher_id: String,
+   205→    /// Event type: `"policy_check"`, `"result_report"`, `"escalation"`, `"heartbeat"`.
+   206→    pub event_type: String,
+   207→    /// Event payload (JSON-serialised string).
+   208→    pub payload: String,
+   209→    /// Unix-epoch timestamp (seconds).
+   210→    pub timestamp: u64,
+   211→}
+   212→
+   213→/// Async pub/sub event bus built on `tokio::sync::broadcast`.
+   214→///
+   215→/// Every [`IpcServer`] RPC publishes an event to the bus. External
+   216→/// consumers (dashboards, audit loggers) subscribe per-agent or to
+   217→/// the global channel.
+   218→///
+   219→/// # Channel capacity
+   220→///
+   221→/// The broadcast channel is initialised with a capacity of 1024 events.
+   222→/// Slow consumers that fall behind will see `RecvError::Lagged`.
+   223→pub struct EventBus {
+   224→    sender: broadcast::Sender<AgentEvent>,
+   225→}
+   226→
+   227→impl EventBus {
+   228→    /// Creates a new event bus with a channel capacity of 1024.
+   229→    pub fn new() -> Self {
+   230→        let (sender, _) = broadcast::channel(1024);
+   231→        Self { sender }
+   232→    }
+   233→
+   234→    /// Creates a new event bus with a custom channel capacity.
+   235→    pub fn with_capacity(capacity: usize) -> Self {
+   236→        let (sender, _) = broadcast::channel(capacity);
+   237→        Self { sender }
+   238→    }
+   239→
+   240→    /// Publishes an event to all active subscribers.
+   241→    ///
+   242→    /// Returns the number of receivers that received the event.
+   243→    /// If there are no subscribers, the event is silently dropped
+   244→    /// (this is by design — broadcast channels don't buffer for
+   245→    /// future subscribers).
+   246→    pub fn publish(&self, event: AgentEvent) -> usize {
+   247→        match self.sender.send(event) {
+   248→            Ok(n) => n,
+   249→            Err(_) => 0,
+   250→        }
+   251→    }
+   252→
+   253→    /// Subscribes to events for a specific agent.
+   254→    ///
+   255→    /// The returned [`broadcast::Receiver`] will yield all events
+   256→    /// published after this call. The `agent_id` parameter is
+   257→    /// currently used for logging/metrics; filtering should be
+   258→    /// done by the consumer based on `publisher_id`.
+   259→    pub fn subscribe(&self, _agent_id: &str) -> broadcast::Receiver<AgentEvent> {
+   260→        self.sender.subscribe()
+   261→    }
+   262→
+   263→    /// Returns a new receiver for the global (unfiltered) event stream.
+   264→    pub fn subscribe_global(&self) -> broadcast::Receiver<AgentEvent> {
+   265→        self.sender.subscribe()
+   266→    }
+   267→}
+   268→
+   269→impl Default for EventBus {
+   270→    fn default() -> Self {
+   271→        Self::new()
+   272→    }
+   273→}
+   274→
+   275→// ---------------------------------------------------------------------------
+   276→// Service trait (gRPC equivalent)
+   277→// ---------------------------------------------------------------------------
+   278→
+   279→/// The Eli-OS IPC service trait.
+   280→///
+   281→/// In a production build this would be generated by `tonic-build` from
+   282→/// a `.proto` file. Here we define it as a hand-written async trait so
+   283→/// that the crate is self-contained and compilable without the proto
+   284→/// compiler toolchain.
+   285→///
+   286→/// # Proto equivalent
+   287→///
+   288→/// ```proto
+   289→/// service EliIpcService {
+   290→///   rpc EvaluateRequest(IpcRequest) returns (IpcResponse);
+   291→///   rpc ReportResult(ResultReport) returns (Acknowledgement);
+   292→///   rpc Escalate(EscalationEvent) returns (Acknowledgement);
+   293→///   rpc Heartbeat(Heartbeat) returns (HeartbeatAck);
+   294→/// }
+   295→/// ```
+   296→#[allow(async_fn_in_trait)]
+   297→pub trait EliIpcService: Send + Sync + 'static {
+   298→    /// Pre-flight policy evaluation for an agent IPC request.
+   299→    async fn evaluate_request(
+   300→        &self,
+   301→        request: IpcRequest,
+   302→    ) -> Result<IpcResponse, tonic::Status>;
+   303→
+   304→    /// Post-execution result reporting.
+   305→    async fn report_result(
+   306→        &self,
+   307→        request: ResultReport,
+   308→    ) -> Result<Acknowledgement, tonic::Status>;
+   309→
+   310→    /// Out-of-band escalation event.
+   311→    async fn escalate(
+   312→        &self,
+   313→        request: EscalationEvent,
+   314→    ) -> Result<Acknowledgement, tonic::Status>;
+   315→
+   316→    /// Liveness and resource telemetry heartbeat.
+   317→    async fn heartbeat(
+   318→        &self,
+   319→        request: Heartbeat,
+   320→    ) -> Result<HeartbeatAck, tonic::Status>;
+   321→}
+   322→
+   323→// ---------------------------------------------------------------------------
+   324→// IpcServer implementation
+   325→// ---------------------------------------------------------------------------
+   326→
+   327→/// The gRPC server implementation for the Eli-OS control plane IPC.
+   328→///
+   329→/// Holds a shared reference to the [`PolicyEngine`] (behind a
+   330→/// `RwLock` for hot-reload support) and the [`EventBus`] for
+   331→/// audit logging.
+   332→///
+   333→/// # Concurrency model
+   334→///
+   335→/// - **`evaluate_request`**: acquires a **read** lock on the policy
+   336→///   engine. Multiple concurrent evaluations are allowed.
+   337→/// - **Hot reloads** (via `policy_engine.write()`) briefly block new
+   338→///   evaluations but do not interrupt in-flight requests.
+   339→pub struct IpcServer {
+   340→    /// The policy engine, shared behind a read-write lock for hot reloading.
+   341→    policy_engine: Arc<RwLock<PolicyEngine>>,
+   342→
+   343→    /// The event bus for publishing audit events.
+   344→    event_bus: Arc<EventBus>,
+   345→}
+   346→
+   347→impl IpcServer {
+   348→    /// Creates a new `IpcServer` instance.
+   349→    ///
+   350→    /// # Arguments
+   351→    ///
+   352→    /// * `policy_engine` — An `Arc<RwLock<PolicyEngine>>` that may be
+   353→    ///   hot-reloaded from a separate writer task.
+   354→    /// * `event_bus` — An `Arc<EventBus>` for publishing audit events.
+   355→    pub fn new(
+   356→        policy_engine: Arc<RwLock<PolicyEngine>>,
+   357→        event_bus: Arc<EventBus>,
+   358→    ) -> Self {
+   359→        Self {
+   360→            policy_engine,
+   361→            event_bus,
+   362→        }
+   363→    }
+   364→
+   365→    /// Generates a ULID string using the `ulid` crate.
+   366→    ///
+   367→    /// Dependency note: `ulid = "1.1"` must be in `Cargo.toml`.
+   368→    /// We fall back to a UUID-like placeholder if the `ulid` crate
+   369→    /// is not available at compile time.
+   370→    fn generate_ulid() -> String {
+   371→        // In production this calls `ulid::Ulid::new().to_string()`.
+   372→        // Here we use a simple timestamp + random suffix to stay
+   373→        // self-contained without a proc-macro dependency.
+   374→        use std::time::{SystemTime, UNIX_EPOCH};
+   375→        let ts = SystemTime::now()
+   376→            .duration_since(UNIX_EPOCH)
+   377→            .map(|d| d.as_millis())
+   378→            .unwrap_or(0);
+   379→        format!("{:012x}{:04x}", ts, ts % 0xFFFF)
+   380→    }
+   381→
+   382→    /// Returns the current Unix-epoch timestamp in seconds.
+   383→    fn now_timestamp() -> u64 {
+   384→        use std::time::{SystemTime, UNIX_EPOCH};
+   385→        SystemTime::now()
+   386→            .duration_since(UNIX_EPOCH)
+   387→            .map(|d| d.as_secs())
+   388→            .unwrap_or(0)
+   389→    }
+   390→
+   391→    /// Converts a gRPC [`IpcRequest`] into a [`PolicyIpcRequest`].
+   392→    fn to_policy_request(req: &IpcRequest) -> Result<PolicyIpcRequest, tonic::Status> {
+   393→        let op_type = match req.operation_type.to_uppercase().as_str() {
+   394→            "READ" => OperationType::Read,
+   395→            "WRITE" => OperationType::Write,
+   396→            "EXECUTE" => OperationType::Execute,
+   397→            "DELETE" => OperationType::Delete,
+   398→            other => {
+   399→                return Err(tonic::Status::invalid_argument(format!(
+   400→                    "Unknown operation type: '{}'. \
+   401→                     Must be READ, WRITE, EXECUTE, or DELETE.",
+   402→                    other
+   403→                )));
+   404→            }
+   405→        };
+   406→
+   407→        Ok(PolicyIpcRequest {
+   408→            agent_id: req.agent_id.clone(),
+   409→            operation_type: op_type,
+   410→            target_resource: req.target_resource.clone(),
+   411→            payload: req.payload.clone(),
+   412→            request_ulid: req.request_ulid.clone(),
+   413→            timestamp: req.timestamp,
+   414→        })
+   415→    }
+   416→
+   417→    /// Converts a [`PolicyIpcResponse`] into a gRPC [`IpcResponse`].
+   418→    fn to_grpc_response(resp: &PolicyIpcResponse) -> IpcResponse {
+   419→        match resp {
+   420→            PolicyIpcResponse::Approved { tier } => IpcResponse {
+   421→                tier: Some(tier.to_string()),
+   422→                approved: true,
+   423→                violation_detail: None,
+   424→                escalation_reason: None,
+   425→            },
+   426→            PolicyIpcResponse::PolicyViolation { violation } => {
+   427→                let detail_json = serde_json::to_string_pretty(violation)
+   428→                    .unwrap_or_else(|_| format!("{{ \"agent_id\": \"{}\" }}", violation.agent_id));
+   429→                IpcResponse {
+   430→                    tier: Some(violation.tier.to_string()),
+   431→                    approved: false,
+   432→                    violation_detail: Some(detail_json),
+   433→                    escalation_reason: None,
+   434→                }
+   435→            }
+   436→            PolicyIpcResponse::Escalated { reason } => IpcResponse {
+   437→                tier: Some("RED".to_string()),
+   438→                approved: false,
+   439→                violation_detail: None,
+   440→                escalation_reason: Some(reason.clone()),
+   441→            },
+   442→        }
+   443→    }
+   444→
+   445→    /// Checks an agent's resource usage against its IPC policy limits.
+   446→    ///
+   447→    /// Returns `Some(warning_message)` if the agent is approaching or
+   448→    /// exceeding its declared resource limits, or `None` if usage is
+   449→    /// within acceptable bounds.
+   450→    fn check_resource_limits(
+   451→        policy_engine: &PolicyEngine,
+   452→        agent_id: &str,
+   453→        memory_usage_mb: f32,
+   454→    ) -> Option<String> {
+   455→        let manifest = policy_engine.manifests().get(agent_id)?;
+   456→        let limits = &manifest.ipc_policy.resource_limits;
+   457→        let limit_f = limits.memory_mb as f32;
+   458→
+   459→        // Warn at 80% of declared limit.
+   460→        let threshold = limit_f * 0.8;
+   461→
+   462→        if memory_usage_mb > limit_f {
+   463→            Some(format!(
+   464→                "Agent '{}' has exceeded its memory limit: \
+   465→                 {:.1} MB used / {} MB allowed. \
+   466→                 Consider terminating and restarting the agent.",
+   467→                agent_id, memory_usage_mb, limits.memory_mb
+   468→            ))
+   469→        } else if memory_usage_mb > threshold {
+   470→            Some(format!(
+   471→                "Agent '{}' is approaching its memory limit: \
+   472→                 {:.1} MB used / {} MB allowed ({:.0}% utilization).",
+   473→                agent_id,
+   474→                memory_usage_mb,
+   475→                limits.memory_mb,
+   476→                (memory_usage_mb / limit_f) * 100.0
+   477→            ))
+   478→        } else {
+   479→            None
+   480→        }
+   481→    }
+   482→}
+   483→
+   484→// ---------------------------------------------------------------------------
+   485→// EliIpcService implementation for IpcServer
+   486→// ---------------------------------------------------------------------------
+   487→
+   488→/// We use a manual `impl` instead of the `#[tonic::async_trait]` proc
+   489→/// macro so this file compiles without the tonic-build toolchain.
+   490→/// In production, the `#[tonic::async_trait]` attribute would be
+   491→/// added and the `.proto`-generated types would replace our hand-
+   492→/// written structs.
+   493→#[allow(async_fn_in_trait)]
+   494→impl EliIpcService for IpcServer {
+   495→    /// Pre-flight policy evaluation.
+   496→    ///
+   497→    /// Acquires a **read** lock on the policy engine, converts the
+   498→    /// gRPC request to a [`PolicyIpcRequest`], calls
+   499→    /// [`PolicyEngine::evaluate`], publishes the result to the event
+   500→    /// bus, and returns the converted [`IpcResponse`].
+   501→    async fn evaluate_request(
+   502→        &self,
+   503→        request: IpcRequest,
+   504→    ) -> Result<IpcResponse, tonic::Status> {
+   505→        let policy_req = Self::to_policy_request(&request)?;
+   506→
+   507→        // Acquire a read lock — multiple concurrent evaluations are allowed.
+   508→        let engine_guard = self.policy_engine.read().await;
+   509→        let policy_resp = engine_guard.evaluate(&policy_req);
+   510→        // Release the read lock before doing I/O (event bus publish).
+   511→        drop(engine_guard);
+   512→
+   513→        let grpc_resp = Self::to_grpc_response(&policy_resp);
+   514→
+   515→        // Publish a policy_check event to the audit bus.
+   516→        let event_payload = serde_json::json!({
+   517→            "request_ulid": request.request_ulid,
+   518→            "agent_id": request.agent_id,
+   519→            "operation_type": request.operation_type,
+   520→            "target_resource": request.target_resource,
+   521→            "approved": grpc_resp.approved,
+   522→            "tier": grpc_resp.tier,
+   523→        })
+   524→        .to_string();
+   525→
+   526→        self.event_bus.publish(AgentEvent {
+   527→            event_ulid: Self::generate_ulid(),
+   528→            publisher_id: request.agent_id.clone(),
+   529→            event_type: "policy_check".to_string(),
+   530→            payload: event_payload,
+   531→            timestamp: Self::now_timestamp(),
+   532→        });
+   533→
+   534→        Ok(grpc_resp)
+   535→    }
+   536→
+   537→    /// Post-execution result reporting.
+   538→    ///
+   539→    /// Logs the result to the event bus with a generated audit ULID
+   540→    /// and returns an acknowledgement to the caller.
+   541→    async fn report_result(
+   542→        &self,
+   543→        request: ResultReport,
+   544→    ) -> Result<Acknowledgement, tonic::Status> {
+   545→        let audit_ulid = Self::generate_ulid();
+   546→
+   547→        let event_payload = serde_json::json!({
+   548→            "task_id": request.task_id,
+   549→            "result_type": request.result_type,
+   550→            "payload": request.payload,
+   551→            "agent_id": request.agent_id,
+   552→        })
+   553→        .to_string();
+   554→
+   555→        self.event_bus.publish(AgentEvent {
+   556→            event_ulid: audit_ulid.clone(),
+   557→            publisher_id: request.agent_id.clone(),
+   558→            event_type: "result_report".to_string(),
+   559→            payload: event_payload,
+   560→            timestamp: Self::now_timestamp(),
+   561→        });
+   562→
+   563→        Ok(Acknowledgement {
+   564→            success: true,
+   565→            message: format!(
+   566→                "Result for task '{}' from agent '{}' recorded. Audit: {}",
+   567→                request.task_id, request.agent_id, audit_ulid
+   568→            ),
+   569→            audit_ulid,
+   570→        })
+   571→    }
+   572→
+   573→    /// Out-of-band escalation event.
+   574→    ///
+   575→    /// Logs the escalation to the event bus and returns an
+   576→    /// acknowledgement. The operator dashboard (or an alerting
+   577→    /// system subscribed to the bus) is responsible for surfacing
+   578→    /// this to a human.
+   579→    async fn escalate(
+   580→        &self,
+   581→        request: EscalationEvent,
+   582→    ) -> Result<Acknowledgement, tonic::Status> {
+   583→        let audit_ulid = Self::generate_ulid();
+   584→
+   585→        let event_payload = serde_json::json!({
+   586→            "trigger_reason": request.trigger_reason,
+   587→            "context": request.context,
+   588→            "severity": request.severity,
+   589→        })
+   590→        .to_string();
+   591→
+   592→        self.event_bus.publish(AgentEvent {
+   593→            event_ulid: audit_ulid.clone(),
+   594→            publisher_id: request.agent_id.clone(),
+   595→            event_type: "escalation".to_string(),
+   596→            payload: event_payload,
+   597→            timestamp: Self::now_timestamp(),
+   598→        });
+   599→
+   600→        Ok(Acknowledgement {
+   601→            success: true,
+   602→            message: format!(
+   603→                "Escalation from agent '{}' (severity: {}) acknowledged. Audit: {}",
+   604→                request.agent_id, request.severity, audit_ulid
+   605→            ),
+   606→            audit_ulid,
+   607→        })
+   608→    }
+   609→
+   610→    /// Liveness and resource telemetry heartbeat.
+   611→    ///
+   612→    /// Checks the reported `memory_usage_mb` against the agent's
+   613→    /// declared IPC policy resource limits. Returns a
+   614→    /// [`HeartbeatAck`] with an optional `resource_warning` if the
+   615→    /// agent is at or above 80% of its memory limit.
+   616→    async fn heartbeat(
+   617→        &self,
+   618→        request: Heartbeat,
+   619→    ) -> Result<HeartbeatAck, tonic::Status> {
+   620→        let engine_guard = self.policy_engine.read().await;
+   621→        let resource_warning = Self::check_resource_limits(
+   622→            &engine_guard,
+   623→            &request.agent_id,
+   624→            request.memory_usage_mb,
+   625→        );
+   626→        drop(engine_guard);
+   627→
+   628→        // Publish heartbeat event (fire-and-forget — we don't care
+   629→        // if there are no subscribers).
+   630→        let event_payload = serde_json::json!({
+   631→            "status": request.status,
+   632→            "tasks_completed": request.tasks_completed,
+   633→            "memory_usage_mb": request.memory_usage_mb,
+   634→        })
+   635→        .to_string();
+   636→
+   637→        self.event_bus.publish(AgentEvent {
+   638→            event_ulid: Self::generate_ulid(),
+   639→            publisher_id: request.agent_id.clone(),
+   640→            event_type: "heartbeat".to_string(),
+   641→            payload: event_payload,
+   642→            timestamp: Self::now_timestamp(),
+   643→        });
+   644→
+   645→        Ok(HeartbeatAck {
+   646→            acknowledged: true,
+   647→            resource_warning,
+   648→        })
+   649→    }
+   650→}
+   651→
+   652→// ---------------------------------------------------------------------------
+   653→// Server startup
+   654→// ---------------------------------------------------------------------------
+   655→
+   656→/// Starts the gRPC IPC server on the given address.
+   657→///
+   658→/// This is the main entry point for the control plane IPC handler.
+   659→/// It binds a gRPC listener, registers the [`IpcServer`] service,
+   660→/// and serves requests until shutdown.
+   661→///
+   662→/// # Arguments
+   663→///
+   664→/// * `addr` — Socket address to listen on (e.g. `"0.0.0.0:50051"`).
+   665→/// * `policy_engine` — Shared policy engine behind an `Arc<RwLock<>>`.
+   666→/// * `event_bus` — Shared event bus for audit logging.
+   667→///
+   668→/// # Errors
+   669→///
+   670→/// Returns an error if the socket cannot be bound or if the server
+   671→/// encounters a fatal error during operation.
+   672→///
+   673→/// # Example
+   674→///
+   675→/// ```ignore
+   676→/// use std::sync::Arc;
+   677→/// use tokio::sync::RwLock;
+   678→/// use eli_policy_engine::PolicyEngine;
+   679→/// use eli_ipc_handler::{IpcServer, EventBus, start_server};
+   680→///
+   681→/// #[tokio::main]
+   682→/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+   683→///     let engine = Arc::new(RwLock::new(PolicyEngine::new(HashMap::new())));
+   684→///     let bus = Arc::new(EventBus::new());
+   685→///     start_server("0.0.0.0:50051", engine, bus).await
+   686→/// }
+   687→/// ```
+   688→pub async fn start_server(
+   689→    addr: &str,
+   690→    policy_engine: Arc<RwLock<PolicyEngine>>,
+   691→    event_bus: Arc<EventBus>,
+   692→) -> Result<(), Box<dyn std::error::Error>> {
+   693→    let server = IpcServer::new(policy_engine, event_bus);
+   694→
+   695→    // In a real deployment this would use tonic::transport::Server:
+   696→    //
+   697→    //   tonic::transport::Server::builder()
+   698→    //       .add_service(EliIpcServiceServer::new(server))
+   699→    //       .serve(addr.parse()?)
+   700→    //       .await?;
+   701→    //
+   702→    // For this self-contained implementation we log the startup
+   703→    // and return Ok. The actual gRPC binding requires the generated
+   704→    // proto code which is outside the scope of this crate file.
+   705→    tracing::info!(
+   706→        agent_count = server.policy_engine.read().await.agent_count(),
+   707→        "Eli-OS IPC handler starting on {}",
+   708→        addr
+   709→    );
+   710→
+   711→    // Placeholder: in production, uncomment the tonic server lines above.
+   712→    // The server would run indefinitely until Ctrl+C or a graceful
+   713→    // shutdown signal is received.
+   714→    tracing::info!("Server ready (note: gRPC binding requires tonic-build proto compilation)");
+   715→
+   716→    Ok(())
+   717→}
+   718→
+   719→// ---------------------------------------------------------------------------
+   720→// Tests
+   721→// ---------------------------------------------------------------------------
+   722→
+   723→#[cfg(test)]
+   724→mod tests {
+   725→    use super::*;
+   726→    use eli_skill_parser::{
+   727→        AgentConstraints, AgentIdentity, CapabilityManifest, IpcPolicy,
+   728→        KnowledgeBaseScope, ResourceLimits,
+   729→    };
+   730→    use std::collections::HashMap;
+   731→
+   732→    /// Builds a test manifest with known resource limits.
+   733→    fn test_manifest_with_limits(memory_mb: u32) -> CapabilityManifest {
+   734→        CapabilityManifest {
+   735→            identity: AgentIdentity {
+   736→                name: "mem-agent".to_string(),
+   737→                role: "worker".to_string(),
+   738→                domain: 
