@@ -1,0 +1,1183 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import { useState, useEffect, useRef, useCallback } from 'react';
+     4→     4→import {
+     5→     5→  LayoutDashboard,
+     6→     6→  MessageSquare,
+     7→     7→  Users,
+     8→     8→  Search,
+     9→     9→  Megaphone,
+    10→    10→  FileText,
+    11→    11→  TrendingUp,
+    12→    12→  CheckSquare,
+    13→    13→  Plug,
+    14→    14→  Workflow,
+    15→    15→  Bug,
+    16→    16→  Wrench,
+    17→    17→  BookOpen,
+    18→    18→  Settings,
+    19→    19→  Send,
+    20→    20→  Menu,
+    21→    21→  ChevronLeft,
+    22→    22→  ExternalLink,
+    23→    23→  Clock,
+    24→    24→  Sparkles,
+    25→    25→  Zap,
+    26→    26→  Shield,
+    27→    27→} from 'lucide-react';
+    28→    28→import { Button } from '@/components/ui/button';
+    29→    29→import { Badge } from '@/components/ui/badge';
+    30→    30→import { ScrollArea } from '@/components/ui/scroll-area';
+    31→    31→import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+    32→    32→import { Separator } from '@/components/ui/separator';
+    33→    33→import { Input } from '@/components/ui/input';
+    34→    34→import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+    35→    35→import { EliMarkdown } from '@/components/eli-markdown';
+    36→    36→
+    37→    37→// ─── Types ───────────────────────────────────────────────────────
+    38→    38→type ViewId =
+    39→    39→  | 'dashboard'
+    40→    40→  | 'chat'
+    41→    41→  | 'leads'
+    42→    42→  | 'audits'
+    43→    43→  | 'campaigns'
+    44→    44→  | 'content'
+    45→    45→  | 'rank'
+    46→    46→  | 'integrations'
+    47→    47→  | 'workflows'
+    48→    48→  | 'scrapers'
+    49→    49→  | 'seo-skills'
+    50→    50→  | 'knowledge'
+    51→    51→  | 'vault'
+    52→    52→  | 'settings';
+    53→    53→
+    54→    54→interface NavItem {
+    55→    55→  id: ViewId;
+    56→    56→  label: string;
+    57→    57→  icon: React.ElementType;
+    58→    58→  group: 'main' | 'systems' | 'knowledge';
+    59→    59→}
+    60→    60→
+    61→    61→interface ChatMessage {
+    62→    62→  id: string;
+    63→    63→  role: 'user' | 'eli';
+    64→    64→  content: string;
+    65→    65→  sources?: Array<{ title: string; source: string; category: string }>;
+    66→    66→  timestamp: Date;
+    67→    67→}
+    68→    68→
+    69→    69→interface KnowledgeCategory {
+    70→    70→  key: string;
+    71→    71→  count: number;
+    72→    72→}
+    73→    73→
+    74→    74→interface KnowledgeStats {
+    75→    75→  totalFiles: number;
+    76→    76→  totalCategories: number;
+    77→    77→  totalSizeMB: string;
+    78→    78→  categories: KnowledgeCategory[];
+    79→    79→}
+    80→    80→
+    81→    81→// ─── Data ────────────────────────────────────────────────────────
+    82→    82→const NAV_ITEMS: NavItem[] = [
+    83→    83→  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, group: 'main' },
+    84→    84→  { id: 'chat', label: 'Chat', icon: MessageSquare, group: 'main' },
+    85→    85→  { id: 'leads', label: 'Leads', icon: Users, group: 'main' },
+    86→    86→  { id: 'audits', label: 'Audits', icon: Search, group: 'main' },
+    87→    87→  { id: 'campaigns', label: 'Campaigns', icon: Megaphone, group: 'main' },
+    88→    88→  { id: 'content', label: 'Content', icon: FileText, group: 'main' },
+    89→    89→  { id: 'rank', label: 'Rank', icon: TrendingUp, group: 'main' },
+    90→    90→  { id: 'integrations', label: 'Integrations', icon: Plug, group: 'systems' },
+    91→    91→  { id: 'workflows', label: 'Workflows', icon: Workflow, group: 'systems' },
+    92→    92→  { id: 'scrapers', label: 'Scrapers', icon: Bug, group: 'systems' },
+    93→    93→  { id: 'seo-skills', label: 'SEO Skills', icon: Wrench, group: 'systems' },
+    94→    94→  { id: 'knowledge', label: 'Knowledge', icon: BookOpen, group: 'knowledge' },
+    95→    95→  { id: 'vault', label: 'Vault', icon: Shield, group: 'knowledge' },
+    96→    96→  { id: 'settings', label: 'Settings', icon: Settings, group: 'knowledge' },
+    97→    97→];
+    98→    98→
+    99→    99→const METRICS = [
+   100→   100→  { label: 'Active Leads', value: 12, icon: Users, color: '#50d8ff', glowClass: 'glow-cyan' },
+   101→   101→  { label: 'Audits Pending', value: 5, icon: Search, color: '#8b5cf6', glowClass: 'glow-purple' },
+   102→   102→  { label: 'Campaigns Running', value: 8, icon: Megaphone, color: '#36d399', glowClass: 'glow-green' },
+   103→   103→  { label: 'Waiting Approval', value: 4, icon: CheckSquare, color: '#ffbf69', glowClass: 'glow-amber' },
+   104→   104→];
+   105→   105→
+   106→   106→const MISSIONS = [
+   107→   107→  { name: 'SEO Audit — VirtuaLab.com', status: 'In Progress', statusColor: '#50d8ff', priority: 'High', progress: 72 },
+   108→   108→  { name: 'Content Calendar — Q4 Strategy', status: 'Pending Review', statusColor: '#ffbf69', priority: 'Medium', progress: 45 },
+   109→   109→  { name: 'Backlink Outreach — Tier 1 Sites', status: 'Active', statusColor: '#36d399', priority: 'High', progress: 88 },
+   110→   110→  { name: 'Google Business Profile Optimization', status: 'Queued', statusColor: '#9ba4c5', priority: 'Low', progress: 12 },
+   111→   111→];
+   112→   112→
+   113→   113→const CATEGORY_META: Record<string, { emoji: string; label: string; color: string }> = {
+   114→   114→  'seo': { emoji: '🔍', label: 'SEO & Marketing', color: '#50d8ff' },
+   115→   115→  'codebase': { emoji: '💻', label: 'Code & Scraping', color: '#8b5cf6' },
+   116→   116→  'web-design': { emoji: '🎨', label: 'Web Design & UI', color: '#ff6b7a' },
+   117→   117→  'ai-agent': { emoji: '🤖', label: 'AI Agents & Tools', color: '#36d399' },
+   118→   118→  'saas': { emoji: '💰', label: 'SaaS & Business', color: '#ffbf69' },
+   119→   119→  'productivity': { emoji: '⚡', label: 'Productivity & Automation', color: '#50d8ff' },
+   120→   120→  'reference': { emoji: '📚', label: 'Reference & Research', color: '#8b5cf6' },
+   121→   121→  'brand': { emoji: '🏷️', label: 'VirtuaLab Brand', color: '#ff6b7a' },
+   122→   122→  'strategy': { emoji: '📋', label: 'Strategy & Planning', color: '#36d399' },
+   123→   123→  'analysis': { emoji: '📊', label: 'Design Analysis', color: '#ffbf69' },
+   124→   124→  'screenshot': { emoji: '📸', label: 'Screenshots', color: '#9ba4c5' },
+   125→   125→  'eli-core': { emoji: '🧠', label: 'Eli Core Identity', color: '#8b5cf6' },
+   126→   126→  'obsidian': { emoji: '📦', label: 'Obsidian Vault', color: '#50d8ff' },
+   127→   127→  'agent-eli': { emoji: '⚙️', label: 'Agent Eli v1 Architecture', color: '#36d399' },
+   128→   128→  'google-api': { emoji: '🔗', label: 'Google API Ecosystem', color: '#36d399' },
+   129→   129→  'crm-sales': { emoji: '📊', label: 'CRM & Sales Tools', color: '#50d8ff' },
+   130→   130→  'project-mgmt': { emoji: '📋', label: 'Project Management', color: '#8b5cf6' },
+   131→   131→  'copywriting-ai': { emoji: '✍️', label: 'Copywriting & AI Content', color: '#ff6b7a' },
+   132→   132→  'cloud-infra': { emoji: '☁️', label: 'Cloud & Infrastructure', color: '#ffbf69' },
+   133→   133→  'cybersecurity': { emoji: '🔒', label: 'Cybersecurity', color: '#ff6b7a' },
+   134→   134→  'design-uiux': { emoji: '🎨', label: 'Design & UI/UX Tools', color: '#50d8ff' },
+   135→   135→  'llm-ai': { emoji: '🤖', label: 'LLM & AI Frameworks', color: '#36d399' },
+   136→   136→  'vps-hosting': { emoji: '🖥️', label: 'VPS & Hosting', color: '#8b5cf6' },
+   137→   137→  'database': { emoji: '🗄️', label: 'Database Tools', color: '#ffbf69' },
+   138→   138→  'github-multi': { emoji: '📂', label: 'GitHub Multi-Topic Directory', color: '#9ba4c5' },
+   139→   139→  'notion-tools': { emoji: '📓', label: 'Notion & Knowledge Mgmt', color: '#50d8ff' },
+   140→   140→  'gohighlevel-agency': { emoji: '🏢', label: 'GoHighLevel & Agency', color: '#36d399' },
+   141→   141→  'automation-workflow': { emoji: '⚙️', label: 'Automation & Workflow', color: '#8b5cf6' },
+   142→   142→  'backlink-seo': { emoji: '🔗', label: 'Backlink & SEO', color: '#ff6b7a' },
+   143→   143→  'exec-assistant': { emoji: '🤵', label: 'Executive Assistant', color: '#50d8ff' },
+   144→   144→  'social-media': { emoji: '📱', label: 'Social Media Mgmt', color: '#36d399' },
+   145→   145→  'shopify-ecommerce': { emoji: '🛒', label: 'Shopify & E-Commerce', color: '#ffbf69' },
+   146→   146→  'github-batch4': { emoji: '📂', label: 'GitHub Batch 4 Directory', color: '#9ba4c5' },
+   147→   147→};
+   148→   148→
+   149→   149→const ELI_WELCOME = `Hey there! I'm **Eli** — VirtuaLab's AI Growth Intelligence.
+   150→   150→
+   151→   151→I'm running on **Llama** with access to **157+ knowledge files** across **32 categories** spanning SEO, content strategy, automation, AI tools, and more. I'm here to help you accelerate growth.
+   152→   152→
+   153→   153→**What I can do:**
+   154→   154→• Analyze SEO opportunities and audit findings
+   155→   155→• Generate content strategies and campaign plans
+   156→   156→• Research tools, competitors, and market opportunities
+   157→   157→• Help with automation workflows and integrations
+   158→   158→• Provide actionable growth recommendations
+   159→   159→
+   160→   160→What would you like to work on today?`;
+   161→   161→
+   162→   162→// ─── Helper: Count-up animation hook (fixed count) ───────────
+   163→   163→function useMetricCounts(targets: number[], duration = 800) {
+   164→   164→  const [counts, setCounts] = useState(targets.map(() => 0));
+   165→   165→  const [started, setStarted] = useState(false);
+   166→   166→
+   167→   167→  useEffect(() => {
+   168→   168→    if (!started) return;
+   169→   169→    const startTime = performance.now();
+   170→   170→  let rafId: number;
+   171→   171→    const step = (now: number) => {
+   172→   172→      const elapsed = now - startTime;
+   173→   173→      const progress = Math.min(elapsed / duration, 1);
+   174→   174→      const eased = 1 - Math.pow(1 - progress, 3);
+   175→   175→      setCounts(targets.map((t) => Math.round(eased * t)));
+   176→   176→      if (progress < 1) rafId = requestAnimationFrame(step);
+   177→   177→    };
+   178→   178→    rafId = requestAnimationFrame(step);
+   179→   179→    return () => cancelAnimationFrame(rafId);
+   180→   180→  }, [started, duration, ...targets]);
+   181→   181→
+   182→   182→  return { counts, start: () => setStarted(true) };
+   183→   183→}
+   184→   184→
+   185→   185→// ─── Helper: Live time ──────────────────────────────────────────
+   186→   186→function useLiveTime() {
+   187→   187→  const [time, setTime] = useState('');
+   188→   188→  useEffect(() => {
+   189→   189→    const update = () => {
+   190→   190→      const now = new Date();
+   191→   191→      setTime(
+   192→   192→        now.toLocaleTimeString('en-US', {
+   193→   193→          hour: '2-digit',
+   194→   194→          minute: '2-digit',
+   195→   195→          second: '2-digit',
+   196→   196→          hour12: false,
+   197→   197→        })
+   198→   198→      );
+   199→   199→    };
+   200→   200→    update();
+   201→   201→    const interval = setInterval(update, 1000);
+   202→   202→    return () => clearInterval(interval);
+   203→   203→  }, []);
+   204→   204→  return time;
+   205→   205→}
+   206→   206→
+   207→   207→// ─── Topbar ─────────────────────────────────────────────────────
+   208→   208→function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
+   209→   209→  const time = useLiveTime();
+   210→   210→
+   211→   211→  return (
+   212→   212→    <header
+   213→   213→      className="h-14 sticky top-0 z-50 flex items-center justify-between px-4 md:px-6"
+   214→   214→      style={{
+   215→   215→        backgroundColor: 'rgba(13, 16, 32, 0.8)',
+   216→   216→        backdropFilter: 'blur(24px)',
+   217→   217→        borderBottom: '1px solid #252a46',
+   218→   218→        boxShadow: '0 1px 20px rgba(0,0,0,0.3), 0 0 40px rgba(139,92,246,0.03)',
+   219→   219→      }}
+   220→   220→    >
+   221→   221→      <div className="flex items-center gap-3">
+   222→   222→        <Button
+   223→   223→          variant="ghost"
+   224→   224→          size="icon"
+   225→   225→          className="md:hidden text-[#9ba4c5] hover:text-[#f5f6ff] hover:bg-[#12162a]"
+   226→   226→          onClick={onMenuClick}
+   227→   227→        >
+   228→   228→          <Menu className="w-5 h-5" />
+   229→   229→        </Button>
+   230→   230→        <div className="flex items-center gap-3">
+   231→   231→          <div
+   232→   232→            className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
+   233→   233→            style={{
+   234→   234→              background: 'linear-gradient(135deg, #8b5cf6, #6d4aff)',
+   235→   235→              boxShadow: '0 0 12px rgba(139,92,246,0.4)',
+   236→   236→            }}
+   237→   237→          >
+   238→   238→            E
+   239→   239→          </div>
+   240→   240→          <div className="flex items-center gap-2">
+   241→   241→            <span className="font-semibold text-[#f5f6ff] text-sm">Eli OS</span>
+   242→   242→            <span className="text-[#252a46] hidden sm:inline">·</span>
+   243→   243→            <span className="text-[#9ba4c5] text-xs hidden sm:inline">Growth Command Center</span>
+   244→   244→          </div>
+   245→   245→        </div>
+   246→   246→      </div>
+   247→   247→
+   248→   248→      <div className="flex items-center gap-3">
+   249→   249→        <div className="flex items-center gap-2 text-xs text-[#9ba4c5]">
+   250→   250→          <div className="w-2 h-2 rounded-full bg-[#36d399] animate-pulse" />
+   251→   251→          <span className="hidden sm:inline">Online</span>
+   252→   252→        </div>
+   253→   253→        <Separator orientation="vertical" className="h-4 bg-[#252a46]" />
+   254→   254→        <div className="flex items-center gap-1.5 text-xs text-[#9ba4c5] font-mono">
+   255→   255→          <Clock className="w-3.5 h-3.5" />
+   256→   256→          {time}
+   257→   257→        </div>
+   258→   258→      </div>
+   259→   259→    </header>
+   260→   260→  );
+   261→   261→}
+   262→   262→
+   263→   263→// ─── Sidebar ────────────────────────────────────────────────────
+   264→   264→function SidebarNav({
+   265→   265→  activeView,
+   266→   266→  onViewChange,
+   267→   267→  collapsed,
+   268→   268→  onToggle,
+   269→   269→}: {
+   270→   270→  activeView: ViewId;
+   271→   271→  onViewChange: (v: ViewId) => void;
+   272→   272→  collapsed: boolean;
+   273→   273→  onToggle: () => void;
+   274→   274→}) {
+   275→   275→  const groups = [
+   276→   276→    { key: 'main', label: 'MAIN' },
+   277→   277→    { key: 'systems', label: 'SYSTEMS' },
+   278→   278→    { key: 'knowledge', label: 'KNOWLEDGE' },
+   279→   279→  ];
+   280→   280→
+   281→   281→  return (
+   282→   282→    <aside
+   283→   283→      className={`hidden md:flex flex-col h-full transition-all duration-300 ease-in-out ${
+   284→   284→        collapsed ? 'w-16' : 'w-60'
+   285→   285→      }`}
+   286→   286→      style={{
+   287→   287→        backgroundColor: '#0d1020',
+   288→   288→        borderRight: '1px solid #252a46',
+   289→   289→      }}
+   290→   290→    >
+   291→   291→      <div className="flex-1 overflow-y-auto py-4 px-2">
+   292→   292→        {groups.map((group) => {
+   293→   293→          const items = NAV_ITEMS.filter((n) => n.group === group.key);
+   294→   294→          return (
+   295→   295→            <div key={group.key} className="mb-4">
+   296→   296→              {!collapsed && (
+   297→   297→                <div className="px-3 mb-2 text-[10px] font-semibold tracking-[0.15em] text-[#9ba4c5] opacity-60">
+   298→   298→                  {group.label}
+   299→   299→                </div>
+   300→   300→              )}
+   301→   301→              {collapsed && <div className="my-2" style={{ borderTop: '1px solid #252a46' }} />}
+   302→   302→              {items.map((item) => {
+   303→   303→                const isActive = activeView === item.id;
+   304→   304→                const Icon = item.icon;
+   305→   305→                return (
+   306→   306→                  <TooltipProvider key={item.id} delayDuration={0}>
+   307→   307→                    <Tooltip>
+   308→   308→                      <TooltipTrigger asChild>
+   309→   309→                        <button
+   310→   310→                          onClick={() => onViewChange(item.id)}
+   311→   311→                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 group relative ${
+   312→   312→                            isActive
+   313→   313→                              ? 'bg-[#8b5cf6]/10 text-[#8b5cf6]'
+   314→   314→                              : 'text-[#9ba4c5] hover:bg-[#12162a] hover:text-[#f5f6ff]'
+   315→   315→                          }`}
+   316→   316→                          style={{
+   317→   317→                            ...(isActive && !collapsed
+   318→   318→                              ? { borderLeft: '2px solid #8b5cf6', marginLeft: '-2px' }
+   319→   319→                              : {}),
+   320→   320→                          }}
+   321→   321→                        >
+   322→   322→                          <Icon
+   323→   323→                            className={`w-4.5 h-4.5 flex-shrink-0 transition-colors ${
+   324→   324→                              isActive ? 'text-[#8b5cf6]' : 'text-[#9ba4c5] group-hover:text-[#f5f6ff]'
+   325→   325→                            }`}
+   326→   326→                          />
+   327→   327→                          {!collapsed && <span>{item.label}</span>}
+   328→   328→                          {isActive && (
+   329→   329→                            <div
+   330→   330→                              className="absolute inset-0 rounded-lg pointer-events-none"
+   331→   331→                              style={{
+   332→   332→                                boxShadow: 'inset 0 0 12px rgba(139,92,246,0.06)',
+   333→   333→                              }}
+   334→   334→                            />
+   335→   335→                          )}
+   336→   336→                        </button>
+   337→   337→                      </TooltipTrigger>
+   338→   338→                      {collapsed && (
+   339→   339→                        <TooltipContent side="right" className="text-xs">
+   340→   340→                          {item.label}
+   341→   341→                        </TooltipContent>
+   342→   342→                      )}
+   343→   343→                    </Tooltip>
+   344→   344→                  </TooltipProvider>
+   345→   345→                );
+   346→   346→              })}
+   347→   347→            </div>
+   348→   348→          );
+   349→   349→        })}
+   350→   350→      </div>
+   351→   351→
+   352→   352→      <div className="p-2" style={{ borderTop: '1px solid #252a46' }}>
+   353→   353→        <Button
+   354→   354→          variant="ghost"
+   355→   355→          size="icon"
+   356→   356→          onClick={onToggle}
+   357→   357→          className={`w-full text-[#9ba4c5] hover:text-[#f5f6ff] hover:bg-[#12162a] ${
+   358→   358→            collapsed ? 'rotate-180' : ''
+   359→   359→          } transition-transform duration-300`}
+   360→   360→        >
+   361→   361→          <ChevronLeft className="w-4 h-4" />
+   362→   362→        </Button>
+   363→   363→      </div>
+   364→   364→    </aside>
+   365→   365→  );
+   366→   366→}
+   367→   367→
+   368→   368→// ─── Mobile Sidebar (Sheet) ─────────────────────────────────────
+   369→   369→function MobileSidebar({
+   370→   370→  activeView,
+   371→   371→  onViewChange,
+   372→   372→  open,
+   373→   373→  onOpenChange,
+   374→   374→}: {
+   375→   375→  activeView: ViewId;
+   376→   376→  onViewChange: (v: ViewId) => void;
+   377→   377→  open: boolean;
+   378→   378→  onOpenChange: (o: boolean) => void;
+   379→   379→}) {
+   380→   380→  const groups = [
+   381→   381→    { key: 'main', label: 'MAIN' },
+   382→   382→    { key: 'systems', label: 'SYSTEMS' },
+   383→   383→    { key: 'knowledge', label: 'KNOWLEDGE' },
+   384→   384→  ];
+   385→   385→
+   386→   386→  return (
+   387→   387→    <Sheet open={open} onOpenChange={onOpenChange}>
+   388→   388→      <SheetContent
+   389→   389→        side="left"
+   390→   390→        className="w-64 p-0"
+   391→   391→        style={{ backgroundColor: '#0d1020', borderRight: '1px solid #252a46' }}
+   392→   392→      >
+   393→   393→        <SheetTitle className="sr-only">Navigation</SheetTitle>
+   394→   394→        <div className="pt-6 px-3 pb-4">
+   395→   395→          <div className="flex items-center gap-3 px-3 mb-6">
+   396→   396→            <div
+   397→   397→              className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
+   398→   398→              style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d4aff)' }}
+   399→   399→            >
+   400→   400→              E
+   401→   401→            </div>
+   402→   402→            <span className="font-semibold text-[#f5f6ff] text-sm">Eli OS</span>
+   403→   403→          </div>
+   404→   404→          {groups.map((group) => {
+   405→   405→            const items = NAV_ITEMS.filter((n) => n.group === group.key);
+   406→   406→            return (
+   407→   407→              <div key={group.key} className="mb-4">
+   408→   408→                <div className="px-3 mb-2 text-[10px] font-semibold tracking-[0.15em] text-[#9ba4c5] opacity-60">
+   409→   409→                  {group.label}
+   410→   410→                </div>
+   411→   411→                {items.map((item) => {
+   412→   412→                  const isActive = activeView === item.id;
+   413→   413→                  const Icon = item.icon;
+   414→   414→                  return (
+   415→   415→                    <button
+   416→   416→                      key={item.id}
+   417→   417→                      onClick={() => {
+   418→   418→                        onViewChange(item.id);
+   419→   419→                        onOpenChange(false);
+   420→   420→                      }}
+   421→   421→                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+   422→   422→                        isActive
+   423→   423→                          ? 'bg-[#8b5cf6]/10 text-[#8b5cf6]'
+   424→   424→                          : 'text-[#9ba4c5] hover:bg-[#12162a] hover:text-[#f5f6ff]'
+   425→   425→                      }`}
+   426→   426→                      style={{
+   427→   427→                        ...(isActive
+   428→   428→                          ? { borderLeft: '2px solid #8b5cf6', marginLeft: '-2px' }
+   429→   429→                          : {}),
+   430→   430→                      }}
+   431→   431→                    >
+   432→   432→                      <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${isActive ? 'text-[#8b5cf6]' : ''}`} />
+   433→   433→                      <span>{item.label}</span>
+   434→   434→                    </button>
+   435→   435→                  );
+   436→   436→                })}
+   437→   437→              </div>
+   438→   438→            );
+   439→   439→          })}
+   440→   440→        </div>
+   441→   441→      </SheetContent>
+   442→   442→    </Sheet>
+   443→   443→  );
+   444→   444→}
+   445→   445→
+   446→   446→// ─── Dashboard View ─────────────────────────────────────────────
+   447→   447→function DashboardView() {
+   448→   448→  const { counts, start } = useMetricCounts(METRICS.map((m) => m.value));
+   449→   449→
+   450→   450→  useEffect(() => {
+   451→   451→    const t = setTimeout(start, 200);
+   452→   452→    return () => clearTimeout(t);
+   453→   453→  }, [start]);
+   454→   454→
+   455→   455→  return (
+   456→   456→    <div className="animate-fadeIn space-y-6">
+   457→   457→      {/* Greeting */}
+   458→   458→      <div>
+   459→   459→        <h1 className="text-xl font-bold text-[#f5f6ff] mb-1">
+   460→   460→          Welcome back, Operator
+   461→   461→        </h1>
+   462→   462→        <p className="text-sm text-[#9ba4c5]">
+   463→   463→          Here's your growth intelligence overview for today.
+   464→   464→        </p>
+   465→   465→      </div>
+   466→   466→
+   467→   467→      {/* Metric Cards */}
+   468→   468→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   469→   469→        {METRICS.map((metric, i) => {
+   470→   470→          const Icon = metric.icon;
+   471→   471→          const count = counts[i];
+   472→   472→          return (
+   473→   473→            <div
+   474→   474→              key={metric.label}
+   475→   475→              className={`animate-slideUp rounded-xl p-5 transition-all duration-300 cursor-default group hover:-translate-y-0.5 ${metric.glowClass}`}
+   476→   476→              style={{
+   477→   477→                animationDelay: `${i * 100}ms`,
+   478→   478→                backgroundColor: '#0d1020',
+   479→   479→                border: '1px solid #252a46',
+   480→   480→              }}
+   481→   481→              onMouseEnter={(e) => {
+   482→   482→                (e.currentTarget as HTMLElement).style.borderColor = metric.color + '40';
+   483→   483→              }}
+   484→   484→              onMouseLeave={(e) => {
+   485→   485→                (e.currentTarget as HTMLElement).style.borderColor = '#252a46';
+   486→   486→              }}
+   487→   487→            >
+   488→   488→              <div className="flex items-start justify-between mb-3">
+   489→   489→                <div
+   490→   490→                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+   491→   491→                  style={{ backgroundColor: metric.color + '15' }}
+   492→   492→                >
+   493→   493→                  <Icon className="w-5 h-5" style={{ color: metric.color }} />
+   494→   494→                </div>
+   495→   495→                <Zap className="w-3.5 h-3.5 text-[#9ba4c5] opacity-40 group-hover:opacity-70 transition-opacity" />
+   496→   496→              </div>
+   497→   497→              <div className="text-2xl font-bold text-[#f5f6ff] animate-count-up" style={{ animationDelay: `${i * 100 + 200}ms` }}>
+   498→   498→                {count}
+   499→   499→              </div>
+   500→   500→              <div className="text-xs text-[#9ba4c5] mt-1">{metric.label}</div>
+   501→   501→            </div>
+   502→   502→          );
+   503→   503→        })}
+   504→   504→      </div>
+   505→   505→
+   506→   506→      {/* Mission List */}
+   507→   507→      <div
+   508→   508→        className="rounded-xl overflow-hidden"
+   509→   509→        style={{
+   510→   510→          backgroundColor: '#0d1020',
+   511→   511→          border: '1px solid #252a46',
+   512→   512→        }}
+   513→   513→      >
+   514→   514→        <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #252a46' }}>
+   515→   515→          <div className="flex items-center gap-2">
+   516→   516→            <Sparkles className="w-4 h-4 text-[#8b5cf6]" />
+   517→   517→            <h2 className="text-sm font-semibold text-[#f5f6ff]">Active Missions</h2>
+   518→   518→          </div>
+   519→   519→          <Badge
+   520→   520→            variant="secondary"
+   521→   521→            className="text-[10px] font-medium"
+   522→   522→            style={{ backgroundColor: '#8b5cf620', color: '#8b5cf6', border: '1px solid #8b5cf630' }}
+   523→   523→          >
+   524→   524→            {MISSIONS.length} active
+   525→   525→          </Badge>
+   526→   526→        </div>
+   527→   527→        <div className="divide-y" style={{ borderColor: '#252a46' }}>
+   528→   528→          {MISSIONS.map((mission, i) => (
+   529→   529→            <div
+   530→   530→              key={mission.name}
+   531→   531→              className="px-5 py-3.5 flex items-center gap-4 hover:bg-[#12162a]/50 transition-colors animate-slideUp"
+   532→   532→              style={{
+   533→   533→                animationDelay: `${i * 80 + 400}ms`,
+   534→   534→                borderBottomColor: '#252a46',
+   535→   535→              }}
+   536→   536→            >
+   537→   537→              <div className="flex-1 min-w-0">
+   538→   538→                <div className="text-sm text-[#f5f6ff] truncate">{mission.name}</div>
+   539→   539→              </div>
+   540→   540→              <Badge
+   541→   541→                variant="secondary"
+   542→   542→                className="text-[10px] flex-shrink-0 hidden sm:inline-flex"
+   543→   543→                style={{
+   544→   544→                  backgroundColor: mission.statusColor + '15',
+   545→   545→                  color: mission.statusColor,
+   546→   546→                  border: `1px solid ${mission.statusColor}30`,
+   547→   547→                }}
+   548→   548→              >
+   549→   549→                {mission.status}
+   550→   550→              </Badge>
+   551→   551→              <Badge
+   552→   552→                variant="outline"
+   553→   553→                className="text-[10px] flex-shrink-0 hidden md:inline-flex"
+   554→   554→                style={{
+   555→   555→                  borderColor: '#252a46',
+   556→   556→                  color: mission.priority === 'High' ? '#ff6b7a' : mission.priority === 'Medium' ? '#ffbf69' : '#9ba4c5',
+   557→   557→                }}
+   558→   558→              >
+   559→   559→                {mission.priority}
+   560→   560→              </Badge>
+   561→   561→              <div className="w-24 flex-shrink-0 hidden sm:block">
+   562→   562→                <div className="flex items-center justify-between text-[10px] text-[#9ba4c5] mb-1">
+   563→   563→                  <span>Progress</span>
+   564→   564→                  <span>{mission.progress}%</span>
+   565→   565→                </div>
+   566→   566→                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: '#12162a' }}>
+   567→   567→                  <div
+   568→   568→                    className="h-full rounded-full transition-all duration-1000 ease-out"
+   569→   569→                    style={{
+   570→   570→                      width: `${mission.progress}%`,
+   571→   571→                      backgroundColor: mission.statusColor,
+   572→   572→                      boxShadow: `0 0 8px ${mission.statusColor}40`,
+   573→   573→                      transitionDelay: `${i * 100 + 600}ms`,
+   574→   574→                    }}
+   575→   575→                  />
+   576→   576→                </div>
+   577→   577→              </div>
+   578→   578→            </div>
+   579→   579→          ))}
+   580→   580→        </div>
+   581→   581→      </div>
+   582→   582→    </div>
+   583→   583→  );
+   584→   584→}
+   585→   585→
+   586→   586→// ─── Chat View ──────────────────────────────────────────────────
+   587→   587→function ChatView() {
+   588→   588→  const [messages, setMessages] = useState<ChatMessage[]>([]);
+   589→   589→  const [input, setInput] = useState('');
+   590→   590→  const [isLoading, setIsLoading] = useState(false);
+   591→   591→  const messagesEndRef = useRef<HTMLDivElement>(null);
+   592→   592→  const textareaRef = useRef<HTMLTextAreaElement>(null);
+   593→   593→
+   594→   594→  const scrollToBottom = useCallback(() => {
+   595→   595→    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+   596→   596→  }, []);
+   597→   597→
+   598→   598→  useEffect(() => {
+   599→   599→    scrollToBottom();
+   600→   600→  }, [messages, isLoading, scrollToBottom]);
+   601→   601→
+   602→   602→  // Welcome message on mount
+   603→   603→  useEffect(() => {
+   604→   604→    setMessages([
+   605→   605→      {
+   606→   606→        id: 'welcome',
+   607→   607→        role: 'eli',
+   608→   608→        content: ELI_WELCOME,
+   609→   609→        timestamp: new Date(),
+   610→   610→      },
+   611→   611→    ]);
+   612→   612→  }, []);
+   613→   613→
+   614→   614→  const handleSend = async () => {
+   615→   615→    const trimmed = input.trim();
+   616→   616→    if (!trimmed || isLoading) return;
+   617→   617→
+   618→   618→    const userMsg: ChatMessage = {
+   619→   619→      id: `user-${Date.now()}`,
+   620→   620→      role: 'user',
+   621→   621→      content: trimmed,
+   622→   622→      timestamp: new Date(),
+   623→   623→    };
+   624→   624→
+   625→   625→    setMessages((prev) => [...prev, userMsg]);
+   626→   626→    setInput('');
+   627→   627→    setIsLoading(true);
+   628→   628→
+   629→   629→    // Reset textarea height
+   630→   630→    if (textareaRef.current) {
+   631→   631→      textareaRef.current.style.height = 'auto';
+   632→   632→    }
+   633→   633→
+   634→   634→    try {
+   635→   635→      const history = messages
+   636→   636→        .filter((m) => m.id !== 'welcome')
+   637→   637→        .map((m) => ({ role: m.role, content: m.content }));
+   638→   638→
+   639→   639→      const res = await fetch('/api/eli-chat', {
+   640→   640→        method: 'POST',
+   641→   641→        headers: { 'Content-Type': 'application/json' },
+   642→   642→        body: JSON.stringify({ message: trimmed, history }),
+   643→   643→      });
+   644→   644→
+   645→   645→      const data = await res.json();
+   646→   646→
+   647→   647→      const eliMsg: ChatMessage = {
+   648→   648→        id: `eli-${Date.now()}`,
+   649→   649→        role: 'eli',
+   650→   650→        content: data.response || 'I encountered an issue processing your request. Please try again.',
+   651→   651→        sources: data.sources,
+   652→   652→        timestamp: new Date(),
+   653→   653→      };
+   654→   654→
+   655→   655→      setMessages((prev) => [...prev, eliMsg]);
+   656→   656→    } catch {
+   657→   657→      const errorMsg: ChatMessage = {
+   658→   658→        id: `error-${Date.now()}`,
+   659→   659→        role: 'eli',
+   660→   660→        content: 'Sorry, I encountered a connection error. Please check that the server is running and try again.',
+   661→   661→        timestamp: new Date(),
+   662→   662→      };
+   663→   663→      setMessages((prev) => [...prev, errorMsg]);
+   664→   664→    } finally {
+   665→   665→      setIsLoading(false);
+   666→   666→    }
+   667→   667→  };
+   668→   668→
+   669→   669→  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+   670→   670→    if (e.key === 'Enter' && !e.shiftKey) {
+   671→   671→      e.preventDefault();
+   672→   672→      handleSend();
+   673→   673→    }
+   674→   674→  };
+   675→   675→
+   676→   676→  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+   677→   677→    setInput(e.target.value);
+   678→   678→    // Auto-resize
+   679→   679→    const ta = e.target;
+   680→   680→    ta.style.height = 'auto';
+   681→   681→    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
+   682→   682→  };
+   683→   683→
+   684→   684→  // Simple markdown-like rendering for user messages only (no code blocks needed)
+   685→   685→  const renderUserContent = (text: string) => {
+   686→   686→    return text.split('\n').map((line, i) => {
+   687→   687→      if (line.startsWith('- ') || line.startsWith('• ')) {
+   688→   688→        return (
+   689→   689→          <div key={i} className="flex gap-2 pl-1">
+   690→   690→            <span className="mt-0.5">•</span>
+   691→   691→            <span>{line.replace(/^[•-]\s*/, '')}</span>
+   692→   692→          </div>
+   693→   693→        );
+   694→   694→      }
+   695→   695→      if (line.trim() === '') return <div key={i} className="h-2" />;
+   696→   696→      return <p key={i} className="leading-relaxed">{line}</p>;
+   697→   697→    });
+   698→   698→  };
+   699→   699→
+   700→   700→  return (
+   701→   701→    <div className="flex flex-col h-full animate-fadeIn">
+   702→   702→      {/* Chat Header */}
+   703→   703→      <div
+   704→   704→        className="px-5 py-3 flex items-center gap-3 flex-shrink-0"
+   705→   705→        style={{ borderBottom: '1px solid #252a46' }}
+   706→   706→      >
+   707→   707→        <div
+   708→   708→          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+   709→   709→          style={{
+   710→   710→            background: 'linear-gradient(135deg, #8b5cf6, #6d4aff)',
+   711→   711→            boxShadow: '0 0 12px rgba(139,92,246,0.3)',
+   712→   712→          }}
+   713→   713→        >
+   714→   714→          E
+   715→   715→        </div>
+   716→   716→        <div>
+   717→   717→          <div className="text-sm font-semibold text-[#f5f6ff]">Eli</div>
+   718→   718→          <div className="text-[10px] text-[#36d399] flex items-center gap-1">
+   719→   719→            <div className="w-1.5 h-1.5 rounded-full bg-[#36d399]" />
+   720→   720→            Growth Intelligence Online
+   721→   721→          </div>
+   722→   722→        </div>
+   723→   723→      </div>
+   724→   724→
+   725→   725→      {/* Messages */}
+   726→   726→      <ScrollArea className="flex-1 px-4 md:px-6 py-4">
+   727→   727→        <div className="max-w-3xl mx-auto space-y-4">
+   728→   728→          {messages.map((msg) => (
+   729→   729→            <div
+   730→   730→              key={msg.id}
+   731→   731→              className={`animate-slideUp flex ${
+   732→   732→                msg.role === 'user' ? 'justify-end' : 'justify-start'
+   733→   733→              }`}
+   734→   734→            >
+   735→   735→              <div
+   736→   736→                className={`max-w-2xl px-4 py-3 text-sm leading-relaxed ${
+   737→   737→                  msg.role === 'user'
+   738→   738→                    ? 'rounded-2xl rounded-tr-sm text-white'
+   739→   739→                    : 'rounded-2xl rounded-tl-sm text-[#f5f6ff]'
+   740→   740→                }`}
+   741→   741→                style={
+   742→   742→                  msg.role === 'user'
+   743→   743→                    ? {
+   744→   744→                        background: 'linear-gradient(135deg, #8b5cf6, #6d4aff)',
+   745→   745→                        boxShadow: '0 4px 15px rgba(139,92,246,0.25)',
+   746→   746→                      }
+   747→   747→                    : {
+   748→   748→                        backgroundColor: '#0d1020',
+   749→   749→                        border: '1px solid #252a46',
+   750→   750→                      }
+   751→   751→                }
+   752→   752→              >
+   753→   753→                {msg.role === 'eli' && (
+   754→   754→                  <div className="flex items-center gap-1.5 mb-2">
+   755→   755→                    <span className="text-[10px] font-semibold text-[#8b5cf6]">ELI</span>
+   756→   756→                    <span className="text-[10px] text-[#9ba4c5]">
+   757→   757→                      {msg.timestamp.toLocaleTimeString('en-US', {
+   758→   758→                        hour: '2-digit',
+   759→   759→                        minute: '2-digit',
+   760→   760→                        hour12: true,
+   761→   761→                      })}
+   762→   762→                    </span>
+   763→   763→                  </div>
+   764→   764→                )}
+   765→   765→                <div className="text-[#f5f6ff]/90">
+   766→   766→                  {msg.role === 'eli' ? <EliMarkdown content={msg.content} /> : renderUserContent(msg.content)}
+   767→   767→                </div>
+   768→   768→                {msg.sources && msg.sources.length > 0 && (
+   769→   769→                  <div
+   770→   770→                    className="mt-3 pt-2 flex flex-wrap gap-1.5"
+   771→   771→                    style={{ borderTop: '1px solid #252a46' }}
+   772→   772→                  >
+   773→   773→                    {msg.sources.map((src, idx) => (
+   774→   774→                      <div
+   775→   775→                        key={idx}
+   776→   776→                        className="flex items-center gap-1 text-[10px] text-[#9ba4c5] hover:text-[#50d8ff] transition-colors cursor-default px-2 py-1 rounded-md"
+   777→   777→                        style={{ backgroundColor: '#12162a' }}
+   778→   778→                      >
+   779→   779→                        <ExternalLink className="w-2.5 h-2.5" />
+   780→   780→                        <span className="truncate max-w-[160px]">{src.title}</span>
+   781→   781→                      </div>
+   782→   782→                    ))}
+   783→   783→                  </div>
+   784→   784→                )}
+   785→   785→              </div>
+   786→   786→            </div>
+   787→   787→          ))}
+   788→   788→
+   789→   789→          {/* Typing indicator */}
+   790→   790→          {isLoading && (
+   791→   791→            <div className="flex justify-start animate-fadeIn">
+   792→   792→              <div
+   793→   793→                className="rounded-2xl rounded-tl-sm px-4 py-3"
+   794→   794→                style={{
+   795→   795→                  backgroundColor: '#0d1020',
+   796→   796→                  border: '1px solid #252a46',
+   797→   797→                }}
+   798→   798→              >
+   799→   799→                <div className="flex items-center gap-1.5">
+   800→   800→                  <span className="text-[10px] font-semibold text-[#8b5cf6] mr-1">ELI</span>
+   801→   801→                  <div
+   802→   802→                    className="w-1.5 h-1.5 rounded-full bg-[#8b5cf6] animate-bounce-dot"
+   803→   803→                    style={{ animationDelay: '0ms' }}
+   804→   804→                  />
+   805→   805→                  <div
+   806→   806→                    className="w-1.5 h-1.5 rounded-full bg-[#8b5cf6] animate-bounce-dot"
+   807→   807→                    style={{ animationDelay: '150ms' }}
+   808→   808→                  />
+   809→   809→                  <div
+   810→   810→                    className="w-1.5 h-1.5 rounded-full bg-[#8b5cf6] animate-bounce-dot"
+   811→   811→                    style={{ animationDelay: '300ms' }}
+   812→   812→                  />
+   813→   813→                </div>
+   814→   814→              </div>
+   815→   815→            </div>
+   816→   816→          )}
+   817→   817→          <div ref={messagesEndRef} />
+   818→   818→        </div>
+   819→   819→      </ScrollArea>
+   820→   820→
+   821→   821→      {/* Input Area */}
+   822→   822→      <div
+   823→   823→        className="flex-shrink-0 p-4 md:px-6"
+   824→   824→        style={{ borderTop: '1px solid #252a46' }}
+   825→   825→      >
+   826→   826→        <div
+   827→   827→          className="flex items-end gap-3 max-w-3xl mx-auto rounded-xl p-2 transition-all duration-200"
+   828→   828→          style={{
+   829→   829→            backgroundColor: '#12162a',
+   830→   830→            border: '1px solid #252a46',
+   831→   831→            boxShadow: '0 0 30px rgba(0,0,0,0.2)',
+   832→   832→          }}
+   833→   833→        >
+   834→   834→          <textarea
+   835→   835→            ref={textareaRef}
+   836→   836→            value={input}
+   837→   837→            onChange={handleTextareaChange}
+   838→   838→            onKeyDown={handleKeyDown}
+   839→   839→            placeholder="Ask Eli anything about growth..."
+   840→   840→            rows={1}
+   841→   841→            className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-[#f5f6ff] placeholder:text-[#9ba4c5]/50 py-2 px-2 min-h-[36px] max-h-[160px]"
+   842→   842→            style={{ scrollbarWidth: 'none' }}
+   843→   843→          />
+   844→   844→          <Button
+   845→   845→            size="icon"
+   846→   846→            disabled={!input.trim() || isLoading}
+   847→   847→            onClick={handleSend}
+   848→   848→            className="flex-shrink-0 w-9 h-9 rounded-lg transition-all duration-200"
+   849→   849→            style={{
+   850→   850→              background: input.trim() && !isLoading
+   851→   851→                ? 'linear-gradient(135deg, #8b5cf6, #6d4aff)'
+   852→   852→                : '#252a46',
+   853→   853→              boxShadow: input.trim() && !isLoading
+   854→   854→                ? '0 0 15px rgba(139,92,246,0.3)'
+   855→   855→                : 'none',
+   856→   856→              cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
+   857→   857→            }}
+   858→   858→          >
+   859→   859→            <Send className="w-4 h-4 text-[#f5f6ff]" />
+   860→   860→          </Button>
+   861→   861→        </div>
+   862→   862→        <div className="flex items-center justify-between mt-2 max-w-3xl mx-auto">
+   863→   863→          <span className="text-[10px] text-[#9ba4c5]/40">
+   864→   864→            Eli runs on Llama. Press Enter to send, Shift+Enter for new line.
+   865→   865→          </span>
+   866→   866→          <span className="text-[10px] text-[#36d399]/60 flex items-center gap-1">
+   867→   867→            <div className="w-1.5 h-1.5 rounded-full bg-[#36d399]" />
+   868→   868→            Llama Core Active
+   869→   869→          </span>
+   870→   870→        </div>
+   871→   871→      </div>
+   872→   872→    </div>
+   873→   873→  );
+   874→   874→}
+   875→   875→
+   876→   876→// ─── Knowledge View ─────────────────────────────────────────────
+   877→   877→function KnowledgeView() {
+   878→   878→  const [search, setSearch] = useState('');
+   879→   879→  const [stats, setStats] = useState<KnowledgeStats | null>(null);
+   880→   880→  const [loading, setLoading] = useState(true);
+   881→   881→
+   882→   882→  useEffect(() => {
+   883→   883→    fetch('/api/knowledge-stats')
+   884→   884→      .then((res) => res.json())
+   885→   885→      .then((data) => {
+   886→   886→        setStats(data);
+   887→   887→        setLoading(false);
+   888→   888→      })
+   889→   889→      .catch(() => setLoading(false));
+   890→   890→  }, []);
+   891→   891→
+   892→   892→  const categories = (stats?.categories || []).map((c) => ({
+   893→   893→    ...c,
+   894→   894→    ...(CATEGORY_META[c.key] || { emoji: '📄', label: c.key, color: '#9ba4c5' }),
+   895→   895→  }));
+   896→   896→
+   897→   897→  const filtered = categories.filter((c) =>
+   898→   898→    c.label.toLowerCase().includes(search.toLowerCase())
+   899→   899→  );
+   900→   900→
+   901→   901→  return (
+   902→   902→    <div className="animate-fadeIn space-y-6">
+   903→   903→      <div>
+   904→   904→        <h1 className="text-xl font-bold text-[#f5f6ff] mb-1">Knowledge Base</h1>
+   905→   905→        <p className="text-sm text-[#9ba4c5]">
+   906→   906→          {loading
+   907→   907→            ? 'Scanning knowledge files...'
+   908→   908→            : `${stats?.totalFiles || 0} files across ${stats?.totalCategories || 0} categories (${stats?.totalSizeMB || '0'} MB) powering Eli's intelligence.`
+   909→   909→          }
+   910→   910→        </p>
+   911→   911→      </div>
+   912→   912→
+   913→   913→      <div className="relative max-w-md">
+   914→   914→        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ba4c5]" />
+   915→   915→        <Input
+   916→   916→          value={search}
+   917→   917→          onChange={(e) => setSearch(e.target.value)}
+   918→   918→          placeholder="Search categories..."
+   919→   919→          className="pl-10"
+   920→   920→          style={{
+   921→   921→            backgroundColor: '#12162a',
+   922→   922→            border: '1px solid #252a46',
+   923→   923→            color: '#f5f6ff',
+   924→   924→          }}
+   925→   925→        />
+   926→   926→      </div>
+   927→   927→
+   928→   928→      {loading ? (
+   929→   929→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+   930→   930→          {Array.from({ length: 8 }).map((_, i) => (
+   931→   931→            <div
+   932→   932→              key={i}
+   933→   933→              className="rounded-xl p-4 animate-pulse"
+   934→   934→              style={{ backgroundColor: '#0d1020', border: '1px solid #252a46' }}
+   935→   935→            >
+   936→   936→              <div className="h-5 w-8 bg-[#252a46] rounded mb-3" />
+   937→   937→              <div className="h-4 w-24 bg-[#252a46] rounded" />
+   938→   938→            </div>
+   939→   939→          ))}
+   940→   940→        </div>
+   941→   941→      ) : (
+   942→   942→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+   943→   943→          {filtered.map((cat, i) => (
+   944→   944→            <div
+   945→   945→              key={cat.key}
+   946→   946→              className="animate-slideUp rounded-xl p-4 transition-all duration-200 cursor-default hover:-translate-y-0.5 group"
+   947→   947→              style={{
+   948→   948→                animationDelay: `${i * 50}ms`,
+   949→   949→                backgroundColor: '#0d1020',
+   950→   950→                border: '1px solid #252a46',
+   951→   951→              }}
+   952→   952→              onMouseEnter={(e) => {
+   953→   953→                (e.currentTarget as HTMLElement).style.borderColor = cat.color + '40';
+   954→   954→                (e.currentTarget as HTMLElement).style.boxShadow = `0 0 20px ${cat.color}10`;
+   955→   955→              }}
+   956→   956→              onMouseLeave={(e) => {
+   957→   957→                (e.currentTarget as HTMLElement).style.borderColor = '#252a46';
+   958→   958→                (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+   959→   959→              }}
+   960→   960→            >
+   961→   961→              <div className="flex items-center justify-between mb-2">
+   962→   962→                <span className="text-lg">{cat.emoji}</span>
+   963→   963→                <Badge
+   964→   964→                  variant="secondary"
+   965→   965→                  className="text-[10px]"
+   966→   966→                  style={{
+   967→   967→                    backgroundColor: cat.color + '15',
+   968→   968→                    color: cat.color,
+   969→   969→                    border: `1px solid ${cat.color}30`,
+   970→   970→                  }}
+   971→   971→                >
+   972→   972→                  {cat.count}
+   973→   973→                </Badge>
+   974→   974→              </div>
+   975→   975→              <div className="text-sm text-[#f5f6ff] group-hover:text-[#50d8ff] transition-colors">
+   976→   976→                {cat.label}
+   977→   977→              </div>
+   978→   978→            </div>
+   979→   979→          ))}
+   980→   980→        </div>
+   981→   981→      )}
+   982→   982→
+   983→   983→      {!loading && filtered.length === 0 && (
+   984→   984→        <div className="text-center py-12 text-sm text-[#9ba4c5]">
+   985→   985→          No categories found matching &quot;{search}&quot;
+   986→   986→        </div>
+   987→   987→      )}
+   988→   988→    </div>
+   989→   989→  );
+   990→   990→}
+   991→   991→
+   992→   992→// ─── Placeholder View ───────────────────────────────────────────
+   993→   993→function PlaceholderView({
+   994→   994→  title,
+   995→   995→  description,
+   996→   996→  icon: Icon,
+   997→   997→}: {
+   998→   998→  title: string;
+   999→   999→  description: string;
+  1000→  1000→  icon: React.ElementType;
+  1001→  1001→}) {
+  1002→  1002→  return (
+  1003→  1003→    <div className="animate-fadeIn flex items-center justify-center h-full">
+  1004→  1004→      <div
+  1005→  1005→        className="text-center max-w-md rounded-2xl p-10"
+  1006→  1006→        style={{
+  1007→  1007→          backgroundColor: '#0d1020',
+  1008→  1008→          border: '1px solid #252a46',
+  1009→  1009→        }}
+  1010→  1010→      >
+  1011→  1011→        <div
+  1012→  1012→          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
+  1013→  1013→          style={{
+  1014→  1014→            background: 'linear-gradient(135deg, #8b5cf620, #6d4aff10)',
+  1015→  1015→            border: '1px solid #8b5cf620',
+  1016→  1016→          }}
+  1017→  1017→        >
+  1018→  1018→          <Icon className="w-7 h-7 text-[#8b5cf6]" />
+  1019→  1019→        </div>
+  1020→  1020→        <h2 className="text-lg font-semibold text-[#f5f6ff] mb-2">{title}</h2>
+  1021→  1021→        <p className="text-sm text-[#9ba4c5] mb-5 leading-relaxed">{description}</p>
+  1022→  1022→        <Badge
+  1023→  1023→          variant="secondary"
+  1024→  1024→          className="text-[11px] font-medium"
+  1025→  1025→          style={{
+  1026→  1026→            backgroundColor: '#8b5cf615',
+  1027→  1027→            color: '#8b5cf6',
+  1028→  1028→            border: '1px solid #8b5cf630',
+  1029→  1029→          }}
+  1030→  1030→        >
+  1031→  1031→          <Sparkles className="w-3 h-3 mr-1" />
+  1032→  1032→          Coming Soon
+  1033→  1033→        </Badge>
+  1034→  1034→      </div>
+  1035→  1035→    </div>
+  1036→  1036→  );
+  1037→  1037→}
+  1038→  1038→
+  1039→  1039→// ─── Main Page ──────────────────────────────────────────────────
+  1040→  1040→export default function Home() {
+  1041→  1041→  const [activeView, setActiveView] = useState<ViewId>('dashboard');
+  1042→  1042→  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  1043→  1043→  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  1044→  1044→
+  1045→  1045→  const renderView = () => {
+  1046→  1046→    switch (activeView) {
+  1047→  1047→      case 'dashboard':
+  1048→  1048→        return <DashboardView />;
+  1049→  1049→      case 'chat':
+  1050→  1050→        return <ChatView />;
+  1051→  1051→      case 'knowledge':
+  1052→  1052→        return <KnowledgeView />;
+  1053→  1053→      case 'leads':
+  1054→  1054→        return (
+  1055→  1055→          <PlaceholderView
+  1056→  1056→            icon={Users}
+  1057→  1057→            title="Lead Management"
+  1058→  1058→            description="Track, score, and nurture leads through your growth pipeline. AI-powered lead qualification and automated follow-ups coming soon."
+  1059→  1059→          />
+  1060→  1060→        );
+  1061→  1061→      case 'audits':
+  1062→  1062→        return (
+  1063→  1063→          <PlaceholderView
+  1064→  1064→            icon={Search}
+  1065→  1065→            title="SEO Audits"
+  1066→  1066→            description="Comprehensive site audits powered by Eli's knowledge of 157+ SEO resources. Technical SEO, content gaps, and competitive analysis."
+  1067→  1067→          />
+  1068→  1068→        );
+  1069→  1069→      case 'campaigns':
+  1070→  1070→        return (
+  1071→  1071→          <PlaceholderView
+  1072→  1072→            icon={Megaphone}
+  1073→  1073→            title="Campaign Manager"
+  1074→  1074→            description="Plan, execute, and track growth campaigns across channels. Content campaigns, email sequences, and social media automation."
+  1075→  1075→          />
+  1076→  1076→        );
+  1077→  1077→      case 'content':
+  1078→  1078→        return (
+  1079→  1079→          <PlaceholderView
+  1080→  1080→            icon={FileText}
+  1081→  1081→            title="Content Engine"
+  1082→  1082→            description="AI-powered content creation, scheduling, and optimization. Blog posts, landing pages, social content, and more."
+  1083→  1083→          />
+  1084→  1084→        );
+  1085→  1085→      case 'rank':
+  1086→  1086→        return (
+  1087→  1087→          <PlaceholderView
+  1088→  1088→            icon={TrendingUp}
+  1089→  1089→            title="Rank Tracker"
+  1090→  1090→            description="Monitor keyword rankings, track SERP positions, and get alerts on ranking changes. Integrated with Eli's SEO intelligence."
+  1091→  1091→          />
+  1092→  1092→        );
+  1093→  1093→      case 'integrations':
+  1094→  1094→        return (
+  1095→  1095→          <PlaceholderView
+  1096→  1096→            icon={Plug}
+  1097→  1097→            title="Integrations Hub"
+  1098→  1098→            description="Connect Eli OS to your existing tools. Google Analytics, Search Console, CMS platforms, CRMs, and automation services."
+  1099→  1099→          />
+  1100→  1100→        );
+  1101→  1101→      case 'workflows':
+  1102→  1102→        return (
+  1103→  1103→          <PlaceholderView
+  1104→  1104→            icon={Workflow}
+  1105→  1105→            title="Workflow Automation"
+  1106→  1106→            description="Design and deploy automated growth workflows. Trigger-based actions, multi-step sequences, and conditional logic."
+  1107→  1107→          />
+  1108→  1108→        );
+  1109→  1109→      case 'scrapers':
+  1110→  1110→        return (
+  1111→  1111→          <PlaceholderView
+  1112→  1112→            icon={Bug}
+  1113→  1113→            title="Web Scrapers"
+  1114→  1114→            description="Deploy and manage web scraping tasks. Extract data from competitors, directories, and public sources for growth intelligence."
+  1115→  1115→          />
+  1116→  1116→        );
+  1117→  1117→      case 'seo-skills':
+  1118→  1118→        return (
+  1119→  1119→          <PlaceholderView
+  1120→  1120→            icon={Wrench}
+  1121→  1121→            title="SEO Skill Registry"
+  1122→  1122→            description="Eli's specialized SEO skills and capabilities. Technical SEO, link building, content optimization, and local search expertise."
+  1123→  1123→          />
+  1124→  1124→        );
+  1125→  1125→      case 'vault':
+  1126→  1126→        return (
+  1127→  1127→          <PlaceholderView
+  1128→  1128→            icon={Shield}
+  1129→  1129→            title="Secure Vault"
+  1130→  1130→            description="Encrypted storage for sensitive business data, API keys, credentials, and confidential strategy documents."
+  1131→  1131→          />
+  1132→  1132→        );
+  1133→  1133→      case 'settings':
+  1134→  1134→        return (
+  1135→  1135→          <PlaceholderView
+  1136→  1136→            icon={Settings}
+  1137→  1137→            title="Settings"
+  1138→  1138→            description="Configure Eli OS preferences, notification settings, API connections, and system behavior."
+  1139→  1139→          />
+  1140→  1140→        );
+  1141→  1141→      default:
+  1142→  1142→        return <DashboardView />;
+  1143→  1143→    }
+  1144→  1144→  };
+  1145→  1145→
+  1146→  1146→  return (
+  1147→  1147→    <div className="h-screen flex flex-col overflow-hidden animate-fadeIn">
+  1148→  1148→      <Topbar onMenuClick={() => setMobileMenuOpen(true)} />
+  1149→  1149→
+  1150→  1150→      <div className="flex flex-1 overflow-hidden">
+  1151→  1151→        {/* Desktop Sidebar */}
+  1152→  1152→        <SidebarNav
+  1153→  1153→          activeView={activeView}
+  1154→  1154→          onViewChange={setActiveView}
+  1155→  1155→          collapsed={sidebarCollapsed}
+  1156→  1156→          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+  1157→  1157→        />
+  1158→  1158→
+  1159→  1159→        {/* Mobile Sidebar */}
+  1160→  1160→        <MobileSidebar
+  1161→  1161→          activeView={activeView}
+  1162→  1162→          onViewChange={setActiveView}
+  1163→  1163→          open={mobileMenuOpen}
+  1164→  1164→          onOpenChange={setMobileMenuOpen}
+  1165→  1165→        />
+  1166→  1166→
+  1167→  1167→        {/* Main Workspace */}
+  1168→  1168→        <main className="flex-1 overflow-hidden">
+  1169→  1169→          {activeView === 'chat' ? (
+  1170→  1170→            renderView()
+  1171→  1171→          ) : (
+  1172→  1172→            <ScrollArea className="h-full">
+  1173→  1173→              <div className="p-4 md:p-6 lg:p-8 max-w-6xl mx-auto">
+  1174→  1174→                {renderView()}
+  1175→  1175→              </div>
+  1176→  1176→            </ScrollArea>
+  1177→  1177→          )}
+  1178→  1178→        </main>
+  1179→  1179→      </div>
+  1180→  1180→    </div>
+  1181→  1181→  );
+  1182→  1182→}
+  1183→  1183→

@@ -97,53 +97,53 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const METRICS = [
-  { label: 'Active Leads', value: 12, icon: Users, color: '#50d8ff', glowClass: 'glow-cyan' },
-  { label: 'Audits Pending', value: 5, icon: Search, color: '#8b5cf6', glowClass: 'glow-purple' },
-  { label: 'Campaigns Running', value: 8, icon: Megaphone, color: '#36d399', glowClass: 'glow-green' },
-  { label: 'Waiting Approval', value: 4, icon: CheckSquare, color: '#ffbf69', glowClass: 'glow-amber' },
+  { label: 'Active Leads', value: 12, icon: Users, color: '#2563eb', glowClass: 'glow-cyan' },
+  { label: 'Audits Pending', value: 5, icon: Search, color: '#7c3aed', glowClass: 'glow-purple' },
+  { label: 'Campaigns Running', value: 8, icon: Megaphone, color: '#059669', glowClass: 'glow-green' },
+  { label: 'Waiting Approval', value: 4, icon: CheckSquare, color: '#d97706', glowClass: 'glow-amber' },
 ];
 
 const MISSIONS = [
-  { name: 'SEO Audit — VirtuaLab.com', status: 'In Progress', statusColor: '#50d8ff', priority: 'High', progress: 72 },
-  { name: 'Content Calendar — Q4 Strategy', status: 'Pending Review', statusColor: '#ffbf69', priority: 'Medium', progress: 45 },
-  { name: 'Backlink Outreach — Tier 1 Sites', status: 'Active', statusColor: '#36d399', priority: 'High', progress: 88 },
-  { name: 'Google Business Profile Optimization', status: 'Queued', statusColor: '#9ba4c5', priority: 'Low', progress: 12 },
+  { name: 'SEO Audit — VirtuaLab.com', status: 'In Progress', statusColor: '#2563eb', priority: 'High', progress: 72 },
+  { name: 'Content Calendar — Q4 Strategy', status: 'Pending Review', statusColor: '#d97706', priority: 'Medium', progress: 45 },
+  { name: 'Backlink Outreach — Tier 1 Sites', status: 'Active', statusColor: '#059669', priority: 'High', progress: 88 },
+  { name: 'Google Business Profile Optimization', status: 'Queued', statusColor: '#64748b', priority: 'Low', progress: 12 },
 ];
 
 const CATEGORY_META: Record<string, { emoji: string; label: string; color: string }> = {
-  'seo': { emoji: '🔍', label: 'SEO & Marketing', color: '#50d8ff' },
-  'codebase': { emoji: '💻', label: 'Code & Scraping', color: '#8b5cf6' },
-  'web-design': { emoji: '🎨', label: 'Web Design & UI', color: '#ff6b7a' },
-  'ai-agent': { emoji: '🤖', label: 'AI Agents & Tools', color: '#36d399' },
-  'saas': { emoji: '💰', label: 'SaaS & Business', color: '#ffbf69' },
-  'productivity': { emoji: '⚡', label: 'Productivity & Automation', color: '#50d8ff' },
-  'reference': { emoji: '📚', label: 'Reference & Research', color: '#8b5cf6' },
-  'brand': { emoji: '🏷️', label: 'VirtuaLab Brand', color: '#ff6b7a' },
-  'strategy': { emoji: '📋', label: 'Strategy & Planning', color: '#36d399' },
-  'analysis': { emoji: '📊', label: 'Design Analysis', color: '#ffbf69' },
-  'screenshot': { emoji: '📸', label: 'Screenshots', color: '#9ba4c5' },
-  'eli-core': { emoji: '🧠', label: 'Eli Core Identity', color: '#8b5cf6' },
-  'obsidian': { emoji: '📦', label: 'Obsidian Vault', color: '#50d8ff' },
-  'agent-eli': { emoji: '⚙️', label: 'Agent Eli v1 Architecture', color: '#36d399' },
-  'google-api': { emoji: '🔗', label: 'Google API Ecosystem', color: '#36d399' },
-  'crm-sales': { emoji: '📊', label: 'CRM & Sales Tools', color: '#50d8ff' },
-  'project-mgmt': { emoji: '📋', label: 'Project Management', color: '#8b5cf6' },
-  'copywriting-ai': { emoji: '✍️', label: 'Copywriting & AI Content', color: '#ff6b7a' },
-  'cloud-infra': { emoji: '☁️', label: 'Cloud & Infrastructure', color: '#ffbf69' },
-  'cybersecurity': { emoji: '🔒', label: 'Cybersecurity', color: '#ff6b7a' },
-  'design-uiux': { emoji: '🎨', label: 'Design & UI/UX Tools', color: '#50d8ff' },
-  'llm-ai': { emoji: '🤖', label: 'LLM & AI Frameworks', color: '#36d399' },
-  'vps-hosting': { emoji: '🖥️', label: 'VPS & Hosting', color: '#8b5cf6' },
-  'database': { emoji: '🗄️', label: 'Database Tools', color: '#ffbf69' },
-  'github-multi': { emoji: '📂', label: 'GitHub Multi-Topic Directory', color: '#9ba4c5' },
-  'notion-tools': { emoji: '📓', label: 'Notion & Knowledge Mgmt', color: '#50d8ff' },
-  'gohighlevel-agency': { emoji: '🏢', label: 'GoHighLevel & Agency', color: '#36d399' },
-  'automation-workflow': { emoji: '⚙️', label: 'Automation & Workflow', color: '#8b5cf6' },
-  'backlink-seo': { emoji: '🔗', label: 'Backlink & SEO', color: '#ff6b7a' },
-  'exec-assistant': { emoji: '🤵', label: 'Executive Assistant', color: '#50d8ff' },
-  'social-media': { emoji: '📱', label: 'Social Media Mgmt', color: '#36d399' },
-  'shopify-ecommerce': { emoji: '🛒', label: 'Shopify & E-Commerce', color: '#ffbf69' },
-  'github-batch4': { emoji: '📂', label: 'GitHub Batch 4 Directory', color: '#9ba4c5' },
+  'seo': { emoji: '🔍', label: 'SEO & Marketing', color: '#2563eb' },
+  'codebase': { emoji: '💻', label: 'Code & Scraping', color: '#7c3aed' },
+  'web-design': { emoji: '🎨', label: 'Web Design & UI', color: '#dc2626' },
+  'ai-agent': { emoji: '🤖', label: 'AI Agents & Tools', color: '#059669' },
+  'saas': { emoji: '💰', label: 'SaaS & Business', color: '#d97706' },
+  'productivity': { emoji: '⚡', label: 'Productivity & Automation', color: '#2563eb' },
+  'reference': { emoji: '📚', label: 'Reference & Research', color: '#7c3aed' },
+  'brand': { emoji: '🏷️', label: 'VirtuaLab Brand', color: '#dc2626' },
+  'strategy': { emoji: '📋', label: 'Strategy & Planning', color: '#059669' },
+  'analysis': { emoji: '📊', label: 'Design Analysis', color: '#d97706' },
+  'screenshot': { emoji: '📸', label: 'Screenshots', color: '#64748b' },
+  'eli-core': { emoji: '🧠', label: 'Eli Core Identity', color: '#7c3aed' },
+  'obsidian': { emoji: '📦', label: 'Obsidian Vault', color: '#2563eb' },
+  'agent-eli': { emoji: '⚙️', label: 'Agent Eli v1 Architecture', color: '#059669' },
+  'google-api': { emoji: '🔗', label: 'Google API Ecosystem', color: '#059669' },
+  'crm-sales': { emoji: '📊', label: 'CRM & Sales Tools', color: '#2563eb' },
+  'project-mgmt': { emoji: '📋', label: 'Project Management', color: '#7c3aed' },
+  'copywriting-ai': { emoji: '✍️', label: 'Copywriting & AI Content', color: '#dc2626' },
+  'cloud-infra': { emoji: '☁️', label: 'Cloud & Infrastructure', color: '#d97706' },
+  'cybersecurity': { emoji: '🔒', label: 'Cybersecurity', color: '#dc2626' },
+  'design-uiux': { emoji: '🎨', label: 'Design & UI/UX Tools', color: '#2563eb' },
+  'llm-ai': { emoji: '🤖', label: 'LLM & AI Frameworks', color: '#059669' },
+  'vps-hosting': { emoji: '🖥️', label: 'VPS & Hosting', color: '#7c3aed' },
+  'database': { emoji: '🗄️', label: 'Database Tools', color: '#d97706' },
+  'github-multi': { emoji: '📂', label: 'GitHub Multi-Topic Directory', color: '#64748b' },
+  'notion-tools': { emoji: '📓', label: 'Notion & Knowledge Mgmt', color: '#2563eb' },
+  'gohighlevel-agency': { emoji: '🏢', label: 'GoHighLevel & Agency', color: '#059669' },
+  'automation-workflow': { emoji: '⚙️', label: 'Automation & Workflow', color: '#7c3aed' },
+  'backlink-seo': { emoji: '🔗', label: 'Backlink & SEO', color: '#dc2626' },
+  'exec-assistant': { emoji: '🤵', label: 'Executive Assistant', color: '#2563eb' },
+  'social-media': { emoji: '📱', label: 'Social Media Mgmt', color: '#059669' },
+  'shopify-ecommerce': { emoji: '🛒', label: 'Shopify & E-Commerce', color: '#d97706' },
+  'github-batch4': { emoji: '📂', label: 'GitHub Batch 4 Directory', color: '#64748b' },
 };
 
 const ELI_WELCOME = `Hey there! I'm **Eli** — VirtuaLab's AI Growth Intelligence.
@@ -212,17 +212,17 @@ function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
     <header
       className="h-14 sticky top-0 z-50 flex items-center justify-between px-4 md:px-6"
       style={{
-        backgroundColor: 'rgba(13, 16, 32, 0.8)',
+        backgroundColor: 'rgba(255, 255, 255, 0.85)',
         backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid #252a46',
-        boxShadow: '0 1px 20px rgba(0,0,0,0.3), 0 0 40px rgba(139,92,246,0.03)',
+        borderBottom: '1px solid #e2e8f0',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
       }}
     >
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden text-[#9ba4c5] hover:text-[#f5f6ff] hover:bg-[#12162a]"
+          className="md:hidden text-[#64748b] hover:text-[#1e293b] hover:bg-[#f1f5f9]"
           onClick={onMenuClick}
         >
           <Menu className="w-5 h-5" />
@@ -231,27 +231,27 @@ function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
             style={{
-              background: 'linear-gradient(135deg, #8b5cf6, #6d4aff)',
-              boxShadow: '0 0 12px rgba(139,92,246,0.4)',
+              background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+              boxShadow: '0 2px 8px rgba(124,58,237,0.25)',
             }}
           >
             E
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-[#f5f6ff] text-sm">Eli OS</span>
-            <span className="text-[#252a46] hidden sm:inline">·</span>
-            <span className="text-[#9ba4c5] text-xs hidden sm:inline">Growth Command Center</span>
+            <span className="font-semibold text-[#1e293b] text-sm">Eli OS</span>
+            <span className="text-[#e2e8f0] hidden sm:inline">·</span>
+            <span className="text-[#64748b] text-xs hidden sm:inline">Growth Command Center</span>
           </div>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 text-xs text-[#9ba4c5]">
-          <div className="w-2 h-2 rounded-full bg-[#36d399] animate-pulse" />
+        <div className="flex items-center gap-2 text-xs text-[#64748b]">
+          <div className="w-2 h-2 rounded-full bg-[#059669] animate-pulse" />
           <span className="hidden sm:inline">Online</span>
         </div>
-        <Separator orientation="vertical" className="h-4 bg-[#252a46]" />
-        <div className="flex items-center gap-1.5 text-xs text-[#9ba4c5] font-mono">
+        <Separator orientation="vertical" className="h-4 bg-[#e2e8f0]" />
+        <div className="flex items-center gap-1.5 text-xs text-[#64748b] font-mono">
           <Clock className="w-3.5 h-3.5" />
           {time}
         </div>
@@ -284,8 +284,8 @@ function SidebarNav({
         collapsed ? 'w-16' : 'w-60'
       }`}
       style={{
-        backgroundColor: '#0d1020',
-        borderRight: '1px solid #252a46',
+        backgroundColor: '#1e1b4b',
+        borderRight: '1px solid #312e81',
       }}
     >
       <div className="flex-1 overflow-y-auto py-4 px-2">
@@ -294,11 +294,11 @@ function SidebarNav({
           return (
             <div key={group.key} className="mb-4">
               {!collapsed && (
-                <div className="px-3 mb-2 text-[10px] font-semibold tracking-[0.15em] text-[#9ba4c5] opacity-60">
+                <div className="px-3 mb-2 text-[10px] font-semibold tracking-[0.15em] text-[#c4b5fd]">
                   {group.label}
                 </div>
               )}
-              {collapsed && <div className="my-2" style={{ borderTop: '1px solid #252a46' }} />}
+              {collapsed && <div className="my-2" style={{ borderTop: '1px solid #312e81' }} />}
               {items.map((item) => {
                 const isActive = activeView === item.id;
                 const Icon = item.icon;
@@ -310,18 +310,18 @@ function SidebarNav({
                           onClick={() => onViewChange(item.id)}
                           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 group relative ${
                             isActive
-                              ? 'bg-[#8b5cf6]/10 text-[#8b5cf6]'
-                              : 'text-[#9ba4c5] hover:bg-[#12162a] hover:text-[#f5f6ff]'
+                              ? 'bg-[rgba(167,139,250,0.15)] text-[#a78bfa]'
+                              : 'text-[#c4b5fd] hover:bg-[rgba(49,46,129,0.5)] hover:text-[#e0e7ff]'
                           }`}
                           style={{
                             ...(isActive && !collapsed
-                              ? { borderLeft: '2px solid #8b5cf6', marginLeft: '-2px' }
+                              ? { borderLeft: '2px solid #a78bfa', marginLeft: '-2px' }
                               : {}),
                           }}
                         >
                           <Icon
                             className={`w-4.5 h-4.5 flex-shrink-0 transition-colors ${
-                              isActive ? 'text-[#8b5cf6]' : 'text-[#9ba4c5] group-hover:text-[#f5f6ff]'
+                              isActive ? 'text-[#a78bfa]' : 'text-[#c4b5fd] group-hover:text-[#e0e7ff]'
                             }`}
                           />
                           {!collapsed && <span>{item.label}</span>}
@@ -329,7 +329,7 @@ function SidebarNav({
                             <div
                               className="absolute inset-0 rounded-lg pointer-events-none"
                               style={{
-                                boxShadow: 'inset 0 0 12px rgba(139,92,246,0.06)',
+                                boxShadow: 'inset 0 0 12px rgba(167,139,250,0.08)',
                               }}
                             />
                           )}
@@ -349,12 +349,12 @@ function SidebarNav({
         })}
       </div>
 
-      <div className="p-2" style={{ borderTop: '1px solid #252a46' }}>
+      <div className="p-2" style={{ borderTop: '1px solid #312e81' }}>
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggle}
-          className={`w-full text-[#9ba4c5] hover:text-[#f5f6ff] hover:bg-[#12162a] ${
+          className={`w-full text-[#c4b5fd] hover:text-[#e0e7ff] hover:bg-[rgba(49,46,129,0.5)] ${
             collapsed ? 'rotate-180' : ''
           } transition-transform duration-300`}
         >
@@ -388,24 +388,24 @@ function MobileSidebar({
       <SheetContent
         side="left"
         className="w-64 p-0"
-        style={{ backgroundColor: '#0d1020', borderRight: '1px solid #252a46' }}
+        style={{ backgroundColor: '#1e1b4b', borderRight: '1px solid #312e81' }}
       >
         <SheetTitle className="sr-only">Navigation</SheetTitle>
         <div className="pt-6 px-3 pb-4">
           <div className="flex items-center gap-3 px-3 mb-6">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm"
-              style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d4aff)' }}
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
             >
               E
             </div>
-            <span className="font-semibold text-[#f5f6ff] text-sm">Eli OS</span>
+            <span className="font-semibold text-[#e0e7ff] text-sm">Eli OS</span>
           </div>
           {groups.map((group) => {
             const items = NAV_ITEMS.filter((n) => n.group === group.key);
             return (
               <div key={group.key} className="mb-4">
-                <div className="px-3 mb-2 text-[10px] font-semibold tracking-[0.15em] text-[#9ba4c5] opacity-60">
+                <div className="px-3 mb-2 text-[10px] font-semibold tracking-[0.15em] text-[#c4b5fd]">
                   {group.label}
                 </div>
                 {items.map((item) => {
@@ -420,16 +420,16 @@ function MobileSidebar({
                       }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
                         isActive
-                          ? 'bg-[#8b5cf6]/10 text-[#8b5cf6]'
-                          : 'text-[#9ba4c5] hover:bg-[#12162a] hover:text-[#f5f6ff]'
+                          ? 'bg-[rgba(167,139,250,0.15)] text-[#a78bfa]'
+                          : 'text-[#c4b5fd] hover:bg-[rgba(49,46,129,0.5)] hover:text-[#e0e7ff]'
                       }`}
                       style={{
                         ...(isActive
-                          ? { borderLeft: '2px solid #8b5cf6', marginLeft: '-2px' }
+                          ? { borderLeft: '2px solid #a78bfa', marginLeft: '-2px' }
                           : {}),
                       }}
                     >
-                      <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${isActive ? 'text-[#8b5cf6]' : ''}`} />
+                      <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${isActive ? 'text-[#a78bfa]' : ''}`} />
                       <span>{item.label}</span>
                     </button>
                   );
@@ -456,10 +456,10 @@ function DashboardView() {
     <div className="animate-fadeIn space-y-6">
       {/* Greeting */}
       <div>
-        <h1 className="text-xl font-bold text-[#f5f6ff] mb-1">
+        <h1 className="text-xl font-bold text-[#1e293b] mb-1">
           Welcome back, Operator
         </h1>
-        <p className="text-sm text-[#9ba4c5]">
+        <p className="text-sm text-[#64748b]">
           Here's your growth intelligence overview for today.
         </p>
       </div>
@@ -475,14 +475,14 @@ function DashboardView() {
               className={`animate-slideUp rounded-xl p-5 transition-all duration-300 cursor-default group hover:-translate-y-0.5 ${metric.glowClass}`}
               style={{
                 animationDelay: `${i * 100}ms`,
-                backgroundColor: '#0d1020',
-                border: '1px solid #252a46',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.borderColor = metric.color + '40';
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#252a46';
+                (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0';
               }}
             >
               <div className="flex items-start justify-between mb-3">
@@ -492,12 +492,12 @@ function DashboardView() {
                 >
                   <Icon className="w-5 h-5" style={{ color: metric.color }} />
                 </div>
-                <Zap className="w-3.5 h-3.5 text-[#9ba4c5] opacity-40 group-hover:opacity-70 transition-opacity" />
+                <Zap className="w-3.5 h-3.5 text-[#94a3b8] opacity-50 group-hover:opacity-80 transition-opacity" />
               </div>
-              <div className="text-2xl font-bold text-[#f5f6ff] animate-count-up" style={{ animationDelay: `${i * 100 + 200}ms` }}>
+              <div className="text-2xl font-bold text-[#1e293b] animate-count-up" style={{ animationDelay: `${i * 100 + 200}ms` }}>
                 {count}
               </div>
-              <div className="text-xs text-[#9ba4c5] mt-1">{metric.label}</div>
+              <div className="text-xs text-[#64748b] mt-1">{metric.label}</div>
             </div>
           );
         })}
@@ -507,35 +507,35 @@ function DashboardView() {
       <div
         className="rounded-xl overflow-hidden"
         style={{
-          backgroundColor: '#0d1020',
-          border: '1px solid #252a46',
+          backgroundColor: '#ffffff',
+          border: '1px solid #e2e8f0',
         }}
       >
-        <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #252a46' }}>
+        <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #e2e8f0' }}>
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#8b5cf6]" />
-            <h2 className="text-sm font-semibold text-[#f5f6ff]">Active Missions</h2>
+            <Sparkles className="w-4 h-4 text-[#7c3aed]" />
+            <h2 className="text-sm font-semibold text-[#1e293b]">Active Missions</h2>
           </div>
           <Badge
             variant="secondary"
             className="text-[10px] font-medium"
-            style={{ backgroundColor: '#8b5cf620', color: '#8b5cf6', border: '1px solid #8b5cf630' }}
+            style={{ backgroundColor: '#7c3aed10', color: '#7c3aed', border: '1px solid #7c3aed20' }}
           >
             {MISSIONS.length} active
           </Badge>
         </div>
-        <div className="divide-y" style={{ borderColor: '#252a46' }}>
+        <div className="divide-y" style={{ borderColor: '#e2e8f0' }}>
           {MISSIONS.map((mission, i) => (
             <div
               key={mission.name}
-              className="px-5 py-3.5 flex items-center gap-4 hover:bg-[#12162a]/50 transition-colors animate-slideUp"
+              className="px-5 py-3.5 flex items-center gap-4 hover:bg-[#f8fafc] transition-colors animate-slideUp"
               style={{
                 animationDelay: `${i * 80 + 400}ms`,
-                borderBottomColor: '#252a46',
+                borderBottomColor: '#e2e8f0',
               }}
             >
               <div className="flex-1 min-w-0">
-                <div className="text-sm text-[#f5f6ff] truncate">{mission.name}</div>
+                <div className="text-sm text-[#1e293b] truncate">{mission.name}</div>
               </div>
               <Badge
                 variant="secondary"
@@ -552,18 +552,18 @@ function DashboardView() {
                 variant="outline"
                 className="text-[10px] flex-shrink-0 hidden md:inline-flex"
                 style={{
-                  borderColor: '#252a46',
-                  color: mission.priority === 'High' ? '#ff6b7a' : mission.priority === 'Medium' ? '#ffbf69' : '#9ba4c5',
+                  borderColor: '#e2e8f0',
+                  color: mission.priority === 'High' ? '#dc2626' : mission.priority === 'Medium' ? '#d97706' : '#64748b',
                 }}
               >
                 {mission.priority}
               </Badge>
               <div className="w-24 flex-shrink-0 hidden sm:block">
-                <div className="flex items-center justify-between text-[10px] text-[#9ba4c5] mb-1">
+                <div className="flex items-center justify-between text-[10px] text-[#64748b] mb-1">
                   <span>Progress</span>
                   <span>{mission.progress}%</span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: '#12162a' }}>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: '#f1f5f9' }}>
                   <div
                     className="h-full rounded-full transition-all duration-1000 ease-out"
                     style={{
@@ -702,21 +702,21 @@ function ChatView() {
       {/* Chat Header */}
       <div
         className="px-5 py-3 flex items-center gap-3 flex-shrink-0"
-        style={{ borderBottom: '1px solid #252a46' }}
+        style={{ borderBottom: '1px solid #e2e8f0' }}
       >
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
           style={{
-            background: 'linear-gradient(135deg, #8b5cf6, #6d4aff)',
-            boxShadow: '0 0 12px rgba(139,92,246,0.3)',
+            background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+            boxShadow: '0 0 12px rgba(124,58,237,0.2)',
           }}
         >
           E
         </div>
         <div>
-          <div className="text-sm font-semibold text-[#f5f6ff]">Eli</div>
-          <div className="text-[10px] text-[#36d399] flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#36d399]" />
+          <div className="text-sm font-semibold text-[#1e293b]">Eli</div>
+          <div className="text-[10px] text-[#059669] flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
             Growth Intelligence Online
           </div>
         </div>
@@ -736,24 +736,24 @@ function ChatView() {
                 className={`max-w-2xl px-4 py-3 text-sm leading-relaxed ${
                   msg.role === 'user'
                     ? 'rounded-2xl rounded-tr-sm text-white'
-                    : 'rounded-2xl rounded-tl-sm text-[#f5f6ff]'
+                    : 'rounded-2xl rounded-tl-sm text-[#1e293b]'
                 }`}
                 style={
                   msg.role === 'user'
                     ? {
-                        background: 'linear-gradient(135deg, #8b5cf6, #6d4aff)',
-                        boxShadow: '0 4px 15px rgba(139,92,246,0.25)',
+                        background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+                        boxShadow: '0 4px 15px rgba(124,58,237,0.15)',
                       }
                     : {
-                        backgroundColor: '#0d1020',
-                        border: '1px solid #252a46',
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e2e8f0',
                       }
                 }
               >
                 {msg.role === 'eli' && (
                   <div className="flex items-center gap-1.5 mb-2">
-                    <span className="text-[10px] font-semibold text-[#8b5cf6]">ELI</span>
-                    <span className="text-[10px] text-[#9ba4c5]">
+                    <span className="text-[10px] font-semibold text-[#7c3aed]">ELI</span>
+                    <span className="text-[10px] text-[#64748b]">
                       {msg.timestamp.toLocaleTimeString('en-US', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -762,19 +762,19 @@ function ChatView() {
                     </span>
                   </div>
                 )}
-                <div className="text-[#f5f6ff]/90">
+                <div className="text-[#1e293b]/90">
                   {msg.role === 'eli' ? <EliMarkdown content={msg.content} /> : renderUserContent(msg.content)}
                 </div>
                 {msg.sources && msg.sources.length > 0 && (
                   <div
                     className="mt-3 pt-2 flex flex-wrap gap-1.5"
-                    style={{ borderTop: '1px solid #252a46' }}
+                    style={{ borderTop: '1px solid #e2e8f0' }}
                   >
                     {msg.sources.map((src, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center gap-1 text-[10px] text-[#9ba4c5] hover:text-[#50d8ff] transition-colors cursor-default px-2 py-1 rounded-md"
-                        style={{ backgroundColor: '#12162a' }}
+                        className="flex items-center gap-1 text-[10px] text-[#64748b] hover:text-[#2563eb] transition-colors cursor-default px-2 py-1 rounded-md"
+                        style={{ backgroundColor: '#f1f5f9' }}
                       >
                         <ExternalLink className="w-2.5 h-2.5" />
                         <span className="truncate max-w-[160px]">{src.title}</span>
@@ -792,22 +792,22 @@ function ChatView() {
               <div
                 className="rounded-2xl rounded-tl-sm px-4 py-3"
                 style={{
-                  backgroundColor: '#0d1020',
-                  border: '1px solid #252a46',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
                 }}
               >
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-semibold text-[#8b5cf6] mr-1">ELI</span>
+                  <span className="text-[10px] font-semibold text-[#7c3aed] mr-1">ELI</span>
                   <div
-                    className="w-1.5 h-1.5 rounded-full bg-[#8b5cf6] animate-bounce-dot"
+                    className="w-1.5 h-1.5 rounded-full bg-[#7c3aed] animate-bounce-dot"
                     style={{ animationDelay: '0ms' }}
                   />
                   <div
-                    className="w-1.5 h-1.5 rounded-full bg-[#8b5cf6] animate-bounce-dot"
+                    className="w-1.5 h-1.5 rounded-full bg-[#7c3aed] animate-bounce-dot"
                     style={{ animationDelay: '150ms' }}
                   />
                   <div
-                    className="w-1.5 h-1.5 rounded-full bg-[#8b5cf6] animate-bounce-dot"
+                    className="w-1.5 h-1.5 rounded-full bg-[#7c3aed] animate-bounce-dot"
                     style={{ animationDelay: '300ms' }}
                   />
                 </div>
@@ -821,14 +821,14 @@ function ChatView() {
       {/* Input Area */}
       <div
         className="flex-shrink-0 p-4 md:px-6"
-        style={{ borderTop: '1px solid #252a46' }}
+        style={{ borderTop: '1px solid #e2e8f0' }}
       >
         <div
           className="flex items-end gap-3 max-w-3xl mx-auto rounded-xl p-2 transition-all duration-200"
           style={{
-            backgroundColor: '#12162a',
-            border: '1px solid #252a46',
-            boxShadow: '0 0 30px rgba(0,0,0,0.2)',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
           }}
         >
           <textarea
@@ -838,7 +838,7 @@ function ChatView() {
             onKeyDown={handleKeyDown}
             placeholder="Ask Eli anything about growth..."
             rows={1}
-            className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-[#f5f6ff] placeholder:text-[#9ba4c5]/50 py-2 px-2 min-h-[36px] max-h-[160px]"
+            className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-[#1e293b] placeholder:text-[#94a3b8] py-2 px-2 min-h-[36px] max-h-[160px]"
             style={{ scrollbarWidth: 'none' }}
           />
           <Button
@@ -848,23 +848,23 @@ function ChatView() {
             className="flex-shrink-0 w-9 h-9 rounded-lg transition-all duration-200"
             style={{
               background: input.trim() && !isLoading
-                ? 'linear-gradient(135deg, #8b5cf6, #6d4aff)'
-                : '#252a46',
+                ? 'linear-gradient(135deg, #7c3aed, #6d28d9)'
+                : '#e2e8f0',
               boxShadow: input.trim() && !isLoading
-                ? '0 0 15px rgba(139,92,246,0.3)'
+                ? '0 0 15px rgba(124,58,237,0.2)'
                 : 'none',
               cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
             }}
           >
-            <Send className="w-4 h-4 text-[#f5f6ff]" />
+            <Send className="w-4 h-4 text-[#ffffff]" />
           </Button>
         </div>
         <div className="flex items-center justify-between mt-2 max-w-3xl mx-auto">
-          <span className="text-[10px] text-[#9ba4c5]/40">
+          <span className="text-[10px] text-[#94a3b8]/70">
             Eli runs on Llama. Press Enter to send, Shift+Enter for new line.
           </span>
-          <span className="text-[10px] text-[#36d399]/60 flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#36d399]" />
+          <span className="text-[10px] text-[#059669]/80 flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
             Llama Core Active
           </span>
         </div>
@@ -891,7 +891,7 @@ function KnowledgeView() {
 
   const categories = (stats?.categories || []).map((c) => ({
     ...c,
-    ...(CATEGORY_META[c.key] || { emoji: '📄', label: c.key, color: '#9ba4c5' }),
+    ...(CATEGORY_META[c.key] || { emoji: '📄', label: c.key, color: '#64748b' }),
   }));
 
   const filtered = categories.filter((c) =>
@@ -901,8 +901,8 @@ function KnowledgeView() {
   return (
     <div className="animate-fadeIn space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-[#f5f6ff] mb-1">Knowledge Base</h1>
-        <p className="text-sm text-[#9ba4c5]">
+        <h1 className="text-xl font-bold text-[#1e293b] mb-1">Knowledge Base</h1>
+        <p className="text-sm text-[#64748b]">
           {loading
             ? 'Scanning knowledge files...'
             : `${stats?.totalFiles || 0} files across ${stats?.totalCategories || 0} categories (${stats?.totalSizeMB || '0'} MB) powering Eli's intelligence.`
@@ -911,16 +911,16 @@ function KnowledgeView() {
       </div>
 
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ba4c5]" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search categories..."
           className="pl-10"
           style={{
-            backgroundColor: '#12162a',
-            border: '1px solid #252a46',
-            color: '#f5f6ff',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            color: '#1e293b',
           }}
         />
       </div>
@@ -931,10 +931,10 @@ function KnowledgeView() {
             <div
               key={i}
               className="rounded-xl p-4 animate-pulse"
-              style={{ backgroundColor: '#0d1020', border: '1px solid #252a46' }}
+              style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0' }}
             >
-              <div className="h-5 w-8 bg-[#252a46] rounded mb-3" />
-              <div className="h-4 w-24 bg-[#252a46] rounded" />
+              <div className="h-5 w-8 bg-[#e2e8f0] rounded mb-3" />
+              <div className="h-4 w-24 bg-[#e2e8f0] rounded" />
             </div>
           ))}
         </div>
@@ -946,15 +946,15 @@ function KnowledgeView() {
               className="animate-slideUp rounded-xl p-4 transition-all duration-200 cursor-default hover:-translate-y-0.5 group"
               style={{
                 animationDelay: `${i * 50}ms`,
-                backgroundColor: '#0d1020',
-                border: '1px solid #252a46',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.borderColor = cat.color + '40';
                 (e.currentTarget as HTMLElement).style.boxShadow = `0 0 20px ${cat.color}10`;
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#252a46';
+                (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0';
                 (e.currentTarget as HTMLElement).style.boxShadow = 'none';
               }}
             >
@@ -972,7 +972,7 @@ function KnowledgeView() {
                   {cat.count}
                 </Badge>
               </div>
-              <div className="text-sm text-[#f5f6ff] group-hover:text-[#50d8ff] transition-colors">
+              <div className="text-sm text-[#1e293b] group-hover:text-[#7c3aed] transition-colors">
                 {cat.label}
               </div>
             </div>
@@ -981,7 +981,7 @@ function KnowledgeView() {
       )}
 
       {!loading && filtered.length === 0 && (
-        <div className="text-center py-12 text-sm text-[#9ba4c5]">
+        <div className="text-center py-12 text-sm text-[#64748b]">
           No categories found matching &quot;{search}&quot;
         </div>
       )}
@@ -1004,28 +1004,28 @@ function PlaceholderView({
       <div
         className="text-center max-w-md rounded-2xl p-10"
         style={{
-          backgroundColor: '#0d1020',
-          border: '1px solid #252a46',
+          backgroundColor: '#ffffff',
+          border: '1px solid #e2e8f0',
         }}
       >
         <div
           className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
           style={{
-            background: 'linear-gradient(135deg, #8b5cf620, #6d4aff10)',
-            border: '1px solid #8b5cf620',
+            background: 'linear-gradient(135deg, rgba(124,58,237,0.08), rgba(124,58,237,0.04))',
+            border: '1px solid rgba(124,58,237,0.12)',
           }}
         >
-          <Icon className="w-7 h-7 text-[#8b5cf6]" />
+          <Icon className="w-7 h-7 text-[#7c3aed]" />
         </div>
-        <h2 className="text-lg font-semibold text-[#f5f6ff] mb-2">{title}</h2>
-        <p className="text-sm text-[#9ba4c5] mb-5 leading-relaxed">{description}</p>
+        <h2 className="text-lg font-semibold text-[#1e293b] mb-2">{title}</h2>
+        <p className="text-sm text-[#64748b] mb-5 leading-relaxed">{description}</p>
         <Badge
           variant="secondary"
           className="text-[11px] font-medium"
           style={{
-            backgroundColor: '#8b5cf615',
-            color: '#8b5cf6',
-            border: '1px solid #8b5cf630',
+            backgroundColor: 'rgba(124,58,237,0.08)',
+            color: '#7c3aed',
+            border: '1px solid rgba(124,58,237,0.15)',
           }}
         >
           <Sparkles className="w-3 h-3 mr-1" />

@@ -24,13 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${inter.variable} font-sans antialiased`}
-        style={{
-          backgroundColor: "#070912",
-          color: "#f5f6ff",
-        }}
-      >
+      <body className={`${inter.variable} font-sans antialiased bg-[#f8fafc] text-[#1e293b]`}>
         {children}
         <Toaster />
       </body>

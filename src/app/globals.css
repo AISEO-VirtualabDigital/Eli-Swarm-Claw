@@ -45,37 +45,37 @@
 
 :root {
   --radius: 0.625rem;
-  --background: #070912;
-  --foreground: #f5f6ff;
-  --card: #0d1020;
-  --card-foreground: #f5f6ff;
-  --popover: #0d1020;
-  --popover-foreground: #f5f6ff;
-  --primary: #8b5cf6;
-  --primary-foreground: #f5f6ff;
-  --secondary: #12162a;
-  --secondary-foreground: #f5f6ff;
-  --muted: #12162a;
-  --muted-foreground: #9ba4c5;
-  --accent: #50d8ff;
-  --accent-foreground: #070912;
-  --destructive: #ff6b7a;
-  --border: #252a46;
-  --input: #252a46;
-  --ring: #8b5cf6;
-  --chart-1: #8b5cf6;
-  --chart-2: #50d8ff;
-  --chart-3: #36d399;
-  --chart-4: #ffbf69;
-  --chart-5: #ff6b7a;
-  --sidebar: #0d1020;
-  --sidebar-foreground: #f5f6ff;
-  --sidebar-primary: #8b5cf6;
-  --sidebar-primary-foreground: #f5f6ff;
-  --sidebar-accent: #12162a;
-  --sidebar-accent-foreground: #f5f6ff;
-  --sidebar-border: #252a46;
-  --sidebar-ring: #8b5cf6;
+  --background: #f8fafc;
+  --foreground: #1e293b;
+  --card: #ffffff;
+  --card-foreground: #1e293b;
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #7c3aed;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #7c3aed;
+  --chart-1: #7c3aed;
+  --chart-2: #2563eb;
+  --chart-3: #059669;
+  --chart-4: #d97706;
+  --chart-5: #dc2626;
+  --sidebar: #1e1b4b;
+  --sidebar-foreground: #e0e7ff;
+  --sidebar-primary: #a78bfa;
+  --sidebar-primary-foreground: #1e1b4b;
+  --sidebar-accent: #312e81;
+  --sidebar-accent-foreground: #e0e7ff;
+  --sidebar-border: #312e81;
+  --sidebar-ring: #a78bfa;
 }
 
 html {
@@ -98,43 +98,43 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: #070912;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #252a46;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #8b5cf6;
+  background: #7c3aed;
 }
 
 /* Custom scrollbar - Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #252a46 #070912;
+  scrollbar-color: #cbd5e1 transparent;
 }
 
-/* Utility: glow effects */
+/* Utility: glow effects → subtle shadows for light theme */
 .glow-purple {
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15), 0 0 60px rgba(139, 92, 246, 0.05);
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.1), 0 4px 12px rgba(124, 58, 237, 0.08);
 }
 
 .glow-cyan {
-  box-shadow: 0 0 20px rgba(80, 216, 255, 0.15), 0 0 60px rgba(80, 216, 255, 0.05);
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.1), 0 4px 12px rgba(37, 99, 235, 0.08);
 }
 
 .glow-green {
-  box-shadow: 0 0 20px rgba(54, 211, 153, 0.15), 0 0 60px rgba(54, 211, 153, 0.05);
+  box-shadow: 0 1px 3px rgba(5, 150, 105, 0.1), 0 4px 12px rgba(5, 150, 105, 0.08);
 }
 
 .glow-amber {
-  box-shadow: 0 0 20px rgba(255, 191, 105, 0.15), 0 0 60px rgba(255, 191, 105, 0.05);
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.1), 0 4px 12px rgba(217, 119, 6, 0.08);
 }
 
 .glow-border {
-  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.3), 0 0 15px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.2), 0 2px 8px rgba(124, 58, 237, 0.06);
 }
 
 /* Animation keyframes */
@@ -156,10 +156,10 @@ html {
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 1px 3px rgba(124, 58, 237, 0.1);
   }
   50% {
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 2px 12px rgba(124, 58, 237, 0.2);
   }
 }
 
