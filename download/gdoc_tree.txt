@@ -1,0 +1,4 @@
+  File "<string>", line 1
+    import sys, json; d = json.load(sys.stdin); tree = d.get('data', {}).get('tree', {}); text_parts = []; def extract_text(node, depth=0): role = node.get('role', ''); name = node.get('name', ''); val = node.get('value', ''); if name and len(name) > 3 and role not in ('banner', 'toolbar', 'button', 'menuitem', 'separator', 'tab', 'tablist'): text_parts.append('  ' * depth + name); for child in node.get('children', []): extract_text(child, depth + 1); if tree: extract_text(tree); print('\n'.join(text_parts[:500]))
+                                                                                                           ^^^
+SyntaxError: invalid syntax

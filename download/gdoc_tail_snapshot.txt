@@ -1,0 +1,554 @@
+            - treeitem "Tab 25" [level=1, ref=e109]
+              - StaticText "Tab 25"
+        - generic
+          - generic [ref=e84] clickable [cursor:pointer]
+            - treeitem "Tab 26" [level=1, ref=e110]
+              - button "收合子標籤" [expanded=true, ref=e190]
+              - StaticText "Tab 26"
+          - group
+            - generic
+              - generic [ref=e145] clickable [cursor:pointer]
+                - treeitem "Tab 27" [level=2, ref=e191]
+                  - button "收合子標籤" [expanded=true, ref=e240]
+                  - StaticText "Tab 27"
+              - group
+                - generic
+                  - generic [ref=e212] clickable [cursor:pointer]
+                    - treeitem "Tab 28" [level=3, ref=e241]
+                      - StaticText "Tab 28"
+        - generic
+          - generic [ref=e85] clickable [cursor:pointer]
+            - treeitem "Tab 29" [level=1, ref=e111]
+              - StaticText "Tab 29"
+        - generic
+          - generic [ref=e86] clickable [cursor:pointer]
+            - treeitem "Industry Pages Growth" [level=1, ref=e112]
+              - StaticText "Industry Pages Growth"
+  - Iframe [ref=e2]
+    - textbox "文件內容" [ref=e242]: 
+    
+    
+    
+    VirtuaLab Digital the "SEO AI Scientist"  :Autonomous Intelligence Swarm Network.
+    
+    1. Deep Marketing Strategist (Baserow + n8n)
+    
+    This role analyzes the data to find the hidden patterns in the market.
+    
+    How to Build It:
+    
+    Create a market_analysis table in Baserow with:
+    
+    keyword (Text)
+    
+    search_volume (Number)
+    
+    competition_level (Single select: Low/Medium/High)
+    
+    trend_direction (Single select: Rising/Stable/Declining)
+    
+    data_source (Text)
+    
+    Build an n8n workflow that:
+    
+    Pulls keyword data from tools like Semrush/Google Trends (via API)
+    
+    Updates the Baserow table
+    
+    Triggers an alert if a high-volume, low-competition keyword is found
+    
+    Why It's Powerful: Instead of guessing what's working, this role shows you exactly where to focus based on real data.
+    
+    🎯 2. Positioning Strategist (n8n + SiteOne Crawler)
+    
+    This role finds your unique position in the market by analyzing competitors.
+    
+    How to Build It:
+    
+    Create a positioning_analysis table in Baserow with:
+    
+    competitor_url (Text)
+    
+    unique_selling_points (Text)
+    
+    content_gaps (Text)
+    
+    pricing_model (Text)
+    
+    strengths (Text)
+    
+    weaknesses (Text)
+    
+    Build an n8n workflow that:
+    
+    Uses SiteOne Crawler to analyze top competitors
+    
+    Extracts their USPs and content gaps
+    
+    Updates Baserow with findings
+    
+    Generates a "Positioning Opportunity" report
+    
+    Why It's Powerful: You'll know exactly what to emphasize that competitors aren't doing.
+    
+    🔍 3. Competitor Analysis Sentinel (CLI Proxy API + Baserow)
+    
+    This role constantly monitors competitors for changes.
+    
+    How to Build It:
+    
+    Create a competitor_monitoring table in Baserow with:
+    
+    competitor_url (Text)
+    
+    last_crawl_date (Date)
+    
+    content_changes (Text)
+    
+    ranking_shifts (Text)
+    
+    new_services (Text)
+    
+    Build an n8n workflow that:
+    
+    Runs SiteOne Crawler on competitor sites weekly
+    
+    Uses CLI Proxy API to analyze content changes
+    
+    Updates Baserow with changes
+    
+    Sends alert if a competitor launches something new
+    
+    Why It's Powerful: You'll know when competitors change their strategy before they even announce it.
+    
+    🤖 4. AI SEO Strategist (CLI Proxy API + n8n)
+    
+    This role optimizes content specifically for AI citations.
+    
+    How to Build It:
+    
+    Create an ai_citation_optimization table in Baserow with:
+    
+    page_url (Text)
+    
+    citation_readiness_score (Number 0-100)
+    
+    schema_health (Text)
+    
+    answer_first_formatting (Text)
+    
+    data_density (Text)
+    
+    Build an n8n workflow that:
+    
+    Uses CLI Proxy API to analyze how likely a page is to be cited
+    
+    Checks for proper schema and answer-first formatting
+    
+    Updates Baserow with optimization suggestions
+    
+    Generates a "Citation Readiness Report"
+    
+    Why It's Powerful: This role doesn't just optimize for search engines—it optimizes for AI systems that are replacing search engines.
+    
+    🌐 5. Parasite SEO Strategist (n8n + Baserow)
+    
+    This role builds authority on high-DA platforms.
+    
+    How to Build It:
+    
+    Create a parasite_seo table in Baserow with:
+    
+    platform (Text: Medium, Dev.to, LinkedIn)
+    
+    content_topic (Text)
+    
+    publish_date (Date)
+    
+    traffic_generated (Number)
+    
+    citation_opportunities (Text)
+    
+    Build an n8n workflow that:
+    
+    Publishes content to high-DA platforms
+    
+    Tracks traffic and citations
+    
+    Updates Baserow with results
+    
+    Generates a "Parasite SEO Performance Report"
+    
+    Why It's Powerful: This role builds your authority without relying solely on your own domain.
+    
+    🛡️ 6. Sentinel (Baserow + n8n)
+    
+    This is your "early warning system" that monitors everything.
+    
+    How to Build It:
+    
+    Create a sentinel_alerts table in Baserow with:
+    
+    alert_type (Text: Keyword Shift, Competitor Move, Citation Drop)
+    
+    severity (Single select: Critical/High/Medium/Low)
+    
+    description (Text)
+    
+    recommended_action (Text)
+    
+    timestamp (Date)
+    
+    Build an n8n workflow that:
+    
+    Monitors all other tables for anomalies
+    
+    Creates alerts when something significant happens
+    
+    Sends SMS/email alerts to your team
+    
+    Logs all alerts in Baserow
+    
+    Why It's Powerful: This role ensures you never miss a critical opportunity or threat.
+    
+    🚀 NEXT STEP: What should we build first?
+    
+    Pick one role to start with, and I'll give you:
+    
+    The exact Baserow table structure
+    
+    The n8n workflow JSON export
+    
+    The CLI Proxy API configuration needed
+    
+    Which role do you want to build first?
+    
+    Deep Marketing Strategist
+    
+    Positioning Strategist
+    
+    Competitor Analysis Sentinel
+    
+    AI SEO Strategist
+    
+    Parasite SEO Strategist
+    
+    Sentinel
+    
+    Let me know, and we'll make it happen today! 🔥
+    
+    
+    
+      - paragraph
+        - LineBreak "\n"
+      - paragraph
+        - LineBreak "\n"
+        - StaticText "VirtuaLab Digital the \"SEO AI Scientist\" :Autonomous Intelligence Swarm Network."
+      - separator
+      - heading "1. Deep Marketing Strategist (Baserow + n8n)" [level=3, ref=e243]
+      - paragraph
+        - StaticText "This role analyzes the data to find the hidden patterns in the market."
+      - paragraph
+        - StaticText "How to Build It:"
+      - list
+        - listitem [level=1]
+          - ListMarker "1. "
+          - StaticText "Create a market_analysis table in Baserow with:"
+        - list
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "keyword (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "search_volume (Number)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "competition_level (Single select: Low/Medium/High)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "trend_direction (Single select: Rising/Stable/Declining)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "data_source (Text)"
+        - listitem [level=1]
+          - ListMarker "2. "
+          - StaticText "Build an n8n workflow that:"
+        - list
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Pulls keyword data from tools like Semrush/Google Trends (via API)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Updates the Baserow table"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Triggers an alert if a high-volume, low-competition keyword is found"
+      - paragraph
+        - StaticText "Why It's Powerful: Instead of guessing what's working, this role shows you exactly where to focus based on real data."
+      - separator
+      - heading "🎯 2. Positioning Strategist (n8n + SiteOne Crawler)" [level=3, ref=e244]
+      - paragraph
+        - StaticText "This role finds your unique position in the market by analyzing competitors."
+      - paragraph
+        - StaticText "How to Build It:"
+      - list
+        - listitem [level=1]
+          - ListMarker "1. "
+          - StaticText "Create a positioning_analysis table in Baserow with:"
+        - list
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "competitor_url (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "unique_selling_points (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "content_gaps (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "pricing_model (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "strengths (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "weaknesses (Text)"
+        - listitem [level=1]
+          - ListMarker "2. "
+          - StaticText "Build an n8n workflow that:"
+        - list
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Uses SiteOne Crawler to analyze top competitors"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Extracts their USPs and content gaps"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Updates Baserow with findings"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Generates a \"Positioning Opportunity\" report"
+      - paragraph
+        - StaticText "Why It's Powerful: You'll know exactly what to emphasize that competitors aren't doing."
+      - separator
+      - heading "🔍 3. Competitor Analysis Sentinel (CLI Proxy API + Baserow)" [level=3, ref=e245]
+      - paragraph
+        - StaticText "This role constantly monitors competitors for changes."
+      - paragraph
+        - StaticText "How to Build It:"
+      - list
+        - listitem [level=1]
+          - ListMarker "1. "
+          - StaticText "Create a competitor_monitoring table in Baserow with:"
+        - list
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "competitor_url (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "last_crawl_date (Date)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "content_changes (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "ranking_shifts (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "new_services (Text)"
+        - listitem [level=1]
+          - ListMarker "2. "
+          - StaticText "Build an n8n workflow that:"
+        - list
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Runs SiteOne Crawler on competitor sites weekly"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Uses CLI Proxy API to analyze content changes"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Updates Baserow with changes"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Sends alert if a competitor launches something new"
+      - paragraph
+        - StaticText "Why It's Powerful: You'll know when competitors change their strategy before they even announce it."
+      - separator
+      - heading "🤖 4. AI SEO Strategist (CLI Proxy API + n8n)" [level=3, ref=e246]
+      - paragraph
+        - StaticText "This role optimizes content specifically for AI citations."
+      - paragraph
+        - StaticText "How to Build It:"
+      - list
+        - listitem [level=1]
+          - ListMarker "1. "
+          - StaticText "Create an ai_citation_optimization table in Baserow with:"
+        - list
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "page_url (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "citation_readiness_score (Number 0-100)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "schema_health (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "answer_first_formatting (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "data_density (Text)"
+        - listitem [level=1]
+          - ListMarker "2. "
+          - StaticText "Build an n8n workflow that:"
+        - list
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Uses CLI Proxy API to analyze how likely a page is to be cited"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Checks for proper schema and answer-first formatting"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Updates Baserow with optimization suggestions"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Generates a \"Citation Readiness Report\""
+      - paragraph
+        - StaticText "Why It's Powerful: This role doesn't just optimize for search engines—it optimizes for AI systems that are replacing search engines."
+      - separator
+      - heading "🌐 5. Parasite SEO Strategist (n8n + Baserow)" [level=3, ref=e247]
+      - paragraph
+        - StaticText "This role builds authority on high-DA platforms."
+      - paragraph
+        - StaticText "How to Build It:"
+      - list
+        - listitem [level=1]
+          - ListMarker "1. "
+          - StaticText "Create a parasite_seo table in Baserow with:"
+        - list
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "platform (Text: Medium, Dev.to, LinkedIn)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "content_topic (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "publish_date (Date)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "traffic_generated (Number)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "citation_opportunities (Text)"
+        - listitem [level=1]
+          - ListMarker "2. "
+          - StaticText "Build an n8n workflow that:"
+        - list
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Publishes content to high-DA platforms"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Tracks traffic and citations"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Updates Baserow with results"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Generates a \"Parasite SEO Performance Report\""
+      - paragraph
+        - StaticText "Why It's Powerful: This role builds your authority without relying solely on your own domain."
+      - separator
+      - heading "🛡️ 6. Sentinel (Baserow + n8n)" [level=3, ref=e248]
+      - paragraph
+        - StaticText "This is your \"early warning system\" that monitors everything."
+      - paragraph
+        - StaticText "How to Build It:"
+      - list
+        - listitem [level=1]
+          - ListMarker "1. "
+          - StaticText "Create a sentinel_alerts table in Baserow with:"
+        - list
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "alert_type (Text: Keyword Shift, Competitor Move, Citation Drop)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "severity (Single select: Critical/High/Medium/Low)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "description (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "recommended_action (Text)"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "timestamp (Date)"
+        - listitem [level=1]
+          - ListMarker "2. "
+          - StaticText "Build an n8n workflow that:"
+        - list
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Monitors all other tables for anomalies"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Creates alerts when something significant happens"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Sends SMS/email alerts to your team"
+          - listitem [level=2]
+            - ListMarker "◦ "
+            - StaticText "Logs all alerts in Baserow"
+      - paragraph
+        - StaticText "Why It's Powerful: This role ensures you never miss a critical opportunity or threat."
+      - separator
+      - heading "🚀 NEXT STEP: What should we build first?" [level=3, ref=e249]
+      - paragraph
+        - StaticText "Pick one role to start with, and I'll give you:"
+      - list
+        - listitem [level=1]
+          - ListMarker "1. "
+          - StaticText "The exact Baserow table structure"
+        - listitem [level=1]
+          - ListMarker "2. "
+          - StaticText "The n8n workflow JSON export"
+        - listitem [level=1]
+          - ListMarker "3. "
+          - StaticText "The CLI Proxy API configuration needed"
+      - paragraph
+        - StaticText "Which role do you want to build first?"
+      - list
+        - listitem [level=1]
+          - ListMarker "• "
+          - StaticText "Deep Marketing Strategist"
+        - listitem [level=1]
+          - ListMarker "• "
+          - StaticText "Positioning Strategist"
+        - listitem [level=1]
+          - ListMarker "• "
+          - StaticText "Competitor Analysis Sentinel"
+        - listitem [level=1]
+          - ListMarker "• "
+          - StaticText "AI SEO Strategist"
+        - listitem [level=1]
+          - ListMarker "• "
+          - StaticText "Parasite SEO Strategist"
+        - listitem [level=1]
+          - ListMarker "• "
+          - StaticText "Sentinel"
+      - paragraph
+        - StaticText "Let me know, and we'll make it happen today! 🔥"
+      - LineBreak "\n"
+    - group
+  - StaticText "已經隱藏咗橫額"
+  - generic
+    - StaticText "啟用咗螢幕閱讀器支援功能。"
+    - StaticText "顯示 75 個分頁，前三個分頁是「VirtuaLab Digital the \"SEO AI Scientist\" :Autono…」、「Tab 75」和「Proposed Home Page」"
+    - StaticText "在第 1 頁。"

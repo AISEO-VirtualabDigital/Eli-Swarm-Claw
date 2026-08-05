@@ -1,0 +1,184 @@
+文件首頁
+AISEO-VirtuaLab Digital Framework
+項目符號清單選單
+編號清單選單
+模式和檢視畫面
+內嵌懸浮動作按鈕
+文件分頁
+隱藏分頁同大綱
+新增分頁
+VirtuaLab Digital the \
+:Autono…
+收合子標籤
+Tab 75
+Proposed Home Page
+Tools to Offer As Free in Website
+The Local Marketing ROI Calculator Tool
+Local Proximity Visualizer Tool
+The Lead Prioritization Matrix Tool
+Tab 53
+Case Study Narative
+Tab 4
+Tab 5
+Tab 6
+Tab 7
+Photo Recomendation
+VirtuaLab Tools Repository
+All in One SEO Tools
+Semantic Writing
+Technical SEO
+sitemap Tool
+Conversion Tool
+Zero Code Jasper AI
+Autonomous Agent
+Off Page Foundation
+Youtube SEO
+Growth Campaign
+GHL & Pest Control
+AI Citation
+Month 2 Content
+Electrical
+Roofing Niche
+Month 3
+White Label Parasite SEO
+Soc Med Strat
+igh-Authority Parasite Article
+Google Discover
+Parasite SEO Web
+Insights
+Pulled Out Repo
+Parasite SEO Tool
+Soc Med Assets
+Tech SEO & Cloud Stacking
+Platform Optimizer
+Data Ingestion for Citation
+Global Footer JS
+Case Study
+Core Industry Pages Optimization
+Programmatic Hub Pag
+Programmatic Hub
+Core Service Pages Configuration
+Automation Page
+Tab 32
+Tab 33
+FInal Home Configuration
+Tab 9
+Technical Integration
+Internal Link Structure & Slugs
+Visibility Page Architecture
+Tab 13
+Convertion Page
+Tab 15
+Tab 16
+Tab 17
+Tab 18
+Tab 19
+Tab 20
+Tab 21
+Tab 22
+Tab 23
+Tab 24
+Tab 25
+Tab 26
+Tab 27
+Tab 28
+Tab 29
+Industry Pages Growth
+文件內容
+SEO AI Scientist
+Positioning Opportunity
+Citation Readiness Report
+Parasite SEO Performance Report
+early warning system
+:Autonomous Intelligence Swarm Network.
+1. Deep Marketing Strategist (Baserow + n8n)
+This role analyzes the data to find the hidden patterns in the market.
+How to Build It:
+Create a market_analysis table in Baserow with:
+keyword (Text)
+search_volume (Number)
+competition_level (Single select: Low/Medium/High)
+trend_direction (Single select: Rising/Stable/Declining)
+data_source (Text)
+Build an n8n workflow that:
+Pulls keyword data from tools like Semrush/Google Trends (via API)
+Updates the Baserow table
+Triggers an alert if a high-volume, low-competition keyword is found
+Why It's Powerful: Instead of guessing what's working, this role shows you exactly where to focus based on real data.
+🎯 2. Positioning Strategist (n8n + SiteOne Crawler)
+This role finds your unique position in the market by analyzing competitors.
+Create a positioning_analysis table in Baserow with:
+competitor_url (Text)
+unique_selling_points (Text)
+content_gaps (Text)
+pricing_model (Text)
+strengths (Text)
+weaknesses (Text)
+Uses SiteOne Crawler to analyze top competitors
+Extracts their USPs and content gaps
+Updates Baserow with findings
+Generates a \
+report
+Why It's Powerful: You'll know exactly what to emphasize that competitors aren't doing.
+🔍 3. Competitor Analysis Sentinel (CLI Proxy API + Baserow)
+This role constantly monitors competitors for changes.
+Create a competitor_monitoring table in Baserow with:
+last_crawl_date (Date)
+content_changes (Text)
+ranking_shifts (Text)
+new_services (Text)
+Runs SiteOne Crawler on competitor sites weekly
+Uses CLI Proxy API to analyze content changes
+Updates Baserow with changes
+Sends alert if a competitor launches something new
+Why It's Powerful: You'll know when competitors change their strategy before they even announce it.
+🤖 4. AI SEO Strategist (CLI Proxy API + n8n)
+This role optimizes content specifically for AI citations.
+Create an ai_citation_optimization table in Baserow with:
+page_url (Text)
+citation_readiness_score (Number 0-100)
+schema_health (Text)
+answer_first_formatting (Text)
+data_density (Text)
+Uses CLI Proxy API to analyze how likely a page is to be cited
+Checks for proper schema and answer-first formatting
+Updates Baserow with optimization suggestions
+Why It's Powerful: This role doesn't just optimize for search engines—it optimizes for AI systems that are replacing search engines.
+🌐 5. Parasite SEO Strategist (n8n + Baserow)
+This role builds authority on high-DA platforms.
+Create a parasite_seo table in Baserow with:
+platform (Text: Medium, Dev.to, LinkedIn)
+content_topic (Text)
+publish_date (Date)
+traffic_generated (Number)
+citation_opportunities (Text)
+Publishes content to high-DA platforms
+Tracks traffic and citations
+Updates Baserow with results
+Why It's Powerful: This role builds your authority without relying solely on your own domain.
+🛡️ 6. Sentinel (Baserow + n8n)
+This is your \
+that monitors everything.
+Create a sentinel_alerts table in Baserow with:
+severity (Single select: Critical/High/Medium/Low)
+description (Text)
+recommended_action (Text)
+timestamp (Date)
+Monitors all other tables for anomalies
+Creates alerts when something significant happens
+Sends SMS/email alerts to your team
+Logs all alerts in Baserow
+Why It's Powerful: This role ensures you never miss a critical opportunity or threat.
+🚀 NEXT STEP: What should we build first?
+Pick one role to start with, and I'll give you:
+The exact Baserow table structure
+The n8n workflow JSON export
+The CLI Proxy API configuration needed
+Which role do you want to build first?
+Deep Marketing Strategist
+Positioning Strategist
+Competitor Analysis Sentinel
+AI SEO Strategist
+Parasite SEO Strategist
+Sentinel
+Let me know, and we'll make it happen today! 🔥

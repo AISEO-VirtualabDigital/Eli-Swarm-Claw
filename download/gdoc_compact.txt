@@ -1,0 +1,444 @@
+- application
+  - banner "選單列" [ref=e1] focusable [tabindex]
+    - dialog "此文件的內容分成多個分頁"
+      - StaticText "此文件的內容分成多個分頁"
+      - button "關閉" [ref=e54]
+    - generic
+      - generic
+    - generic
+      - generic
+        - link "文件首頁" [ref=e6]
+          - image
+          - image
+        - generic
+          - generic "AISEO-VirtuaLab Digital Framework "
+            - generic
+              - StaticText "AISEO-VirtuaLab Digital Framework "
+            - button "文件狀態：已儲存至「雲端硬碟」。" [ref=e55]
+          - generic
+            - button "匿名鴨子" [ref=e111]
+              - generic [ref=e144] clickable [cursor:pointer]
+                - image "匿名鴨子"
+            - button "顯示所有留言" [ref=e47]
+            - generic
+              - button "共用。擁有連結的人。擁有連結的用戶皆可存取 (無需登入)。" [disabled, ref=e48]
+                - StaticText "共用"
+              - button "快速分享操作" [expanded=false, disabled, ref=e49]
+            - link "登入" [ref=e50]
+    - generic
+      - generic
+        - menubar [ref=e4] focusable [tabindex]
+          - menuitem "檔案" [expanded=false, ref=e7]
+          - menuitem "編輯" [expanded=false, ref=e8]
+          - menuitem "查看" [expanded=false, ref=e9]
+          - menuitem "插入" [expanded=false, ref=e10]
+          - menuitem "格式" [expanded=false, ref=e11]
+          - menuitem "工具" [expanded=false, ref=e12]
+          - menuitem "擴充功能" [expanded=false, ref=e13]
+          - menuitem "說明" [expanded=false, ref=e14]
+      - generic
+        - generic
+          - toolbar "搜尋選單 (Alt 鍵+/)" [ref=e15] focusable [tabindex]
+            - generic
+              - generic [ref=e51] clickable [cursor:pointer]
+              - combobox "選單" [ref=e52]
+          - toolbar "主機" [ref=e16] focusable [tabindex]
+            - button "復原 (Ctrl 鍵+Z)" [ref=e19]
+            - button "取消復原 (Ctrl 鍵+Y)" [ref=e20]
+            - button "列印 (Ctrl 鍵+P)" [ref=e21]
+            - button "拼字和文法檢查 (Ctrl 鍵+Alt 鍵+X)" [ref=e22]
+            - button "套用格式" [ref=e23]
+            - combobox "縮放" [expanded=false, ref=e24]
+              - generic
+                - textbox "縮放" [ref=e85]: 100%
+                  - StaticText "100%"
+            - separator [disabled]
+            - listbox "樣式" [ref=e25]
+              - generic
+                - option "樣式 清單；已選取 一般文字。" [selected, ref=e58]
+                  - StaticText "一般文字"
+            - separator [disabled]
+            - listbox "字型" [ref=e26]
+              - generic
+                - option "字型 清單；已選取 Arial。" [selected, ref=e59]
+                  - StaticText "Arial"
+            - separator [disabled]
+            - button "縮小字型 (Ctrl 鍵+Shift 鍵+逗號)" [ref=e27]
+            - combobox "字型大小" [expanded=false, ref=e28]
+              - textbox "字型大小" [ref=e86]: 12
+                - StaticText "12"
+            - button "放大字型 (Ctrl 鍵+Shift 鍵+英文句號)" [ref=e29]
+            - separator [disabled]
+            - button "粗體 (Ctrl 鍵+B)" [ref=e30]
+            - button "斜體 (Ctrl 鍵+I)" [ref=e31]
+            - button "劃線 (Ctrl 鍵+U)" [ref=e32]
+            - button "文字顏色" [expanded=false, ref=e33]
+            - button "反白顯示顏色" [expanded=false, ref=e34]
+            - separator [disabled]
+            - button "插入連結 (Ctrl 鍵+K)" [ref=e35]
+            - button "新增留言 (Ctrl 鍵+Alt 鍵+M)" [disabled, ref=e36]
+            - separator [disabled]
+            - button "對齊和縮排" [expanded=false, ref=e37]
+            - button "行距及段落間距" [expanded=false, ref=e38]
+            - button "檢查清單 (Ctrl 鍵+Shift 鍵+9)" [ref=e39]
+            - button "檢查清單選單" [expanded=false, ref=e40]
+            - button "項目符號 (Ctrl 鍵+Shift 鍵+8)" [ref=e41]
+            - button "項目符號清單選單" [expanded=false, ref=e42]
+            - button "編號清單 (Ctrl 鍵+Shift 鍵+7)" [ref=e43]
+            - button "編號清單選單" [expanded=false, ref=e44]
+            - button "更多" [disabled, ref=e45]
+        - toolbar "模式和檢視畫面" [ref=e5] focusable [tabindex]
+          - button "編輯模式" [expanded=false, ref=e17]
+            - generic
+              - generic
+                - StaticText "編輯中"
+          - separator [disabled]
+          - button "隱藏選單 (Ctrl 鍵+Shift 鍵+F)" [ref=e18]
+    - generic
+  - generic
+  - generic
+    - generic
+    - generic
+      - generic
+        - generic
+      - generic
+        - Canvas
+        - Canvas
+      - list
+    - generic
+    - image
+    - generic "文件分頁" [ref=e46] focusable [tabindex]
+      - button "隱藏分頁同大綱" [ref=e53]
+        - button "返回" [disabled, ref=e56]
+          - button "返回" [disabled, ref=e112]
+      - generic
+        - heading "文件分頁" [level=2, ref=e57]
+        - button "新增分頁" [ref=e60]
+      - tree "文件分頁"
+        - generic
+          - generic [ref=e61] clickable [cursor:pointer]
+            - treeitem "VirtuaLab Digital the \"SEO AI Scientist\" :Autono…" [level=1, selected, ref=e87]
+              - button "收合子標籤" [expanded=true, ref=e145]
+              - StaticText "VirtuaLab Digital the \"SEO AI Scientist\"  :Autono…"
+              - button "分頁選項" [expanded=false, ref=e113]
+          - group
+            - generic
+              - generic [ref=e114] clickable [cursor:pointer]
+                - treeitem "Tab 75" [level=2, ref=e146]
+                  - StaticText "Tab 75"
+        - generic
+          - generic [ref=e62] clickable [cursor:pointer]
+            - treeitem "Proposed Home Page" [level=1, ref=e88]
+              - button "收合子標籤" [expanded=true, ref=e147]
+              - StaticText "Proposed Home Page"
+          - group
+            - generic
+              - generic [ref=e115] clickable [cursor:pointer]
+                - treeitem "Tools to Offer As Free in Website" [level=2, ref=e148]
+                  - button "收合子標籤" [expanded=true, ref=e211]
+                  - StaticText "Tools to Offer As Free in Website"
+              - group
+                - generic
+                  - generic [ref=e190] clickable [cursor:pointer]
+                    - treeitem "The Local Marketing ROI Calculator Tool" [level=3, ref=e212]
+                - generic
+                  - generic [ref=e191] clickable [cursor:pointer]
+                    - treeitem "Local Proximity Visualizer Tool" [level=3, ref=e213]
+                - generic
+                  - generic [ref=e192] clickable [cursor:pointer]
+                    - treeitem "The Lead Prioritization Matrix Tool" [level=3, ref=e214]
+                - generic
+                  - generic [ref=e193] clickable [cursor:pointer]
+                    - treeitem "Tab 53" [level=3, ref=e215]
+            - generic
+              - generic [ref=e116] clickable [cursor:pointer]
+                - treeitem "Case Study Narative" [level=2, ref=e149]
+                  - button "收合子標籤" [expanded=true, ref=e216]
+                  - StaticText "Case Study Narative"
+              - group
+                - generic
+                  - generic [ref=e194] clickable [cursor:pointer]
+                    - treeitem "Tab 4" [level=3, ref=e217]
+                - generic
+                  - generic [ref=e195] clickable [cursor:pointer]
+                    - treeitem "Tab 5" [level=3, ref=e218]
+                - generic
+                  - generic [ref=e196] clickable [cursor:pointer]
+                    - treeitem "Tab 6" [level=3, ref=e219]
+                - generic
+                  - generic [ref=e197] clickable [cursor:pointer]
+                    - treeitem "Tab 7" [level=3, ref=e220]
+                - generic
+                  - generic [ref=e198] clickable [cursor:pointer]
+                    - treeitem "Photo Recomendation" [level=3, ref=e221]
+        - generic
+          - generic [ref=e63] clickable [cursor:pointer]
+            - treeitem "VirtuaLab Tools Repository" [level=1, ref=e89]
+              - button "收合子標籤" [expanded=true, ref=e150]
+              - StaticText "VirtuaLab Tools Repository"
+          - group
+            - generic
+              - generic [ref=e117] clickable [cursor:pointer]
+                - treeitem "All in One SEO Tools" [level=2, ref=e151]
+                  - StaticText "All in One SEO Tools"
+            - generic
+              - generic [ref=e118] clickable [cursor:pointer]
+                - treeitem "Semantic Writing" [level=2, ref=e152]
+                  - StaticText "Semantic Writing"
+            - generic
+              - generic [ref=e119] clickable [cursor:pointer]
+                - treeitem "Technical SEO" [level=2, ref=e153]
+                  - StaticText "Technical SEO"
+            - generic
+              - generic [ref=e120] clickable [cursor:pointer]
+                - treeitem "sitemap Tool" [level=2, ref=e154]
+                  - StaticText "sitemap Tool"
+            - generic
+              - generic [ref=e121] clickable [cursor:pointer]
+                - treeitem "Conversion Tool" [level=2, ref=e155]
+                  - StaticText "Conversion Tool"
+            - generic
+              - generic [ref=e122] clickable [cursor:pointer]
+                - treeitem "Zero Code Jasper AI" [level=2, ref=e156]
+                  - StaticText "Zero Code Jasper AI"
+            - generic
+              - generic [ref=e123] clickable [cursor:pointer]
+                - treeitem "Autonomous Agent" [level=2, ref=e157]
+                  - StaticText "Autonomous Agent"
+        - generic
+          - generic [ref=e64] clickable [cursor:pointer]
+            - treeitem "Off Page Foundation" [level=1, ref=e90]
+              - button "收合子標籤" [expanded=true, ref=e158]
+              - StaticText "Off Page Foundation"
+          - group
+            - generic
+              - generic [ref=e124] clickable [cursor:pointer]
+                - treeitem "Youtube SEO" [level=2, ref=e159]
+                  - StaticText "Youtube SEO"
+        - generic
+          - generic [ref=e65] clickable [cursor:pointer]
+            - treeitem "Growth Campaign" [level=1, ref=e91]
+              - button "收合子標籤" [expanded=true, ref=e160]
+              - StaticText "Growth Campaign"
+          - group
+            - generic
+              - generic [ref=e125] clickable [cursor:pointer]
+                - treeitem "GHL & Pest Control" [level=2, ref=e161]
+                  - StaticText "GHL & Pest Control"
+            - generic
+              - generic [ref=e126] clickable [cursor:pointer]
+                - treeitem "AI Citation" [level=2, ref=e162]
+                  - StaticText "AI Citation"
+            - generic
+              - generic [ref=e127] clickable [cursor:pointer]
+                - treeitem "Month 2 Content" [level=2, ref=e163]
+                  - StaticText "Month 2 Content"
+            - generic
+              - generic [ref=e128] clickable [cursor:pointer]
+                - treeitem "Electrical" [level=2, ref=e164]
+                  - StaticText "Electrical"
+            - generic
+              - generic [ref=e129] clickable [cursor:pointer]
+                - treeitem "Roofing Niche" [level=2, ref=e165]
+                  - StaticText "Roofing Niche"
+            - generic
+              - generic [ref=e130] clickable [cursor:pointer]
+                - treeitem "Month 3" [level=2, ref=e166]
+                  - StaticText "Month 3"
+        - generic
+          - generic [ref=e66] clickable [cursor:pointer]
+            - treeitem "White Label Parasite SEO" [level=1, ref=e92]
+              - button "收合子標籤" [expanded=true, ref=e167]
+              - StaticText "White Label Parasite SEO"
+          - group
+            - generic
+              - generic [ref=e131] clickable [cursor:pointer]
+                - treeitem "Soc Med Strat" [level=2, ref=e168]
+                  - button "收合子標籤" [expanded=true, ref=e222]
+                  - StaticText "Soc Med Strat"
+              - group
+                - generic
+                  - generic [ref=e199] clickable [cursor:pointer]
+                    - treeitem "igh-Authority Parasite Article" [level=3, ref=e223]
+                - generic
+                  - generic [ref=e200] clickable [cursor:pointer]
+                    - treeitem "Google Discover" [level=3, ref=e224]
+                - generic
+                  - generic [ref=e201] clickable [cursor:pointer]
+                    - treeitem "Parasite SEO Web" [level=3, ref=e225]
+                - generic
+                  - generic [ref=e202] clickable [cursor:pointer]
+                    - treeitem "Insights" [level=3, ref=e226]
+                - generic
+                  - generic [ref=e203] clickable [cursor:pointer]
+                    - treeitem "Pulled Out Repo" [level=3, ref=e227]
+            - generic
+              - generic [ref=e132] clickable [cursor:pointer]
+                - treeitem "Parasite SEO Tool" [level=2, ref=e169]
+                  - button "收合子標籤" [expanded=true, ref=e228]
+                  - StaticText "Parasite SEO Tool"
+              - group
+                - generic
+                  - generic [ref=e204] clickable [cursor:pointer]
+                    - treeitem "Soc Med Assets" [level=3, ref=e229]
+                - generic
+                  - generic [ref=e205] clickable [cursor:pointer]
+                    - treeitem "Tech SEO & Cloud Stacking" [level=3, ref=e230]
+            - generic
+              - generic [ref=e133] clickable [cursor:pointer]
+                - treeitem "Platform Optimizer" [level=2, ref=e170]
+                  - StaticText "Platform Optimizer"
+        - generic
+          - generic [ref=e67] clickable [cursor:pointer]
+            - treeitem "Data Ingestion for Citation" [level=1, ref=e93]
+              - button "收合子標籤" [expanded=true, ref=e171]
+              - StaticText "Data Ingestion for Citation"
+          - group
+            - generic
+              - generic [ref=e134] clickable [cursor:pointer]
+                - treeitem "Global Footer JS" [level=2, ref=e172]
+                  - StaticText "Global Footer JS"
+        - generic
+          - generic [ref=e68] clickable [cursor:pointer]
+            - treeitem "Case Study" [level=1, ref=e94]
+              - StaticText "Case Study"
+        - generic
+          - generic [ref=e69] clickable [cursor:pointer]
+            - treeitem "Core Industry Pages Optimization" [level=1, ref=e95]
+              - button "收合子標籤" [expanded=true, ref=e173]
+              - StaticText "Core Industry Pages Optimization"
+          - group
+            - generic
+              - generic [ref=e135] clickable [cursor:pointer]
+                - treeitem "Programmatic Hub Pag" [level=2, ref=e174]
+                  - StaticText "Programmatic Hub Pag"
+            - generic
+              - generic [ref=e136] clickable [cursor:pointer]
+                - treeitem "Programmatic Hub" [level=2, ref=e175]
+                  - StaticText "Programmatic Hub"
+        - generic
+          - generic [ref=e70] clickable [cursor:pointer]
+            - treeitem "Core Service Pages Configuration" [level=1, ref=e96]
+              - button "收合子標籤" [expanded=true, ref=e176]
+              - StaticText "Core Service Pages Configuration"
+          - group
+            - generic
+              - generic [ref=e137] clickable [cursor:pointer]
+                - treeitem "Automation Page" [level=2, ref=e177]
+                  - button "收合子標籤" [expanded=true, ref=e231]
+                  - StaticText "Automation Page"
+              - group
+                - generic
+                  - generic [ref=e206] clickable [cursor:pointer]
+                    - treeitem "Tab 32" [level=3, ref=e232]
+                - generic
+                  - generic [ref=e207] clickable [cursor:pointer]
+                    - treeitem "Tab 33" [level=3, ref=e233]
+        - generic
+          - generic [ref=e71] clickable [cursor:pointer]
+            - treeitem "FInal Home Configuration" [level=1, ref=e97]
+              - button "收合子標籤" [expanded=true, ref=e178]
+              - StaticText "FInal Home Configuration"
+          - group
+            - generic
+              - generic [ref=e138] clickable [cursor:pointer]
+                - treeitem "Tab 9" [level=2, ref=e179]
+                  - StaticText "Tab 9"
+        - generic
+          - generic [ref=e72] clickable [cursor:pointer]
+            - treeitem "Technical Integration" [level=1, ref=e98]
+              - StaticText "Technical Integration"
+        - generic
+          - generic [ref=e73] clickable [cursor:pointer]
+            - treeitem "Internal Link Structure & Slugs" [level=1, ref=e99]
+              - StaticText "Internal Link Structure & Slugs"
+        - generic
+          - generic [ref=e74] clickable [cursor:pointer]
+            - treeitem "Visibility Page Architecture" [level=1, ref=e100]
+              - button "收合子標籤" [expanded=true, ref=e180]
+              - StaticText "Visibility Page Architecture"
+          - group
+            - generic
+              - generic [ref=e139] clickable [cursor:pointer]
+                - treeitem "Tab 13" [level=2, ref=e181]
+                  - StaticText "Tab 13"
+        - generic
+          - generic [ref=e75] clickable [cursor:pointer]
+            - treeitem "Convertion Page" [level=1, ref=e101]
+              - button "收合子標籤" [expanded=true, ref=e182]
+              - StaticText "Convertion Page"
+          - group
+            - generic
+              - generic [ref=e140] clickable [cursor:pointer]
+                - treeitem "Tab 15" [level=2, ref=e183]
+                  - button "收合子標籤" [expanded=true, ref=e234]
+                  - StaticText "Tab 15"
+              - group
+                - generic
+                  - generic [ref=e208] clickable [cursor:pointer]
+                    - treeitem "Tab 16" [level=3, ref=e235]
+        - generic
+          - generic [ref=e76] clickable [cursor:pointer]
+            - treeitem "Tab 17" [level=1, ref=e102]
+              - StaticText "Tab 17"
+        - generic
+          - generic [ref=e77] clickable [cursor:pointer]
+            - treeitem "Tab 18" [level=1, ref=e103]
+              - button "收合子標籤" [expanded=true, ref=e184]
+              - StaticText "Tab 18"
+          - group
+            - generic
+              - generic [ref=e141] clickable [cursor:pointer]
+                - treeitem "Tab 19" [level=2, ref=e185]
+                  - StaticText "Tab 19"
+        - generic
+          - generic [ref=e78] clickable [cursor:pointer]
+            - treeitem "Tab 20" [level=1, ref=e104]
+              - StaticText "Tab 20"
+        - generic
+          - generic [ref=e79] clickable [cursor:pointer]
+            - treeitem "Tab 21" [level=1, ref=e105]
+              - StaticText "Tab 21"
+        - generic
+          - generic [ref=e80] clickable [cursor:pointer]
+            - treeitem "Tab 22" [level=1, ref=e106]
+              - button "收合子標籤" [expanded=true, ref=e186]
+              - StaticText "Tab 22"
+          - group
+            - generic
+              - generic [ref=e142] clickable [cursor:pointer]
+                - treeitem "Tab 23" [level=2, ref=e187]
+                  - button "收合子標籤" [expanded=true, ref=e236]
+                  - StaticText "Tab 23"
+              - group
+                - generic
+                  - generic [ref=e209] clickable [cursor:pointer]
+                    - treeitem "Tab 24" [level=3, ref=e237]
+        - generic
+          - generic [ref=e81] clickable [cursor:pointer]
+            - treeitem "Tab 25" [level=1, ref=e107]
+              - StaticText "Tab 25"
+        - generic
+          - generic [ref=e82] clickable [cursor:pointer]
+            - treeitem "Tab 26" [level=1, ref=e108]
+              - button "收合子標籤" [expanded=true, ref=e188]
+              - StaticText "Tab 26"
+          - group
+            - generic
+              - generic [ref=e143] clickable [cursor:pointer]
+                - treeitem "Tab 27" [level=2, ref=e189]
+                  - button "收合子標籤" [expanded=true, ref=e238]
+                  - StaticText "Tab 27"
+              - group
+                - generic
+                  - generic [ref=e210] clickable [cursor:pointer]
+                    - treeitem "Tab 28" [level=3, ref=e239]
+        - generic
+          - generic [ref=e83] clickable [cursor:pointer]
+            - treeitem "Tab 29" [level=1, ref=e109]
+        - generic
+          - generic [ref=e84] clickable [cursor:pointer]
+            - treeitem "Industry Pages Growth" [level=1, ref=e110]
+  - Iframe [ref=e2]
+    - textbox "文件內容" [ref=e240]
+  - link "開啟螢幕閱讀器支援功能" [ref=e3]
