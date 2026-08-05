@@ -91,6 +91,8 @@ function extractCategory(content: string, filename: string): string {
   if (lower.includes('fmhy') || lower.includes('virtuallab-strategy') || lower.includes('googleapis-repo') || lower.includes('google-research') || lower.includes('google-services-samples') || lower.includes('google-api-python-docs') || lower.includes('googleapis-nodejs') || lower.includes('low-level-design')) return 'reference';
   // --- Google API (client libs, workspace, maps, AI, auth, scraping) ---
   if (lower.includes('github-google-api-topic') || lower.includes('google-api-client-libraries') || lower.includes('google-workspace-api') || lower.includes('google-maps-places') || lower.includes('google-ai-gemini') || lower.includes('google-auth-oauth') || lower.includes('google-scraping-automation')) return 'google-api';
+  // --- SEO tools, frameworks, libraries ---
+  if (lower.includes('github-seo-tools') || lower.includes('awesome-seo') || lower.includes('claude-seo') || lower.includes('next-seo') || lower.includes('laravel-seo') || lower.includes('seo-tools-yoast') || lower.includes('image-seo')) return 'seo';
   // --- Eli identity, architecture, skills ---
   if (lower.includes('eli-core-identity') || lower.includes('eli-obsidian-agent-skills') || lower.includes('eli-obsidian-architecture') || lower.includes('eli-obsidian-manual-rewiring')) return 'eli-core';
   // --- Obsidian vault, importer, skill harness ---
@@ -191,7 +193,7 @@ export async function buildKnowledgeMap(): Promise<string> {
     byCategory[c.category].push({ title: c.title, source: c.source, url: c.url });
   }
 
-  const lines: string[] = ['ELI\'S KNOWLEDGE MAP (130+ sources across 14 categories):', ''];
+  const lines: string[] = ['ELI\'S KNOWLEDGE MAP (137+ sources across 14 categories):', ''];
   const categoryLabels: Record<string, string> = {
     'seo': '🔍 SEO & Marketing',
     'codebase': '💻 Code & Scraping',
