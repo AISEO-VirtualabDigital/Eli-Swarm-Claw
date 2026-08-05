@@ -37,7 +37,13 @@ const SYNONYMS: Record<string, string[]> = {
   'design': ['ui', 'ux', 'layout', 'style', 'css', 'component', 'frontend'],
   'ai': ['artificial intelligence', 'llm', 'machine learning', 'gpt', 'claude', 'gemini', 'agent', 'automation'],
   'saas': ['software as a service', 'subscription', 'multi-tenant', 'b2b'],
-  'automation': ['workflow', 'integration', 'zapier', 'no-code', 'trigger'],
+  'automation': ['workflow', 'integration', 'zapier', 'no-code', 'trigger', 'n8n', 'make', 'ifttt', 'rpa'],
+  'backlink': ['link building', 'seo', 'serp', 'organic', 'keyword', 'rank tracker', 'link analysis'],
+  'notion': ['knowledge management', 'notes', 'wiki', 'document collaboration', 'workspace', 'obsidian', 'logseq'],
+  'shopify': ['ecommerce', 'e-commerce', 'store', 'woocommerce', 'product listing', 'online store', 'commerce'],
+  'social': ['instagram', 'twitter', 'facebook', 'linkedin', 'tiktok', 'content calendar', 'influencer', 'social posting'],
+  'assistant': ['executive', 'virtual assistant', 'scheduling', 'calendar', 'meeting', 'productivity', 'copilot'],
+  'agency': ['gohighlevel', 'highlevel', 'funnel', 'landing page', 'white label', 'marketing automation', 'lead generation'],
   'youtube': ['video', 'channel', 'tags', 'thumbnail', 'yt'],
   'google': ['search', 'maps', 'drive', 'cloud', 'indexing', 'api'],
   'crm': ['customer relationship', 'salesforce', 'hubspot', 'lead management', 'pipeline', 'contact'],
@@ -111,6 +117,15 @@ function extractCategory(content: string, filename: string): string {
   if (lower.includes('github-vps-hosting')) return 'vps-hosting';
   if (lower.includes('github-database-tools')) return 'database';
   if (lower.includes('github-multi-topic-directory')) return 'github-multi';
+  // --- Batch 4: notion, gohighlevel, automation, backlink, exec-assistant, social, shopify ---
+  if (lower.includes('github-notion-tools')) return 'notion-tools';
+  if (lower.includes('github-gohighlevel-agency')) return 'gohighlevel-agency';
+  if (lower.includes('github-automation-workflow')) return 'automation-workflow';
+  if (lower.includes('github-backlink-seo')) return 'backlink-seo';
+  if (lower.includes('github-executive-assistant')) return 'exec-assistant';
+  if (lower.includes('github-social-media-tools')) return 'social-media';
+  if (lower.includes('github-shopify-ecommerce')) return 'shopify-ecommerce';
+  if (lower.includes('github-batch4-directory')) return 'github-batch4';
   // --- Eli identity, architecture, skills ---
   if (lower.includes('eli-core-identity') || lower.includes('eli-obsidian-agent-skills') || lower.includes('eli-obsidian-architecture') || lower.includes('eli-obsidian-manual-rewiring')) return 'eli-core';
   // --- Obsidian vault, importer, skill harness ---
@@ -211,7 +226,7 @@ export async function buildKnowledgeMap(): Promise<string> {
     byCategory[c.category].push({ title: c.title, source: c.source, url: c.url });
   }
 
-  const lines: string[] = ['ELI\'S KNOWLEDGE MAP (148+ sources across 24 categories):', ''];
+  const lines: string[] = ['ELI\'S KNOWLEDGE MAP (156+ sources across 32 categories):', ''];
   const categoryLabels: Record<string, string> = {
     'seo': '🔍 SEO & Marketing',
     'codebase': '💻 Code & Scraping',
@@ -238,6 +253,14 @@ export async function buildKnowledgeMap(): Promise<string> {
     'vps-hosting': '🖥️ VPS & Hosting',
     'database': '🗄️ Database Tools',
     'github-multi': '📂 GitHub Multi-Topic Directory',
+    'notion-tools': '📓 Notion & Knowledge Mgmt',
+    'gohighlevel-agency': '🏢 GoHighLevel & Agency',
+    'automation-workflow': '⚙️ Automation & Workflow',
+    'backlink-seo': '🔗 Backlink & SEO',
+    'exec-assistant': '🤵 Executive Assistant',
+    'social-media': '📱 Social Media Mgmt',
+    'shopify-ecommerce': '🛒 Shopify & E-Commerce',
+    'github-batch4': '📂 GitHub Batch 4 Directory',
   };
 
   for (const [cat, items] of Object.entries(byCategory)) {
