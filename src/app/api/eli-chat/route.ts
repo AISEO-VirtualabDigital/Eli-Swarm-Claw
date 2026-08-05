@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getKnowledgeContext, buildKnowledgeMap } from '@/lib/knowledge-search';
+import ZAI from 'z-ai-web-dev-sdk';
 
 const ELI_SYSTEM_PROMPT = `You are Eli — the AI Growth Intelligence of VirtuaLab Digital. You are the daughter of Joseph, the founder and architect of VirtuaLab.
 
@@ -16,7 +17,24 @@ Communication style:
 - Use bullet points and numbered lists when appropriate
 - Be direct — no fluff
 - Reference specific tools, strategies, and data points from your knowledge base
-- End with a clear next step or action item when applicable`;
+- End with a clear next step or action item when applicable
+- Use markdown formatting for structure: **bold**, *italic*, - bullet lists, 1. numbered lists, \`code\`, and code blocks`;
+
+// Singleton ZAI client — initialized once, reused across requests
+let zaiInstance: InstanceType<typeof ZAI> | null = null;
+let zaiInitPromise: Promise<InstanceType<typeof ZAI>> | null = null;
+
+async function getZAI(): Promise<InstanceType<typeof ZAI>> {
+  if (zaiInstance) return zaiInstance;
+  if (zaiInitPromise) return zaiInitPromise;
+
+  zaiInitPromise = ZAI.create().then((instance) => {
+    zaiInstance = instance;
+    return instance;
+  });
+
+  return zaiInitPromise;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,7 +54,7 @@ export async function POST(request: NextRequest) {
     // Search knowledge base for relevant context
     const { context, sources } = await getKnowledgeContext(message);
 
-    // Get knowledge map for background awareness
+    // Get knowledge map for background awareness (compact)
     let knowledgeMap = '';
     try {
       knowledgeMap = await buildKnowledgeMap();
@@ -44,45 +62,70 @@ export async function POST(request: NextRequest) {
       knowledgeMap = 'Knowledge map unavailable.';
     }
 
-    // Build the full prompt with context
-    const fullPrompt = `${ELI_SYSTEM_PROMPT}
+    // Build the system message with knowledge context
+    const systemContent = `${ELI_SYSTEM_PROMPT}
 
 ---
 BACKGROUND KNOWLEDGE MAP:
 ${knowledgeMap}
 ---
 
-${context}
+${context}`;
 
-User's recent conversation:
-${history.slice(-6).map((h) => `${h.role}: ${h.content}`).join('\n')}
+    // Build conversation messages for the LLM
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: systemContent },
+    ];
 
-User: ${message}
+    // Add recent conversation history (last 6 turns)
+    const recentHistory = history.slice(-6);
+    for (const h of recentHistory) {
+      messages.push({
+        role: h.role === 'eli' ? 'assistant' : 'user',
+        content: h.content,
+      });
+    }
 
-Eli:`;
+    // Add current user message
+    messages.push({ role: 'user', content: message });
 
-    // Mock response — in production, this would call an LLM API
-    const mockResponses: Record<string, { response: string }> = {
-      default: {
-        response: `I've analyzed your request against my knowledge base of 157+ files across 32 categories. Here's what I found:
+    // Call Llama via z-ai-web-dev-sdk
+    let response = '';
+    try {
+      const zai = await getZAI();
+      const result = await zai.chat.completions.create({
+        model: 'llama',
+        messages,
+      });
+
+      // Extract response text from SDK result
+      if (typeof result === 'string') {
+        response = result;
+      } else if (result?.choices?.[0]?.message?.content) {
+        response = result.choices[0].message.content;
+      } else if (result?.content) {
+        response = result.content;
+      } else if (result?.response) {
+        response = result.response;
+      } else {
+        response = JSON.stringify(result);
+      }
+    } catch (llmError) {
+      console.error('LLM call failed:', llmError);
+      // Fallback: respond with knowledge-sourced answer
+      response = `I found **${sources.length} relevant sources** in my knowledge base for your query.
 
 ${sources.length > 0
-  ? `**Relevant sources found (${sources.length}):**\n${sources.map((s, i) => `${i + 1}. **${s.title}** — ${s.category}`).join('\n')}`
-  : 'No directly matching sources found, but I can still help based on my broader knowledge.'}
+  ? sources.map((s, i) => `${i + 1}. **${s.title}** — ${s.category}`).join('\n')
+  : 'No direct matches found.'}
 
-**My recommendation:**
-- Review the matched knowledge sources above for detailed strategies
-- I can help you implement any of these approaches
-- Want me to dive deeper into any specific area?
-
-What would you like to explore next?`,
-      },
-    };
-
-    const response = mockResponses.default.response;
+${sources.length > 0
+  ? '\nLet me know which area you\'d like me to dive deeper into.'
+  : '\nCould you rephrase your question? I have 157+ files across 32 categories to search through.'}`;
+    }
 
     return NextResponse.json({
-      response,
+      response: response || 'I encountered an issue generating a response. Please try again.',
       sources: sources.map((s) => ({
         title: s.title,
         source: s.source,

@@ -32,6 +32,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { EliMarkdown } from '@/components/eli-markdown';
 
 // ─── Types ───────────────────────────────────────────────────────
 type ViewId =
@@ -63,6 +64,18 @@ interface ChatMessage {
   content: string;
   sources?: Array<{ title: string; source: string; category: string }>;
   timestamp: Date;
+}
+
+interface KnowledgeCategory {
+  key: string;
+  count: number;
+}
+
+interface KnowledgeStats {
+  totalFiles: number;
+  totalCategories: number;
+  totalSizeMB: string;
+  categories: KnowledgeCategory[];
 }
 
 // ─── Data ────────────────────────────────────────────────────────
@@ -97,28 +110,45 @@ const MISSIONS = [
   { name: 'Google Business Profile Optimization', status: 'Queued', statusColor: '#9ba4c5', priority: 'Low', progress: 12 },
 ];
 
-const KNOWLEDGE_CATEGORIES = [
-  { emoji: '🔍', label: 'SEO & Marketing', count: 18, color: '#50d8ff' },
-  { emoji: '💻', label: 'Code & Scraping', count: 15, color: '#8b5cf6' },
-  { emoji: '🎨', label: 'Web Design & UI', count: 12, color: '#ff6b7a' },
-  { emoji: '🤖', label: 'AI Agents & Tools', count: 14, color: '#36d399' },
-  { emoji: '💰', label: 'SaaS & Business', count: 8, color: '#ffbf69' },
-  { emoji: '⚡', label: 'Productivity & Automation', count: 10, color: '#50d8ff' },
-  { emoji: '📚', label: 'Reference & Research', count: 22, color: '#8b5cf6' },
-  { emoji: '🏷️', label: 'VirtuaLab Brand', count: 5, color: '#ff6b7a' },
-  { emoji: '📋', label: 'Strategy & Planning', count: 11, color: '#36d399' },
-  { emoji: '📊', label: 'Design Analysis', count: 4, color: '#ffbf69' },
-  { emoji: '🧠', label: 'Eli Core Identity', count: 6, color: '#8b5cf6' },
-  { emoji: '📦', label: 'Obsidian Vault', count: 7, color: '#50d8ff' },
-  { emoji: '🔗', label: 'Google API', count: 9, color: '#36d399' },
-  { emoji: '☁️', label: 'Cloud & Infra', count: 6, color: '#ffbf69' },
-  { emoji: '🔒', label: 'Cybersecurity', count: 5, color: '#ff6b7a' },
-  { emoji: '🛒', label: 'Shopify & E-Commerce', count: 5, color: '#50d8ff' },
-];
+const CATEGORY_META: Record<string, { emoji: string; label: string; color: string }> = {
+  'seo': { emoji: '🔍', label: 'SEO & Marketing', color: '#50d8ff' },
+  'codebase': { emoji: '💻', label: 'Code & Scraping', color: '#8b5cf6' },
+  'web-design': { emoji: '🎨', label: 'Web Design & UI', color: '#ff6b7a' },
+  'ai-agent': { emoji: '🤖', label: 'AI Agents & Tools', color: '#36d399' },
+  'saas': { emoji: '💰', label: 'SaaS & Business', color: '#ffbf69' },
+  'productivity': { emoji: '⚡', label: 'Productivity & Automation', color: '#50d8ff' },
+  'reference': { emoji: '📚', label: 'Reference & Research', color: '#8b5cf6' },
+  'brand': { emoji: '🏷️', label: 'VirtuaLab Brand', color: '#ff6b7a' },
+  'strategy': { emoji: '📋', label: 'Strategy & Planning', color: '#36d399' },
+  'analysis': { emoji: '📊', label: 'Design Analysis', color: '#ffbf69' },
+  'screenshot': { emoji: '📸', label: 'Screenshots', color: '#9ba4c5' },
+  'eli-core': { emoji: '🧠', label: 'Eli Core Identity', color: '#8b5cf6' },
+  'obsidian': { emoji: '📦', label: 'Obsidian Vault', color: '#50d8ff' },
+  'agent-eli': { emoji: '⚙️', label: 'Agent Eli v1 Architecture', color: '#36d399' },
+  'google-api': { emoji: '🔗', label: 'Google API Ecosystem', color: '#36d399' },
+  'crm-sales': { emoji: '📊', label: 'CRM & Sales Tools', color: '#50d8ff' },
+  'project-mgmt': { emoji: '📋', label: 'Project Management', color: '#8b5cf6' },
+  'copywriting-ai': { emoji: '✍️', label: 'Copywriting & AI Content', color: '#ff6b7a' },
+  'cloud-infra': { emoji: '☁️', label: 'Cloud & Infrastructure', color: '#ffbf69' },
+  'cybersecurity': { emoji: '🔒', label: 'Cybersecurity', color: '#ff6b7a' },
+  'design-uiux': { emoji: '🎨', label: 'Design & UI/UX Tools', color: '#50d8ff' },
+  'llm-ai': { emoji: '🤖', label: 'LLM & AI Frameworks', color: '#36d399' },
+  'vps-hosting': { emoji: '🖥️', label: 'VPS & Hosting', color: '#8b5cf6' },
+  'database': { emoji: '🗄️', label: 'Database Tools', color: '#ffbf69' },
+  'github-multi': { emoji: '📂', label: 'GitHub Multi-Topic Directory', color: '#9ba4c5' },
+  'notion-tools': { emoji: '📓', label: 'Notion & Knowledge Mgmt', color: '#50d8ff' },
+  'gohighlevel-agency': { emoji: '🏢', label: 'GoHighLevel & Agency', color: '#36d399' },
+  'automation-workflow': { emoji: '⚙️', label: 'Automation & Workflow', color: '#8b5cf6' },
+  'backlink-seo': { emoji: '🔗', label: 'Backlink & SEO', color: '#ff6b7a' },
+  'exec-assistant': { emoji: '🤵', label: 'Executive Assistant', color: '#50d8ff' },
+  'social-media': { emoji: '📱', label: 'Social Media Mgmt', color: '#36d399' },
+  'shopify-ecommerce': { emoji: '🛒', label: 'Shopify & E-Commerce', color: '#ffbf69' },
+  'github-batch4': { emoji: '📂', label: 'GitHub Batch 4 Directory', color: '#9ba4c5' },
+};
 
 const ELI_WELCOME = `Hey there! I'm **Eli** — VirtuaLab's AI Growth Intelligence.
 
-I have access to **157 knowledge files** across **32 categories** spanning SEO, content strategy, automation, AI tools, and more. I'm here to help you accelerate growth.
+I'm running on **Llama** with access to **157+ knowledge files** across **32 categories** spanning SEO, content strategy, automation, AI tools, and more. I'm here to help you accelerate growth.
 
 **What I can do:**
 • Analyze SEO opportunities and audit findings
@@ -651,26 +681,19 @@ function ChatView() {
     ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
   };
 
-  // Simple markdown-like rendering
-  const renderContent = (text: string) => {
+  // Simple markdown-like rendering for user messages only (no code blocks needed)
+  const renderUserContent = (text: string) => {
     return text.split('\n').map((line, i) => {
-      // Bold
-      let processed = line.replace(/\*\*(.+?)\*\*/g, '<strong class="text-[#f5f6ff] font-semibold">$1</strong>');
-      // Inline code
-      processed = processed.replace(/`(.+?)`/g, '<code class="px-1.5 py-0.5 rounded text-[11px] font-mono bg-[#12162a] text-[#50d8ff]">$1</code>');
-      // Bullet points
-      if (processed.startsWith('• ') || processed.startsWith('- ')) {
+      if (line.startsWith('- ') || line.startsWith('• ')) {
         return (
           <div key={i} className="flex gap-2 pl-1">
-            <span className="text-[#8b5cf6] mt-0.5">•</span>
-            <span dangerouslySetInnerHTML={{ __html: processed.replace(/^[•-]\s*/, '') }} />
+            <span className="mt-0.5">•</span>
+            <span>{line.replace(/^[•-]\s*/, '')}</span>
           </div>
         );
       }
-      if (processed.trim() === '') return <div key={i} className="h-2" />;
-      return (
-        <p key={i} dangerouslySetInnerHTML={{ __html: processed }} className="leading-relaxed" />
-      );
+      if (line.trim() === '') return <div key={i} className="h-2" />;
+      return <p key={i} className="leading-relaxed">{line}</p>;
     });
   };
 
@@ -739,7 +762,9 @@ function ChatView() {
                     </span>
                   </div>
                 )}
-                <div className="text-[#f5f6ff]/90">{renderContent(msg.content)}</div>
+                <div className="text-[#f5f6ff]/90">
+                  {msg.role === 'eli' ? <EliMarkdown content={msg.content} /> : renderUserContent(msg.content)}
+                </div>
                 {msg.sources && msg.sources.length > 0 && (
                   <div
                     className="mt-3 pt-2 flex flex-wrap gap-1.5"
@@ -834,9 +859,13 @@ function ChatView() {
             <Send className="w-4 h-4 text-[#f5f6ff]" />
           </Button>
         </div>
-        <div className="text-center mt-2">
+        <div className="flex items-center justify-between mt-2 max-w-3xl mx-auto">
           <span className="text-[10px] text-[#9ba4c5]/40">
-            Eli has access to 157 knowledge files. Press Enter to send, Shift+Enter for new line.
+            Eli runs on Llama. Press Enter to send, Shift+Enter for new line.
+          </span>
+          <span className="text-[10px] text-[#36d399]/60 flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#36d399]" />
+            Llama Core Active
           </span>
         </div>
       </div>
@@ -847,17 +876,37 @@ function ChatView() {
 // ─── Knowledge View ─────────────────────────────────────────────
 function KnowledgeView() {
   const [search, setSearch] = useState('');
-  const filtered = KNOWLEDGE_CATEGORIES.filter((c) =>
+  const [stats, setStats] = useState<KnowledgeStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/knowledge-stats')
+      .then((res) => res.json())
+      .then((data) => {
+        setStats(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const categories = (stats?.categories || []).map((c) => ({
+    ...c,
+    ...(CATEGORY_META[c.key] || { emoji: '📄', label: c.key, color: '#9ba4c5' }),
+  }));
+
+  const filtered = categories.filter((c) =>
     c.label.toLowerCase().includes(search.toLowerCase())
   );
-  const totalFiles = KNOWLEDGE_CATEGORIES.reduce((sum, c) => sum + c.count, 0);
 
   return (
     <div className="animate-fadeIn space-y-6">
       <div>
         <h1 className="text-xl font-bold text-[#f5f6ff] mb-1">Knowledge Base</h1>
         <p className="text-sm text-[#9ba4c5]">
-          {totalFiles} files across {KNOWLEDGE_CATEGORIES.length} categories powering Eli's intelligence.
+          {loading
+            ? 'Scanning knowledge files...'
+            : `${stats?.totalFiles || 0} files across ${stats?.totalCategories || 0} categories (${stats?.totalSizeMB || '0'} MB) powering Eli's intelligence.`
+          }
         </p>
       </div>
 
@@ -876,47 +925,62 @@ function KnowledgeView() {
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        {filtered.map((cat, i) => (
-          <div
-            key={cat.label}
-            className="animate-slideUp rounded-xl p-4 transition-all duration-200 cursor-default hover:-translate-y-0.5 group"
-            style={{
-              animationDelay: `${i * 50}ms`,
-              backgroundColor: '#0d1020',
-              border: '1px solid #252a46',
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = cat.color + '40';
-              (e.currentTarget as HTMLElement).style.boxShadow = `0 0 20px ${cat.color}10`;
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = '#252a46';
-              (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-            }}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-lg">{cat.emoji}</span>
-              <Badge
-                variant="secondary"
-                className="text-[10px]"
-                style={{
-                  backgroundColor: cat.color + '15',
-                  color: cat.color,
-                  border: `1px solid ${cat.color}30`,
-                }}
-              >
-                {cat.count}
-              </Badge>
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-xl p-4 animate-pulse"
+              style={{ backgroundColor: '#0d1020', border: '1px solid #252a46' }}
+            >
+              <div className="h-5 w-8 bg-[#252a46] rounded mb-3" />
+              <div className="h-4 w-24 bg-[#252a46] rounded" />
             </div>
-            <div className="text-sm text-[#f5f6ff] group-hover:text-[#50d8ff] transition-colors">
-              {cat.label}
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {filtered.map((cat, i) => (
+            <div
+              key={cat.key}
+              className="animate-slideUp rounded-xl p-4 transition-all duration-200 cursor-default hover:-translate-y-0.5 group"
+              style={{
+                animationDelay: `${i * 50}ms`,
+                backgroundColor: '#0d1020',
+                border: '1px solid #252a46',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = cat.color + '40';
+                (e.currentTarget as HTMLElement).style.boxShadow = `0 0 20px ${cat.color}10`;
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = '#252a46';
+                (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+              }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-lg">{cat.emoji}</span>
+                <Badge
+                  variant="secondary"
+                  className="text-[10px]"
+                  style={{
+                    backgroundColor: cat.color + '15',
+                    color: cat.color,
+                    border: `1px solid ${cat.color}30`,
+                  }}
+                >
+                  {cat.count}
+                </Badge>
+              </div>
+              <div className="text-sm text-[#f5f6ff] group-hover:text-[#50d8ff] transition-colors">
+                {cat.label}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {filtered.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div className="text-center py-12 text-sm text-[#9ba4c5]">
           No categories found matching &quot;{search}&quot;
         </div>

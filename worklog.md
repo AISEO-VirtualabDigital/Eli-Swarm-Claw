@@ -175,3 +175,30 @@ Stage Summary:
 - 10 placeholder views for future panels
 - API route at /api/eli-chat wired to knowledge search engine
 - All verified via agent-browser: renders, interacts, no console errors
+---
+Task ID: 1
+Agent: Main
+Task: Debug Eli - wire all components and connect Llama to core
+
+Work Log:
+- Audited entire codebase: page.tsx (1119 lines), layout.tsx, globals.css, eli-chat route, knowledge-search.ts, db.ts, prisma schema, package.json
+- Discovered 6 critical wiring issues:
+  1. Chat API using MOCK responses (never called any LLM)
+  2. z-ai-web-dev-sdk installed but zero imports anywhere
+  3. react-markdown installed but chat used dangerouslySetInnerHTML with regex
+  4. KnowledgeView had hardcoded category data instead of real counts
+  5. Prisma had query logging enabled (would spam production)
+  6. No knowledge-stats API endpoint existed
+- Wired z-ai-web-dev-sdk into /api/eli-chat/route.ts with singleton pattern, conversation history, knowledge context injection, and graceful fallback
+- Created /src/components/eli-markdown.tsx - proper markdown renderer using react-markdown + react-syntax-highlighter with Eli's dark theme
+- Created /api/knowledge-stats/route.ts - dynamic knowledge stats endpoint
+- Updated page.tsx: replaced hardcoded KNOWLEDGE_CATEGORIES with dynamic fetch, replaced dangerouslySetInnerHTML with EliMarkdown component, updated welcome message to mention Llama
+- Fixed Prisma db.ts: removed query logging
+- Updated chat input footer to show 'Llama Core Active' status indicator
+
+Stage Summary:
+- Llama is now LIVE on Eli's core - verified with real LLM responses
+- Chat returns proper markdown with code blocks, lists, tables
+- Knowledge view shows real-time file counts from the 140-file knowledge base
+- All routes compile clean: /, /api/eli-chat, /api/knowledge-stats
+- Build passes successfully (next build)
