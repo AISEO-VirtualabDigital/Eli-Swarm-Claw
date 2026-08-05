@@ -50,6 +50,7 @@ const SYNONYMS: Record<string, string[]> = {
   'skill': ['capability', 'harness', 'stack', 'agent skill', 'skill registry'],
   'workflow': ['automation', 'pipeline', 'dag', 'execution', 'rewiring'],
   'authority': ['human order', 'operator', 'policy', 'governance', 'approval'],
+  'google': ['google api', 'gcloud', 'gcp', 'workspace', 'gmail', 'drive', 'calendar', 'sheets', 'docs', 'gemini', 'maps', 'places', 'oauth'],
 };
 
 function expandQuery(query: string): string {
@@ -88,6 +89,8 @@ function extractCategory(content: string, filename: string): string {
   if (lower.includes('saas') || lower.includes('serverless') || lower.includes('ghl')) return 'saas';
   if (lower.includes('algorithm') || lower.includes('testing-tools') || lower.includes('scraper') || lower.includes('scrapegraph') || lower.includes('social-analyzer') || lower.includes('goindex') || lower.includes('google-drive-index') || lower.includes('google-maps-scraper') || lower.includes('schemacrawler')) return 'codebase';
   if (lower.includes('fmhy') || lower.includes('virtuallab-strategy') || lower.includes('googleapis-repo') || lower.includes('google-research') || lower.includes('google-services-samples') || lower.includes('google-api-python-docs') || lower.includes('googleapis-nodejs') || lower.includes('low-level-design')) return 'reference';
+  // --- Google API (client libs, workspace, maps, AI, auth, scraping) ---
+  if (lower.includes('github-google-api-topic') || lower.includes('google-api-client-libraries') || lower.includes('google-workspace-api') || lower.includes('google-maps-places') || lower.includes('google-ai-gemini') || lower.includes('google-auth-oauth') || lower.includes('google-scraping-automation')) return 'google-api';
   // --- Eli identity, architecture, skills ---
   if (lower.includes('eli-core-identity') || lower.includes('eli-obsidian-agent-skills') || lower.includes('eli-obsidian-architecture') || lower.includes('eli-obsidian-manual-rewiring')) return 'eli-core';
   // --- Obsidian vault, importer, skill harness ---
@@ -188,7 +191,7 @@ export async function buildKnowledgeMap(): Promise<string> {
     byCategory[c.category].push({ title: c.title, source: c.source, url: c.url });
   }
 
-  const lines: string[] = ['ELI\'S KNOWLEDGE MAP (123+ sources across 13 categories):', ''];
+  const lines: string[] = ['ELI\'S KNOWLEDGE MAP (130+ sources across 14 categories):', ''];
   const categoryLabels: Record<string, string> = {
     'seo': '🔍 SEO & Marketing',
     'codebase': '💻 Code & Scraping',
@@ -204,6 +207,7 @@ export async function buildKnowledgeMap(): Promise<string> {
     'eli-core': '🧠 Eli Core Identity & Skills',
     'obsidian': '📦 Obsidian Vault & Tools',
     'agent-eli': '⚙️ Agent Eli v1 Architecture',
+    'google-api': '🔗 Google API Ecosystem',
   };
 
   for (const [cat, items] of Object.entries(byCategory)) {

@@ -47,3 +47,30 @@ Stage Summary:
 - Knowledge base expanded from 97 → 123 files (9.2MB total)
 - 3 new categories: eli-core (4), obsidian (13), agent-eli (9)
 - Knowledge search now covers: Eli's identity/skills/authority, Obsidian vault structure, Obsidian importer, Skill harness manager, Agent Eli v1 architecture/code/skills/registries
+
+---
+Task ID: 3
+Agent: Main
+Task: Absorb GitHub Google API topic (top 50 repos) into Eli's knowledge base
+
+Work Log:
+- Fetched https://github.com/topics/google-api via GitHub Search API (2,469 total repos)
+- Retrieved top 50 repos sorted by stars with full metadata
+- Fetched README content for 30 most relevant repos via GitHub raw API
+- Created absorb-github-google-api.py to process and categorize repos
+- Generated 7 knowledge source files grouped by domain:
+  1. github-google-api-topic-directory.md (16KB) — master directory of all 50 repos in 10 categories
+  2. google-api-client-libraries.md (8KB) — googleapis/nodejs-client, aiogoogle, generative-ai .NET SDK, .NET samples
+  3. google-workspace-api-tools.md (29KB) — Google Workspace CLI (30K⭐), GAM, gkeepapi, gmail-tester, Google Meet bot, Google Chat poll, WhatsApp contact sync, Apps Script tools, YouTube video maker, Google Contacts, GTM MCP server, Google Photos uploader, Figma-to-Slides
+  4. google-maps-places-api-tools.md (7KB) — react-google-maps, react-places-autocomplete, react-google-autocomplete, Keyless Google Maps API, google-places-api PHP
+  5. google-ai-gemini-api-tools.md (7KB) — GeminiProChat, Gemini 2 Live API demo, Gemini .NET SDK, Vibe Prompting, LangChain Coder
+  6. google-auth-oauth-libraries.md (10KB) — react-google-login, react-native-google-sign-in, elixir-auth-google, angular-google-gapi, vue-gapi, ng-gapi
+  7. google-scraping-automation-tools.md (24KB) — Librex meta search, Araa Search, secret-regex-list, Google reverse image API, Sports Results API, SaaS boilerplate, BuilderBook, expenses tracker, OpenAPI directory, research paper fetcher, jobseeker analytics, APK downloader, image downloader
+- Updated knowledge-search-upgraded.ts: added google-api category + 13 filename patterns, Google synonym expansion (13 terms), knowledge map now 14 categories / 130+ sources
+- Updated eli-chat-upgraded.ts: system prompt references 130+ sources, 14 categories, Google API ecosystem
+
+Stage Summary:
+- 7 new knowledge source files (99KB new content)
+- Knowledge base: 130 files total across 14 categories
+- Top repos absorbed: googleworkspace/cli (30K⭐), google-api-nodejs-client (12K⭐), GeminiProChat (4.9K⭐), openapi-directory (4.5K⭐), GAM (4.3K⭐)
+- Coverage spans: client libraries, workspace tools, maps/places, AI/Gemini, auth/OAuth, scraping, automation
