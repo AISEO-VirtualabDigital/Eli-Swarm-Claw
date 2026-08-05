@@ -1,0 +1,2002 @@
+     1→import { spawn } from "child_process";
+     2→import { shell } from "electron";
+     3→import * as fs from "fs";
+     4→import * as os from "os";
+     5→import * as nodePath from "path";
+     6→import {
+     7→  FileSystemAdapter,
+     8→  Menu,
+     9→  Notice,
+    10→  Plugin,
+    11→  TAbstractFile,
+    12→  TFile,
+    13→  TFolder,
+    14→  WorkspaceLeaf,
+    15→  setIcon,
+    16→} from "obsidian";
+    17→import { Detector } from "./detector";
+    18→import {
+    19→  buildOpenerCommand,
+    20→  DetectedTerminal,
+    21→  detectInstalledTerminals,
+    22→  resolvePreferredTerminal,
+    23→  TMUX_SESSION,
+    24→} from "./terminal";
+    25→import { EXAMPLE_SKILL_BODY, EXAMPLE_SKILL_REL_PATH } from "./example";
+    26→import {
+    27→  DEFAULT_PINNED_ICON,
+    28→  elementHasSvg,
+    29→  pinAction,
+    30→  resolvePinnedIcon,
+    31→} from "./icon";
+    32→import { IconPickerModal } from "./iconPicker";
+    33→import {
+    34→  AGENT_CONFIG_SUBDIR,
+    35→  AGENT_SESSION_PROMPT,
+    36→  augmentPath,
+    37→  buildAgentInvocation,
+    38→  buildLaunchPrompt,
+    39→  buildOmnigentArgv,
+    40→  buildRightClickMenuItems,
+    41→  buildSkillCliInvocation,
+    42→  BUNDLE_CONFIG_NAME,
+    43→  ClaudeAgent,
+    44→  CustomAgent,
+    45→  buildCustomHarnessArgv,
+    46→  buildCustomHarnessCliInvocation,
+    47→  ConfiguredHarness,
+    48→  CustomHarness,
+    49→  decodeAgentChoice,
+    50→  discoverCustomAgents,
+    51→  encodeAgentChoice,
+    52→  parseClaudeAgentFrontmatter,
+    53→  encodeCustomHarnessChoice,
+    54→  HARNESS_DEFAULT_VALUE,
+    55→  isAllowedBuiltinAgent,
+    56→  isAllowedHarness,
+    57→  isValidCustomAgentPath,
+    58→  isValidCustomHarnessCommand,
+    59→  OMNIGENT_HARNESSES,
+    60→  parseConfiguredHarnesses,
+    61→  parseHarnessCommandLine,
+    62→  parseHarnessValue,
+    63→  resolveAgentLaunch,
+    64→  resolveOmnigentBinary,
+    65→  resolveSkillHarness,
+    66→  safeCustomAgentRealPath,
+    67→  SkillAgent,
+    68→  toInteractiveArgv,
+    69→} from "./launch";
+    70→import {
+    71→  agentFolderSegments,
+    72→  commandFolderSegments,
+    73→  defaultSkillScanRoots,
+    74→  homeSkillRootPaths,
+    75→  joinHome,
+    76→  skillFolderSegments,
+    77→} from "./folders";
+    78→import { HiddenFilesController, isRevealableHiddenPath } from "./hiddenFiles";
+    79→import {
+    80→  coerceFrontmatterTags,
+    81→  firstHeading,
+    82→  inferSourceLabel,
+    83→  parseFrontmatter,
+    84→  resolveSkillTags,
+    85→  sanitizeTag,
+    86→} from "./parse";
+    87→import { SkillLayerSettingTab } from "./settingsTab";
+    88→import {
+    89→  buildRawTerminalScript,
+    90→  buildResumeArgv,
+    91→  buildTerminalScript,
+    92→  LaunchedSession,
+    93→  SESSION_MAX_AGE_MS,
+    94→  sessionToolFromCommand,
+    95→  SessionTool,
+    96→} from "./sessions";
+    97→import { addTagToContent, removeTagFromContent } from "./tagEdit";
+    98→import {
+    99→  BashScript,
+   100→  DEFAULT_SETTINGS,
+   101→  LaunchMode,
+   102→  Skill,
+   103→  SkillLayerSettings,
+   104→} from "./types";
+   105→import { SKILL_LAYER_VIEW, SkillBrowserView } from "./view";
+   106→import { decideToggleAction } from "./viewToggle";
+   107→import {
+   108→  canOpenInYamlViewer,
+   109→  detectYamlViewerEnabled,
+   110→  resolveVaultTFile,
+   111→  YAML_VIEWER_VIEW_TYPE,
+   112→} from "./yamlViewer";
+   113→
+   114→/** Internal (non-public) command registry surface used to unregister commands. */
+   115→interface CommandsApi {
+   116→  removeCommand?(id: string): void;
+   117→}
+   118→
+   119→const RESCAN_DEBOUNCE_MS = 600;
+   120→
+   121→export default class SkillLayerPlugin extends Plugin {
+   122→  settings!: SkillLayerSettings;
+   123→  private detector!: Detector;
+   124→  private skills: Skill[] = [];
+   125→
+   126→  /** Tracked per-skill ribbon icons so we can `.remove()` them on unpin. */
+   127→  private ribbonIcons = new Map<string, HTMLElement>();
+   128→  /** Full command ids registered per pinned skill, for clean removal. */
+   129→  private pinnedCommandIds = new Map<string, string>();
+   130→  /** Local command ids currently in use, to guarantee no id collisions. */
+   131→  private usedCommandLocalIds = new Set<string>();
+   132→
+   133→  /** Cached custom agents discovered from `<vault>/.omnigent/agent-configs`. */
+   134→  private customAgents: CustomAgent[] = [];
+   135→
+   136→  /** Cached terminal emulators detected on disk (for the preferred-terminal dropdown). */
+   137→  private detectedTerminals: DetectedTerminal[] = [];
+   138→
+   139→  /** Cached Claude subagents (M17) from `<vault>/.claude/agents` + `~/.claude/agents`. */
+   140→  private claudeAgents: ClaudeAgent[] = [];
+   141→
+   142→  /** Cached commands (M18): `*.md` under each tool's commands folder (Skill-shaped, kind:"command"). */
+   143→  private commands: Skill[] = [];
+   144→
+   145→  /** Cached harnesses discovered from `omnigent config list` (M15.3). */
+   146→  private configuredHarnesses: ConfiguredHarness[] = [];
+   147→  /** True once a discovery attempt has completed (success or empty). */
+   148→  private harnessesDiscovered = false;
+   149→
+   150→  /** Controls the hidden-dot-folder reveal patch (M15); lazily constructed. */
+   151→  private hiddenFiles!: HiddenFilesController;
+   152→
+   153→  /**
+   154→   * True when WE flipped the global hidden reveal ON temporarily (M16/M17): the
+   155→   * global toggle was off and the user opened a hidden-folder skill. The reveal
+   156→   * stays on while ANY open file is inside a hidden folder — so the user can move
+   157→   * freely between hidden folders — and is flipped back off only once no open
+   158→   * file is in a hidden folder (i.e. they opened a normal, visible file). Never
+   159→   * touched while the global toggle is on, so we don't fight the user's setting.
+   160→   */
+   161→  private tempRevealActive = false;
+   162→  /** Signature of currently-open skill files, so layout-change only re-renders
+   163→   *  the view when a skill's open/closed state actually changed. */
+   164→  private lastOpenSkillSig = "";
+   165→
+   166→  private rescanTimer: number | null = null;
+   167→
+   168→  async onload(): Promise<void> {
+   169→    await this.loadSettings();
+   170→    this.detector = new Detector(this.app, () => this.settings);
+   171→    this.hiddenFiles = new HiddenFilesController(this.app);
+   172→
+   173→    this.registerView(
+   174→      SKILL_LAYER_VIEW,
+   175→      (leaf: WorkspaceLeaf) => new SkillBrowserView(leaf, this),
+   176→    );
+   177→
+   178→    this.addRibbonIcon("brain-circuit", "Skill and Harness Manager: toggle skills browser", () => {
+   179→      void this.toggleView();
+   180→    });
+   181→
+   182→    this.addCommand({
+   183→      id: "open-browser",
+   184→      name: "Open skills browser",
+   185→      callback: () => void this.activateView(),
+   186→    });
+   187→
+   188→    this.addSettingTab(new SkillLayerSettingTab(this.app, this));
+   189→
+   190→    // Hot-reload for Vault-API (non-dot) roots. `vault.on('modify')` fires on
+   191→    // edit (incl. external edits Obsidian detects), but the metadataCache may
+   192→    // not be re-parsed yet at that moment — so we ALSO listen to
+   193→    // `metadataCache.on('changed')`, which fires after a fresh re-parse, and
+   194→    // the scan reads fresh file content anyway (see Detector.scanVaultRoot).
+   195→    // Dot-folder / external roots emit no events; they refresh on view open
+   196→    // and via the in-view Rescan / Refresh buttons.
+   197→    this.registerEvent(this.app.vault.on("create", () => this.scheduleRescan()));
+   198→    this.registerEvent(this.app.vault.on("modify", () => this.scheduleRescan()));
+   199→    this.registerEvent(this.app.vault.on("delete", () => this.scheduleRescan()));
+   200→    this.registerEvent(this.app.vault.on("rename", () => this.scheduleRescan()));
+   201→    this.registerEvent(
+   202→      this.app.metadataCache.on("changed", () => this.scheduleRescan()),
+   203→    );
+   204→
+   205→    // M3: file-explorer right-click. For each right-click-enabled skill, add a
+   206→    // `Run "<name>" here` item that launches it one-shot with the clicked
+   207→    // file/folder as context. Fires for both files and folders (TAbstractFile).
+   208→    this.registerEvent(
+   209→      this.app.workspace.on("file-menu", (menu: Menu, file: TAbstractFile) =>
+   210→        this.addFileMenuItems(menu, file),
+   211→      ),
+   212→    );
+   213→
+   214→    // Initial scan + restore pinned ribbon icons once the layout is ready.
+   215→    this.app.workspace.onLayoutReady(async () => {
+   216→      await this.rescan();
+   217→      this.recreatePinnedRibbons();
+   218→      // Reveal hidden dot-folders if the toggle is on (deferred to layout-ready,
+   219→      // like the reference plugin, so the file explorer exists to repopulate).
+   220→      if (this.settings.showHiddenFolders) {
+   221→        void this.hiddenFiles.enable();
+   222→      }
+   223→      // Discover omnigent-configured harnesses (best-effort, non-blocking) so the
+   224→      // per-skill Harness dropdown + Harnesses tab reflect the user's omnigent.
+   225→      void this.discoverConfiguredHarnesses();
+   226→      // Detect installed terminal emulators for the preferred-terminal setting.
+   227→      this.detectTerminals();
+   228→      // Seed the bundled example skill on first run (no-op after the first seed
+   229→      // or if the file already exists). Non-blocking; never throws.
+   230→      void this.seedExampleSkill();
+   231→    });
+   232→
+   233→    // Keep the Open/Close-file button labels accurate and tear down a temporary
+   234→    // hidden reveal when its skill's tab is closed (by our button or by hand).
+   235→    this.registerEvent(
+   236→      this.app.workspace.on("layout-change", () => void this.onLayoutChange()),
+   237→    );
+   238→  }
+   239→
+   240→  onunload(): void {
+   241→    if (this.rescanTimer !== null) window.clearTimeout(this.rescanTimer);
+   242→    // Restore the hidden-file adapter patch (function swap is synchronous).
+   243→    this.hiddenFiles?.teardown();
+   244→    // Explicitly remove tracked ribbon icons (Obsidian also cleans these, but
+   245→    // we own the Map so we leave nothing dangling).
+   246→    for (const el of this.ribbonIcons.values()) el.remove();
+   247→    this.ribbonIcons.clear();
+   248→    // Symmetric teardown: clear the command-tracking maps too. (Commands are
+   249→    // unregistered by Obsidian on unload; this just drops our in-memory state.)
+   250→    this.pinnedCommandIds.clear();
+   251→    this.usedCommandLocalIds.clear();
+   252→  }
+   253→
+   254→  // --- Settings ----------------------------------------------------------
+   255→  async loadSettings(): Promise<void> {
+   256→    this.settings = Object.assign(
+   257→      {},
+   258→      DEFAULT_SETTINGS,
+   259→      (await this.loadData()) as Partial<SkillLayerSettings> | null,
+   260→    );
+   261→    // Migration: the harness selector (the M1 global `--harness` plus the M4–M7
+   262→    // per-skill harness machinery) is replaced by the per-skill AGENT selector;
+   263→    // omnigent now picks the harness itself. Strip every legacy harness key
+   264→    // fail-closed (a plain `delete` cannot throw) so a stale data.json can never
+   265→    // reintroduce harness behavior. A skill that had a harness selected simply
+   266→    // reverts to the Default agent (it has no `skillAgent` entry). Everything
+   267→    // else in data.json is preserved by the Object.assign above.
+   268→    const raw = this.settings as unknown as Record<string, unknown>;
+   269→    for (const key of [
+   270→      // NOTE (M15): `skillHarness` is NO LONGER stripped — it is repurposed as
+   271→      // the per-skill omnigent `--harness` map (string values). Any stale value
+   272→      // from the removed M4–M7 harness selector (a different shape) is made safe
+   273→      // by `resolveHarness`, which fails closed against the hardcoded harness
+   274→      // allowlist, so a non-member simply emits no `--harness`.
+   275→      "discoveredHarnesses",
+   276→      "customHarnesses",
+   277→      "omnigentHarness",
+   278→      // M11: the user-configurable invocation template is gone — the "Copy
+   279→      // invocation" action now uses a FIXED natural-language form
+   280→      // (`Use the <name> skill.`). Strip it fail-closed so a stale data.json can
+   281→      // never reintroduce it; every OTHER setting (scanRoots, pins, skillAgent,
+   282→      // omnigentBinaryPath, omnigentServerUrl, appendVaultAnchor, …) is preserved
+   283→      // by the Object.assign above. NOTE (M19): `omnigentServerUrl` is BACK as a
+   284→      // real setting (per-launch `--server` target), so it is NOT stripped.
+   285→      "invocationTemplate",
+   286→    ]) {
+   287→      delete raw[key];
+   288→    }
+   289→
+   290→    // M18: remove the home-directory (global) skill roots an earlier build
+   291→    // auto-added (external kind, disabled) — they cluttered settings and mixed
+   292→    // machine-global skills with the user's in-vault skills. Only the exact
+   293→    // auto-added paths are dropped, so a user's own custom external roots stay.
+   294→    const homeRoots = new Set(homeSkillRootPaths(os.homedir()));
+   295→    this.settings.scanRoots = this.settings.scanRoots.filter(
+   296→      (r) => !(r.kind === "external" && homeRoots.has(r.path)),
+   297→    );
+   298→    // Union the per-tool VAULT skill scan roots (from the Agentfiles tool map)
+   299→    // into whatever's stored, so in-vault skills across Claude/Cursor/Codex/etc.
+   300→    // are discovered out of the box. Additive + idempotent: existing roots (incl.
+   301→    // the user's custom ones and their enabled state) are preserved.
+   302→    const havePaths = new Set(this.settings.scanRoots.map((r) => r.path));
+   303→    for (const root of defaultSkillScanRoots()) {
+   304→      if (!havePaths.has(root.path)) {
+   305→        this.settings.scanRoots.push(root);
+   306→        havePaths.add(root.path);
+   307→      }
+   308→    }
+   309→    // Migration: the earlier default panel width (420) was too narrow for all six
+   310→    // tabs; bump a still-default value up to the new 520. A width the user chose
+   311→    // themselves (anything other than the old default) is left untouched.
+   312→    if (this.settings.panelWidth === 420) this.settings.panelWidth = 520;
+   313→  }
+   314→
+   315→  async saveSettings(): Promise<void> {
+   316→    await this.saveData(this.settings);
+   317→  }
+   318→
+   319→  /**
+   320→   * Seed the bundled example skill on first run. No-op when already seeded
+   321→   * (`seededExample`), when the vault base can't be resolved / isn't a desktop
+   322→   * filesystem, or when the file already exists (so a user who edited it isn't
+   323→   * clobbered and a deleted one isn't recreated). Writes via Node `fs` because
+   324→   * `.agents/` is a hidden dot-folder outside the Vault API index. Never throws.
+   325→   */
+   326→  private async seedExampleSkill(): Promise<void> {
+   327→    if (this.settings.seededExample) return;
+   328→    const base = this.detector.vaultBasePath();
+   329→    if (!base || !this.detector.canScanExternal()) return;
+   330→    try {
+   331→      const abs = nodePath.join(base, EXAMPLE_SKILL_REL_PATH);
+   332→      if (!fs.existsSync(abs)) {
+   333→        await fs.promises.mkdir(nodePath.dirname(abs), { recursive: true });
+   334→        await fs.promises.writeFile(abs, EXAMPLE_SKILL_BODY, "utf8");
+   335→      }
+   336→      // Mark seeded even if the file already existed, so we stop probing.
+   337→      this.settings.seededExample = true;
+   338→      await this.saveSettings();
+   339→      await this.rescan();
+   340→    } catch (err) {
+   341→      console.error("[skill-layer] example skill seed failed:", err);
+   342→    }
+   343→  }
+   344→
+   345→  // --- Creating skills / commands / folders (Skills & Commands tabs) ------
+   346→  /**
+   347→   * The tool-folder segments a NEW skill or command folder can be added into
+   348→   * (`.claude/skills`, `.codex/prompts`, …), for the "add folder" picker. Skills
+   349→   * use the skills segments; commands use the command segments.
+   350→   */
+   351→  addableFolderSegments(kind: "skill" | "command"): string[] {
+   352→    return kind === "command" ? commandFolderSegments() : skillFolderSegments();
+   353→  }
+   354→
+   355→  /**
+   356→   * The tool-folder segments (for `kind`) that currently EXIST on disk in the
+   357→   * vault — used to render empty sections so a freshly-created (still-empty)
+   358→   * folder shows up with its per-section "+". Desktop-gated; [] when unavailable.
+   359→   */
+   360→  existingToolFolders(kind: "skill" | "command"): string[] {
+   361→    const base = this.detector.vaultBasePath();
+   362→    if (!base || !this.detector.canScanExternal()) return [];
+   363→    return this.addableFolderSegments(kind).filter((seg) => {
+   364→      try {
+   365→        return fs.statSync(nodePath.join(base, seg)).isDirectory();
+   366→      } catch {
+   367→        return false;
+   368→      }
+   369→    });
+   370→  }
+   371→
+   372→  /**
+   373→   * Create a tool folder (e.g. `.claude/skills`) in the vault if absent, then
+   374→   * rescan so its (empty) section appears. Returns a user-facing error string, or
+   375→   * null on success. Desktop-gated; `seg` must be one of the known segments.
+   376→   */
+   377→  async createToolFolder(seg: string): Promise<string | null> {
+   378→    const base = this.detector.vaultBasePath();
+   379→    if (!base || !this.detector.canScanExternal()) return "Requires the desktop app.";
+   380→    if (!this.addableFolderSegments("skill").includes(seg) &&
+   381→        !this.addableFolderSegments("command").includes(seg)) {
+   382→      return "Unknown folder.";
+   383→    }
+   384→    try {
+   385→      await fs.promises.mkdir(nodePath.join(base, seg), { recursive: true });
+   386→      await this.rescan();
+   387→      return null;
+   388→    } catch (err) {
+   389→      console.error("[skill-layer] createToolFolder failed:", err);
+   390→      return "Could not create the folder.";
+   391→    }
+   392→  }
+   393→
+   394→  /**
+   395→   * Create a new SKILL inside the tool folder `folderSeg`: `<folderSeg>/<name>/
+   396→   * SKILL.md` with a minimal frontmatter stub, then open it in Obsidian (like the
+   397→   * Open file button). Returns an error string, or null on success. The name is
+   398→   * sanitized to a safe folder name; refuses to overwrite an existing file.
+   399→   */
+   400→  async createSkillInFolder(folderSeg: string, rawName: string): Promise<string | null> {
+   401→    const base = this.detector.vaultBasePath();
+   402→    if (!base || !this.detector.canScanExternal()) return "Requires the desktop app.";
+   403→    const name = this.sanitizeItemName(rawName);
+   404→    if (!name) return "Please enter a valid name.";
+   405→    const relPath = `${folderSeg}/${name}/SKILL.md`;
+   406→    const abs = nodePath.join(base, relPath);
+   407→    if (fs.existsSync(abs)) return `A skill named "${name}" already exists here.`;
+   408→    const body = `---\nname: ${name}\ndescription: \n---\n\n# ${name}\n\n`;
+   409→    try {
+   410→      await fs.promises.mkdir(nodePath.dirname(abs), { recursive: true });
+   411→      await fs.promises.writeFile(abs, body, "utf8");
+   412→    } catch (err) {
+   413→      console.error("[skill-layer] createSkillInFolder failed:", err);
+   414→      return "Could not create the skill file.";
+   415→    }
+   416→    await this.rescan();
+   417→    await this.openCreatedFile(relPath, abs);
+   418→    return null;
+   419→  }
+   420→
+   421→  /**
+   422→   * Create a new COMMAND inside the tool folder `folderSeg`: `<folderSeg>/
+   423→   * <name>.md` (any markdown in a commands folder is a command), then open it in
+   424→   * Obsidian. Returns an error string, or null on success.
+   425→   */
+   426→  async createCommandInFolder(folderSeg: string, rawName: string): Promise<string | null> {
+   427→    const base = this.detector.vaultBasePath();
+   428→    if (!base || !this.detector.canScanExternal()) return "Requires the desktop app.";
+   429→    const name = this.sanitizeItemName(rawName);
+   430→    if (!name) return "Please enter a valid name.";
+   431→    const relPath = `${folderSeg}/${name}.md`;
+   432→    const abs = nodePath.join(base, relPath);
+   433→    if (fs.existsSync(abs)) return `A command named "${name}" already exists here.`;
+   434→    const body = `# ${name}\n\n`;
+   435→    try {
+   436→      await fs.promises.mkdir(nodePath.dirname(abs), { recursive: true });
+   437→      await fs.promises.writeFile(abs, body, "utf8");
+   438→    } catch (err) {
+   439→      console.error("[skill-layer] createCommandInFolder failed:", err);
+   440→      return "Could not create the command file.";
+   441→    }
+   442→    await this.rescan();
+   443→    await this.openCreatedFile(relPath, abs);
+   444→    return null;
+   445→  }
+   446→
+   447→  /** A safe folder/file base name from user input (kebab-ish, no path separators). */
+   448→  private sanitizeItemName(raw: string): string {
+   449→    return (raw ?? "")
+   450→      .trim()
+   451→      .replace(/[^A-Za-z0-9._ -]+/g, "")
+   452→      .replace(/\s+/g, "-")
+   453→      .replace(/^[-.]+|[-.]+$/g, "")
+   454→      .slice(0, 60);
+   455→  }
+   456→
+   457→  /**
+   458→   * Open a just-created vault file in Obsidian. Tool folders are hidden
+   459→   * dot-folders, so reuse the same temporary-reveal path as `openSkill`
+   460→   * (`openHiddenSkillTemporarily`); fall back to the OS app if it never indexes.
+   461→   */
+   462→  private async openCreatedFile(vaultPath: string, absPath: string): Promise<void> {
+   463→    const tfile = this.detector.resolveTFile(vaultPath);
+   464→    if (tfile instanceof TFile) {
+   465→      await this.openTFileAndRevealFolder(tfile);
+   466→      return;
+   467→    }
+   468→    if (this.canRevealHiddenFolders() && !this.settings.showHiddenFolders) {
+   469→      if (await this.openHiddenSkillTemporarily(vaultPath)) return;
+   470→    }
+   471→    try {
+   472→      const result = await shell.openPath(absPath);
+   473→      if (result) new Notice(`Could not open file: ${result}`);
+   474→    } catch (err) {
+   475→      console.error("[skill-layer] openCreatedFile failed:", err);
+   476→    }
+   477→  }
+   478→
+   479→  // --- Preferred terminal + launch mode ----------------------------------
+   480→  /** Re-detect installed terminal emulators into the cache (app bundles + tmux). */
+   481→  private detectTerminals(): void {
+   482→    this.detectedTerminals = detectInstalledTerminals({
+   483→      homedir: os.homedir(),
+   484→      // Standard macOS app locations (system + per-user Applications).
+   485→      appDirs: ["/Applications", nodePath.join(os.homedir(), "Applications")],
+   486→      exists: (p) => fs.existsSync(p),
+   487→    });
+   488→  }
+   489→
+   490→  /** The terminal emulators detected on disk (for the settings dropdown). */
+   491→  getDetectedTerminals(): DetectedTerminal[] {
+   492→    return this.detectedTerminals;
+   493→  }
+   494→
+   495→  /**
+   496→   * The effective preferred terminal, resolved fail-closed to `auto` against the
+   497→   * actually-detected set (a stale/uninstalled `preferredTerminal` falls back to
+   498→   * the OS default terminal). Used by the terminal-launch path + settings UI.
+   499→   */
+   500→  resolvePreferredTerminal(): DetectedTerminal {
+   501→    return resolvePreferredTerminal(this.settings.preferredTerminal, this.detectedTerminals);
+   502→  }
+   503→
+   504→  /** The effective launch mode for a skill/command: per-item override, else the global default. */
+   505→  effectiveLaunchMode(id: string): LaunchMode {
+   506→    const override = this.settings.skillLaunchMode[id];
+   507→    return override === "headless" || override === "terminal"
+   508→      ? override
+   509→      : this.settings.defaultLaunchMode;
+   510→  }
+   511→
+   512→  /** The <select> value for a skill's launch mode ("" = Default/global). */
+   513→  launchModeOptionValue(id: string): string {
+   514→    const v = this.settings.skillLaunchMode[id];
+   515→    return v === "headless" || v === "terminal" ? v : "";
+   516→  }
+   517→
+   518→  /** Persist a skill's launch-mode override; "" / unknown deletes the key (→ global default). */
+   519→  async setSkillLaunchMode(id: string, value: string): Promise<void> {
+   520→    if (value === "headless" || value === "terminal") {
+   521→      this.settings.skillLaunchMode[id] = value;
+   522→    } else {
+   523→      delete this.settings.skillLaunchMode[id];
+   524→    }
+   525→    await this.saveSettings();
+   526→    this.refreshViews();
+   527→  }
+   528→
+   529→  /** Absolute path to this plugin's data.json (config lives outside the vault
+   530→   *  markdown, under the configured config dir). Used by the "register a harness
+   531→   *  by prompt" flow so a model can edit it directly. */
+   532→  dataJsonPath(): string {
+   533→    const base = this.detector.vaultBasePath() ?? "<vault>";
+   534→    return `${base}/${this.app.vault.configDir}/plugins/${this.manifest.id}/data.json`;
+   535→  }
+   536→
+   537→  /** A copy-paste prompt the user runs inside their AI CLI (Claude Code, Codex,
+   538→   *  omnigent, …) so the model registers ITSELF as a custom harness by appending
+   539→   *  to `harnesses` in data.json. `dataPath` is embedded so no guesswork. */
+   540→  harnessRegistrationPrompt(): string {
+   541→    return [
+   542→      `Register yourself as a launch "harness" in my Obsidian "Skill and Harness Manager" plugin.`,
+   543→      ``,
+   544→      `1. Open this plugin config JSON file:`,
+   545→      `   ${this.dataJsonPath()}`,
+   546→      `2. Parse it as JSON and ensure it has a top-level "harnesses" array (create it if missing).`,
+   547→      `3. Append ONE entry describing how to run YOU non-interactively with a single prompt:`,
+   548→      `     {`,
+   549→      `       "id": "<short-kebab-id>",`,
+   550→      `       "label": "<your product name>",`,
+   551→      `       "command": ["<absolute path to your CLI>", "<non-interactive flags>", "{prompt}"]`,
+   552→      `     }`,
+   553→      `   Rules: command[0] must be an absolute path; exactly one element must contain the`,
+   554→      `   literal token {prompt}; leave every other key in the file unchanged; write valid JSON.`,
+   555→      `   Optional: add "resumeCommand": ["<absolute CLI>", "<resume flags>"] (no {prompt}) to`,
+   556→      `   enable the Sessions tab's "Connect" button.`,
+   557→      `4. Tell me to click "Reload" in the plugin settings (or reload the plugin) so the`,
+   558→      `   new harness appears.`,
+   559→    ].join("\n");
+   560→  }
+   561→
+   562→  /** Re-read data.json from disk into memory + refresh the UI. Lets a harness the
+   563→   *  user registered via the prompt (which edits data.json directly) show up
+   564→   *  without a full plugin reload. */
+   565→  async reloadSettingsFromDisk(): Promise<void> {
+   566→    await this.loadSettings();
+   567→    this.refreshViews();
+   568→    new Notice("Skill and Harness Manager: reloaded settings from disk.");
+   569→  }
+   570→
+   571→  // --- Detection ---------------------------------------------------------
+   572→  canScanExternal(): boolean {
+   573→    return this.detector.canScanExternal();
+   574→  }
+   575→
+   576→  private scheduleRescan(): void {
+   577→    if (this.rescanTimer !== null) window.clearTimeout(this.rescanTimer);
+   578→    this.rescanTimer = window.setTimeout(() => {
+   579→      this.rescanTimer = null;
+   580→      void this.rescan();
+   581→    }, RESCAN_DEBOUNCE_MS);
+   582→  }
+   583→
+   584→  /** Re-run detection and refresh any open browser view. */
+   585→  async rescan(notify = false): Promise<void> {
+   586→    this.skills = await this.detector.scan();
+   587→    // Keep the custom-agent dropdown in step with on-disk config changes.
+   588→    this.scanCustomAgents();
+   589→    this.scanClaudeAgents();
+   590→    this.scanCommands();
+   591→    for (const leaf of this.app.workspace.getLeavesOfType(SKILL_LAYER_VIEW)) {
+   592→      const view = leaf.view;
+   593→      if (view instanceof SkillBrowserView) view.refresh();
+   594→    }
+   595→    if (notify) new Notice(`Skill and Harness Manager: found ${this.skills.length} skills.`);
+   596→  }
+   597→
+   598→  getSkills(): Skill[] {
+   599→    return this.skills;
+   600→  }
+   601→
+   602→  getSkillById(id: string): Skill | undefined {
+   603→    return this.skills.find((s) => s.id === id);
+   604→  }
+   605→
+   606→  // --- Browser view ------------------------------------------------------
+   607→  async activateView(): Promise<void> {
+   608→    const { workspace } = this.app;
+   609→    const existing = workspace.getLeavesOfType(SKILL_LAYER_VIEW);
+   610→    if (existing.length > 0) {
+   611→      await workspace.revealLeaf(existing[0]);
+   612→      // Revealing an existing leaf does NOT re-fire onOpen, so refresh from
+   613→      // disk here to pick up external edits (incl. dot-folder / external roots).
+   614→      await this.rescan();
+   615→      this.applyPanelWidth();
+   616→      return;
+   617→    }
+   618→    const leaf = workspace.getRightLeaf(false);
+   619→    if (!leaf) return;
+   620→    // A freshly created leaf's onOpen() runs the rescan itself.
+   621→    await leaf.setViewState({ type: SKILL_LAYER_VIEW, active: true });
+   622→    await workspace.revealLeaf(leaf);
+   623→    this.applyPanelWidth();
+   624→  }
+   625→
+   626→  /**
+   627→   * Open the browser side panel at the configured `panelWidth` so it always uses
+   628→   * a consistent width rather than whatever the sidebar was last dragged to. The
+   629→   * right-sidebar width has no public API, so this sets the width on the right
+   630→   * split's container element (undocumented internals) behind a guarded cast and
+   631→   * a `requestAnimationFrame` (so it lands after the reveal lays out). Best-effort
+   632→   * — silently no-ops if the internals aren't shaped as expected or on mobile.
+   633→   */
+   634→  private applyPanelWidth(): void {
+   635→    const width = this.settings.panelWidth;
+   636→    if (!width || width <= 0) return;
+   637→    const rightSplit = (this.app.workspace as unknown as {
+   638→      rightSplit?: { containerEl?: HTMLElement; collapsed?: boolean };
+   639→    }).rightSplit;
+   640→    const el = rightSplit?.containerEl;
+   641→    if (!el) return;
+   642→    window.requestAnimationFrame(() => {
+   643→      try {
+   644→        // setCssStyles (not a direct .style assignment) per Obsidian guidelines.
+   645→        el.setCssStyles({ width: `${width}px` });
+   646→        // Nudge Obsidian to reconcile the split sizes to the new width.
+   647→        this.app.workspace.requestSaveLayout?.();
+   648→      } catch (err) {
+   649→        console.error("[skill-layer] applyPanelWidth failed:", err);
+   650→      }
+   651→    });
+   652→  }
+   653→
+   654→  /**
+   655→   * Ribbon behavior: toggle the Skill and Harness Manager pane.
+   656→   * - Not open                → open + reveal (via activateView).
+   657→   * - Open but not active      → reveal/focus it (via activateView).
+   658→   * - Open AND active/visible  → close (detach its leaves).
+   659→   *
+   660→   * The command-palette "Open skills browser" entry stays on activateView
+   661→   * (pure open+reveal, never closes) — closing on a command named "Open"
+   662→   * would be surprising. Only the ribbon toggles.
+   663→   */
+   664→  async toggleView(): Promise<void> {
+   665→    const { workspace } = this.app;
+   666→    const existing = workspace.getLeavesOfType(SKILL_LAYER_VIEW);
+   667→    const activeView = workspace.getActiveViewOfType(SkillBrowserView);
+   668→    const isActiveVisible =
+   669→      activeView !== null && existing.includes(activeView.leaf);
+   670→    const action = decideToggleAction(existing.length > 0, isActiveVisible);
+   671→    if (action === "close") {
+   672→      workspace.detachLeavesOfType(SKILL_LAYER_VIEW);
+   673→      return;
+   674→    }
+   675→    // "open" and "reveal" both funnel through activateView (open+reveal+rescan).
+   676→    await this.activateView();
+   677→  }
+   678→
+   679→  // --- Pinning + per-skill icons -----------------------------------------
+   680→  isPinned(id: string): boolean {
+   681→    return this.settings.pinnedSkillIds.includes(id);
+   682→  }
+   683→
+   684→  // --- Right-click (file-menu) per-skill toggle (M3) ---------------------
+   685→  /** True if this skill is exposed in the file-explorer right-click menu. */
+   686→  isRightClickEnabled(id: string): boolean {
+   687→    return this.settings.rightClickSkillIds.includes(id);
+   688→  }
+   689→
+   690→  /** Flip a skill's `rightClickEnabled` membership and persist to data.json. */
+   691→  async toggleRightClick(skill: Skill): Promise<void> {
+   692→    const on = this.isRightClickEnabled(skill.id);
+   693→    if (on) {
+   694→      this.settings.rightClickSkillIds = this.settings.rightClickSkillIds.filter(
+   695→        (x) => x !== skill.id,
+   696→      );
+   697→    } else {
+   698→      this.settings.rightClickSkillIds.push(skill.id);
+   699→    }
+   700→    await this.saveSettings();
+   701→    this.refreshViews();
+   702→    new Notice(
+   703→      `Skill and Harness Manager: ${on ? "removed" : "added"} "${skill.name}" ${
+   704→        on ? "from" : "to"
+   705→      } the right-click menu.`,
+   706→    );
+   707→  }
+   708→
+   709→  // --- Per-skill AGENT selector ------------------------------------------
+   710→  /**
+   711→   * The absolute custom-agent config directory (`<vault>/.omnigent/agent-configs`),
+   712→   * or null when the vault base path can't be resolved (e.g. mobile). This is
+   713→   * BOTH the scan dir for discovery and the containment boundary every stored
+   714→   * custom path is re-validated against at launch.
+   715→   */
+   716→  agentConfigDir(): string | null {
+   717→    const base = this.detector.vaultBasePath();
+   718→    if (!base) return null;
+   719→    return nodePath.join(base, AGENT_CONFIG_SUBDIR);
+   720→  }
+   721→
+   722→  /** The cached, discovered custom agents (display metadata for the dropdown). */
+   723→  getCustomAgents(): CustomAgent[] {
+   724→    return this.customAgents;
+   725→  }
+   726→
+   727→  /**
+   728→   * Re-scan `<vault>/.omnigent/agent-configs` for custom agents into the cache
+   729→   * (no view refresh): loose `*.yaml`/`*.yml` files AND bundle directories
+   730→   * (`<name>/config.yaml`). A missing directory yields zero agents (no error).
+   731→   * All filesystem access is wrapped so this never throws.
+   732→   */
+   733→  private scanCustomAgents(): void {
+   734→    this.customAgents = discoverCustomAgents({
+   735→      dir: this.agentConfigDir(),
+   736→      readdir: (d) => fs.readdirSync(d),
+   737→      readFile: (p) => fs.readFileSync(p, "utf8"),
+   738→      isFile: (p) => {
+   739→        try {
+   740→          return fs.statSync(p).isFile();
+   741→        } catch {
+   742→          return false;
+   743→        }
+   744→      },
+   745→      isDirectory: (p) => {
+   746→        try {
+   747→          return fs.statSync(p).isDirectory();
+   748→        } catch {
+   749→          return false;
+   750→        }
+   751→      },
+   752→    });
+   753→  }
+   754→
+   755→  /** Re-scan custom agents AND refresh open views (the Settings "Refresh" path). */
+   756→  refreshCustomAgents(): void {
+   757→    this.scanCustomAgents();
+   758→    this.refreshViews();
+   759→  }
+   760→
+   761→  /**
+   762→   * Unified refresh (M18): re-scan everything the browser shows — skills,
+   763→   * commands, custom agents, Claude subagents (all via `rescan`) — and kick a
+   764→   * best-effort re-discovery of omnigent harnesses. This is the single "Refresh"
+   765→   * action wired to every tab's refresh control (it subsumes the old Rescan
+   766→   * button). Harness discovery is fire-and-forget so a slow/unavailable omnigent
+   767→   * never blocks the filesystem rescan.
+   768→   */
+   769→  async refreshAll(): Promise<void> {
+   770→    await this.rescan();
+   771→    void this.refreshConfiguredHarnesses();
+   772→  }
+   773→
+   774→  // --- Claude subagents (M17) --------------------------------------------
+   775→  /** The cached, discovered Claude subagents (for the per-skill Agent dropdown
+   776→   *  when a claude/custom harness is selected). */
+   777→  getClaudeAgents(): ClaudeAgent[] {
+   778→    return this.claudeAgents;
+   779→  }
+   780→
+   781→  /**
+   782→   * Scan `<vault>/.claude/agents` and `~/.claude/agents` for `*.md` subagents
+   783→   * into the cache (no view refresh). Name = frontmatter `name:` (else filename
+   784→   * stem); project entries win over global on a name clash. Missing dirs yield
+   785→   * zero (no error); all fs access is wrapped so this never throws.
+   786→   */
+   787→  private scanClaudeAgents(): void {
+   788→    const base = this.detector.vaultBasePath();
+   789→    const home = os.homedir();
+   790→    // M18: scan EVERY tool's agents folder (.claude/agents, .cursor/agents,
+   791→    // .codex/agents, …) — project (vault-relative) first, then home — so agents
+   792→    // from any assistant appear. Project wins over global on a name clash.
+   793→    const dirs: { dir: string; source: "project" | "global" }[] = [];
+   794→    for (const seg of agentFolderSegments()) {
+   795→      if (base) dirs.push({ dir: nodePath.join(base, seg), source: "project" });
+   796→    }
+   797→    for (const seg of agentFolderSegments()) {
+   798→      dirs.push({ dir: joinHome(home, seg), source: "global" });
+   799→    }
+   800→
+   801→    const byName = new Map<string, ClaudeAgent>();
+   802→    for (const { dir, source } of dirs) {
+   803→      let entries: string[];
+   804→      try {
+   805→        entries = fs.readdirSync(dir);
+   806→      } catch {
+   807→        continue; // missing dir → skip
+   808→      }
+   809→      for (const entry of entries.sort()) {
+   810→        if (!/\.md$/i.test(entry)) continue;
+   811→        const abs = nodePath.join(dir, entry);
+   812→        let text: string;
+   813→        try {
+   814→          if (!fs.statSync(abs).isFile()) continue;
+   815→          text = fs.readFileSync(abs, "utf8");
+   816→        } catch {
+   817→          continue;
+   818→        }
+   819→        const meta = parseClaudeAgentFrontmatter(text);
+   820→        const name = meta.name && meta.name.trim() ? meta.name.trim() : entry.replace(/\.md$/i, "");
+   821→        // Project (scanned first) wins; don't let global clobber it.
+   822→        if (byName.has(name)) continue;
+   823→        byName.set(name, {
+   824→          name,
+   825→          path: abs,
+   826→          source,
+   827→          ...(meta.description ? { description: meta.description } : {}),
+   828→        });
+   829→      }
+   830→    }
+   831→    this.claudeAgents = Array.from(byName.values()).sort((a, b) =>
+   832→      a.name.localeCompare(b.name),
+   833→    );
+   834→  }
+   835→
+   836→  /** Re-scan Claude subagents AND refresh open views (dropdown "Refresh" path). */
+   837→  refreshClaudeAgents(): void {
+   838→    this.scanClaudeAgents();
+   839→    this.refreshViews();
+   840→  }
+   841→
+   842→  /**
+   843→   * The dropdown value for a skill's stored Claude subagent — the stored name if
+   844→   * it still resolves to a discovered agent, else "" (Default). Keeps the UI from
+   845→   * showing an orphaned selection; launch re-validates the same way.
+   846→   */
+   847→  claudeAgentOptionValue(id: string): string {
+   848→    const stored = this.settings.skillClaudeAgent[id];
+   849→    if (typeof stored !== "string" || !stored) return "";
+   850→    return this.claudeAgents.some((a) => a.name === stored) ? stored : "";
+   851→  }
+   852→
+   853→  /** Persist a skill's Claude subagent choice; "" / unknown deletes the key. */
+   854→  async setSkillClaudeAgent(id: string, name: string): Promise<void> {
+   855→    if (name && this.claudeAgents.some((a) => a.name === name)) {
+   856→      this.settings.skillClaudeAgent[id] = name;
+   857→    } else {
+   858→      delete this.settings.skillClaudeAgent[id];
+   859→    }
+   860→    await this.saveSettings();
+   861→    this.refreshViews();
+   862→  }
+   863→
+   864→  /** Display label for a skill's Claude subagent ("Default" when none/stale). */
+   865→  claudeAgentLabelFor(id: string): string {
+   866→    const v = this.claudeAgentOptionValue(id);
+   867→    return v || "Default";
+   868→  }
+   869→
+   870→  // --- Commands (M18) ----------------------------------------------------
+   871→  /** The cached, discovered commands (for the Commands tab). Skill-shaped. */
+   872→  getCommands(): Skill[] {
+   873→    return this.commands;
+   874→  }
+   875→
+   876→  /**
+   877→   * Scan every tool's commands folder (`.claude/commands`, `.codex/prompts`, …)
+   878→   * — project (vault-relative) first, then home — for `*.md` files, each of
+   879→   * which is one command. Unlike skills there's no SKILL.md rule: any markdown in
+   880→   * a commands folder is a command. Built as Skill objects with kind:"command" so
+   881→   * they reuse the whole row UI / per-item state. Deduped by absolute path
+   882→   * (project wins). All fs access wrapped; never throws.
+   883→   */
+   884→  private scanCommands(): void {
+   885→    const base = this.detector.vaultBasePath();
+   886→    const home = os.homedir();
+   887→    const dirs: { dir: string; vaultRel: string | null }[] = [];
+   888→    for (const seg of commandFolderSegments()) {
+   889→      if (base) dirs.push({ dir: nodePath.join(base, seg), vaultRel: seg });
+   890→    }
+   891→    for (const seg of commandFolderSegments()) {
+   892→      dirs.push({ dir: joinHome(home, seg), vaultRel: null });
+   893→    }
+   894→
+   895→    const byId = new Map<string, Skill>();
+   896→    for (const { dir, vaultRel } of dirs) {
+   897→      let entries: string[];
+   898→      try {
+   899→        entries = fs.readdirSync(dir);
+   900→      } catch {
+   901→        continue; // missing dir → skip
+   902→      }
+   903→      for (const entry of entries.sort()) {
+   904→        if (!/\.md$/i.test(entry)) continue;
+   905→        const abs = nodePath.join(dir, entry);
+   906→        let text: string;
+   907→        try {
+   908→          if (!fs.statSync(abs).isFile()) continue;
+   909→          text = fs.readFileSync(abs, "utf8");
+   910→        } catch {
+   911→          continue;
+   912→        }
+   913→        if (byId.has(abs)) continue;
+   914→        const fm = parseFrontmatter(text);
+   915→        const stem = entry.replace(/\.md$/i, "");
+   916→        const name = fm.name && fm.name.trim() ? fm.name.trim() : stem;
+   917→        const description =
+   918→          fm.description && fm.description.trim()
+   919→            ? fm.description.trim()
+   920→            : firstHeading(text) ?? "(no description)";
+   921→        const vaultPath = vaultRel ? `${vaultRel}/${entry}` : null;
+   922→        const relForTag = vaultPath ?? `${nodePath.basename(dir)}/${entry}`;
+   923→        byId.set(abs, {
+   924→          id: abs,
+   925→          kind: "command",
+   926→          name,
+   927→          description,
+   928→          path: abs,
+   929→          vaultPath,
+   930→          sourceRoot: dir,
+   931→          sourceLabel: inferSourceLabel(abs),
+   932→          detection: vaultRel ? "adapter" : "external",
+   933→          tags: resolveSkillTags({
+   934→            relativePath: relForTag,
+   935→            description,
+   936→            frontmatterTags: fm.tags ?? [],
+   937→          }),
+   938→        });
+   939→      }
+   940→    }
+   941→    this.commands = Array.from(byId.values()).sort((a, b) =>
+   942→      a.name.localeCompare(b.name),
+   943→    );
+   944→  }
+   945→
+   946→  /**
+   947→   * The <select> option value reflecting a skill's stored agent choice, used to
+   948→   * preselect the dropdown. Falls back to Default when the stored value is not a
+   949→   * currently-selectable option (unknown built-in, or a custom path no longer in
+   950→   * the discovered set) so the UI never shows an orphaned selection — launch
+   951→   * already fails closed independently via `resolveAgentLaunch`.
+   952→   */
+   953→  agentOptionValue(id: string): string {
+   954→    const stored = this.settings.skillAgent[id];
+   955→    if (!stored || typeof stored !== "object") return encodeAgentChoice(null);
+   956→    if (stored.kind === "builtin") {
+   957→      return isAllowedBuiltinAgent(stored.name)
+   958→        ? encodeAgentChoice(stored)
+   959→        : encodeAgentChoice(null);
+   960→    }
+   961→    if (stored.kind === "custom") {
+   962→      return this.customAgents.some((a) => a.path === stored.path)
+   963→        ? encodeAgentChoice(stored)
+   964→        : encodeAgentChoice(null);
+   965→    }
+   966→    return encodeAgentChoice(null);
+   967→  }
+   968→
+   969→  /**
+   970→   * Persist a skill's agent choice from the dropdown's encoded option value. The
+   971→   * value is decoded then VALIDATED before storing: a built-in name must be in
+   972→   * the hardcoded allowlist; a custom path must pass `isValidCustomAgentPath`
+   973→   * against the scan dir AND be one of the currently-discovered agents. Anything
+   974→   * else (incl. Default) deletes the key so data.json stays clean. Launch
+   975→   * re-validates independently, so storage is defense-in-depth, not the gate.
+   976→   */
+   977→  async setSkillAgent(id: string, encoded: string): Promise<void> {
+   978→    const choice = decodeAgentChoice(encoded);
+   979→    let store: SkillAgent | null = null;
+   980→    if (choice.kind === "builtin" && isAllowedBuiltinAgent(choice.name)) {
+   981→      store = { kind: "builtin", name: choice.name };
+   982→    } else if (choice.kind === "custom") {
+   983→      const dir = this.agentConfigDir();
+   984→      const known = this.customAgents.some((a) => a.path === choice.path);
+   985→      if (dir && known && isValidCustomAgentPath(choice.path, dir)) {
+   986→        store = { kind: "custom", path: choice.path };
+   987→      }
+   988→    }
+   989→    if (store) {
+   990→      this.settings.skillAgent[id] = store;
+   991→    } else {
+   992→      delete this.settings.skillAgent[id];
+   993→    }
+   994→    await this.saveSettings();
+   995→  }
+   996→
+   997→  /**
+   998→   * The <select> option value reflecting a skill's stored HARNESS choice (M15),
+   999→   * for preselecting the dropdown. Resolves to a built-in omnigent harness name,
+  1000→   * a `custom:<id>` value (only if that custom harness still exists), or the
+  1001→   * Default sentinel — so the UI never shows an orphaned selection. Launch
+  1002→   * re-validates via `resolveSkillHarness`.
+  1003→   */
+  1004→  harnessOptionValue(id: string): string {
+  1005→    const choice = parseHarnessValue(this.settings.skillHarness[id]);
+  1006→    if (choice.kind === "omnigent") return choice.name;
+  1007→    if (
+  1008→      choice.kind === "custom" &&
+  1009→      this.settings.harnesses.some((h) => h.id === choice.id)
+  1010→    ) {
+  1011→      return encodeCustomHarnessChoice(choice.id);
+  1012→    }
+  1013→    return HARNESS_DEFAULT_VALUE;
+  1014→  }
+  1015→
+  1016→  /**
+  1017→   * Human-readable label for a skill's effective AGENT (M16) — shown on the row
+  1018→   * so the assignment is visible without opening Configuration. Mirrors
+  1019→   * `agentOptionValue`'s fail-closed fallback: a stale/unknown choice reads as
+  1020→   * "Default". Returns "Default", a built-in name (polly/debby), or a custom
+  1021→   * agent's display name.
+  1022→   */
+  1023→  agentLabelFor(id: string): string {
+  1024→    const choice = decodeAgentChoice(this.agentOptionValue(id));
+  1025→    if (choice.kind === "builtin") return choice.name;
+  1026→    if (choice.kind === "custom") {
+  1027→      const a = this.customAgents.find((x) => x.path === choice.path);
+  1028→      return a ? a.name : "Default";
+  1029→    }
+  1030→    return "Default";
+  1031→  }
+  1032→
+  1033→  /**
+  1034→   * Human-readable label for a skill's effective HARNESS (M16) — shown on the
+  1035→   * row. "Default", an omnigent harness name, or a custom harness's label. Uses
+  1036→   * `harnessOptionValue` so a dropped custom harness degrades to "Default".
+  1037→   */
+  1038→  harnessLabelFor(id: string): string {
+  1039→    const v = this.harnessOptionValue(id);
+  1040→    if (v === HARNESS_DEFAULT_VALUE) return "Default";
+  1041→    const choice = parseHarnessValue(v);
+  1042→    if (choice.kind === "custom") {
+  1043→      const h = this.settings.harnesses.find((x) => x.id === choice.id);
+  1044→      return h ? h.label : "Default";
+  1045→    }
+  1046→    // An omnigent harness — label it as such to distinguish from custom ones.
+  1047→    return `omnigent - ${v}`;
+  1048→  }
+  1049→
+  1050→  /**
+  1051→   * True iff the skill's effective harness is a user-defined CUSTOM harness
+  1052→   * (non-omnigent). When so, omnigent AGENTS (polly/debby/the YAML bundle
+  1053→   * format) do NOT apply — a custom harness spawns its own binary and never
+  1054→   * routes through omnigent — so the Agent selector is filtered to Default and
+  1055→   * the row's Agent pill is hidden. (Default + omnigent `--harness` both still
+  1056→   * run via omnigent, so agents remain available for those.)
+  1057→   */
+  1058→  skillUsesCustomHarness(id: string): boolean {
+  1059→    return parseHarnessValue(this.harnessOptionValue(id)).kind === "custom";
+  1060→  }
+  1061→
+  1062→  /**
+  1063→   * Persist a skill's HARNESS choice from the dropdown's option value (M15). A
+  1064→   * built-in omnigent harness name or a `custom:<id>` that still exists is
+  1065→   * stored; Default / anything unrecognized deletes the key so data.json stays
+  1066→   * clean. Launch re-validates independently (`resolveSkillHarness`), so storage
+  1067→   * is defense-in-depth.
+  1068→   */
+  1069→  async setSkillHarness(id: string, value: string): Promise<void> {
+  1070→    const choice = parseHarnessValue(value);
+  1071→    if (choice.kind === "omnigent") {
+  1072→      this.settings.skillHarness[id] = choice.name;
+  1073→    } else if (
+  1074→      choice.kind === "custom" &&
+  1075→      this.settings.harnesses.some((h) => h.id === choice.id)
+  1076→    ) {
+  1077→      this.settings.skillHarness[id] = encodeCustomHarnessChoice(choice.id);
+  1078→    } else {
+  1079→      delete this.settings.skillHarness[id];
+  1080→    }
+  1081→    await this.saveSettings();
+  1082→  }
+  1083→
+  1084→  // --- Custom harnesses (M15.3) ------------------------------------------
+  1085→  /** The user-defined custom harnesses (for the Harnesses tab + dropdown). */
+  1086→  getCustomHarnesses(): CustomHarness[] {
+  1087→    return this.settings.harnesses;
+  1088→  }
+  1089→
+  1090→  /**
+  1091→   * Add a custom harness from the Settings form. `label` names it; `commandLine`
+  1092→   * is the full single-line command (binary + args), e.g.
+  1093→   * `/usr/local/bin/isaac -p {prompt}`. The line is whitespace-split into an argv
+  1094→   * array (`parseHarnessCommandLine` — NOT a shell tokenizer) and validated
+  1095→   * fail-closed (`isValidCustomHarnessCommand`: absolute binary + a `{prompt}`
+  1096→   * token). Returns an error string on rejection (shown as a Notice by the
+  1097→   * caller), or null on success. A stable id is generated.
+  1098→   */
+  1099→  async addCustomHarness(
+  1100→    label: string,
+  1101→    commandLine: string,
+  1102→  ): Promise<string | null> {
+  1103→    const trimmedLabel = label.trim();
+  1104→    if (!trimmedLabel) return "Harness needs a name.";
+  1105→    const command = parseHarnessCommandLine(commandLine);
+  1106→    if (!isValidCustomHarnessCommand(command)) {
+  1107→      return (
+  1108→        "Invalid command: the first token (binary) must be an ABSOLUTE path and " +
+  1109→        "the command must include the {prompt} placeholder. " +
+  1110→        "Example: /usr/local/bin/isaac -p {prompt}"
+  1111→      );
+  1112→    }
+  1113→    const id = this.generateHarnessId(trimmedLabel);
+  1114→    this.settings.harnesses.push({ id, label: trimmedLabel, command });
+  1115→    await this.saveSettings();
+  1116→    this.refreshViews();
+  1117→    return null;
+  1118→  }
+  1119→
+  1120→  /** Remove a custom harness by id, and clear any skill selections pointing at it. */
+  1121→  /**
+  1122→   * Set (or clear, when blank) a custom harness's Resume command (M20). Parsed
+  1123→   * like the launch command but WITHOUT a `{prompt}` requirement (resume
+  1124→   * continues an existing session); the binary must still be an absolute path.
+  1125→   * Returns an error string on invalid input, else null.
+  1126→   */
+  1127→  async setCustomHarnessResume(
+  1128→    id: string,
+  1129→    commandLine: string,
+  1130→  ): Promise<string | null> {
+  1131→    const h = this.settings.harnesses.find((x) => x.id === id);
+  1132→    if (!h) return "Harness not found.";
+  1133→    const line = commandLine.trim();
+  1134→    if (!line) {
+  1135→      delete h.resumeCommand;
+  1136→      await this.saveSettings();
+  1137→      return null;
+  1138→    }
+  1139→    const argv = parseHarnessCommandLine(line);
+  1140→    if (
+  1141→      !Array.isArray(argv) ||
+  1142→      argv.length === 0 ||
+  1143→      !argv.every((t) => typeof t === "string" && t.length > 0) ||
+  1144→      !nodePath.isAbsolute(argv[0])
+  1145→    ) {
+  1146→      return "Invalid resume command: the first token (binary) must be an ABSOLUTE path. Example: /usr/local/bin/isaac resume";
+  1147→    }
+  1148→    h.resumeCommand = argv;
+  1149→    await this.saveSettings();
+  1150→    return null;
+  1151→  }
+  1152→
+  1153→  async removeCustomHarness(id: string): Promise<void> {
+  1154→    this.settings.harnesses = this.settings.harnesses.filter((h) => h.id !== id);
+  1155→    // Drop any per-skill selection that referenced this now-deleted harness.
+  1156→    const ref = encodeCustomHarnessChoice(id);
+  1157→    for (const [skillId, value] of Object.entries(this.settings.skillHarness)) {
+  1158→      if (value === ref) delete this.settings.skillHarness[skillId];
+  1159→    }
+  1160→    await this.saveSettings();
+  1161→    this.refreshViews();
+  1162→  }
+  1163→
+  1164→  /** A stable, collision-free id derived from the label. */
+  1165→  private generateHarnessId(label: string): string {
+  1166→    const base =
+  1167→      label
+  1168→        .toLowerCase()
+  1169→        .replace(/[^a-z0-9]+/g, "-")
+  1170→        .replace(/^-+|-+$/g, "")
+  1171→        .slice(0, 32) || "harness";
+  1172→    let id = base;
+  1173→    let n = 2;
+  1174→    const taken = new Set(this.settings.harnesses.map((h) => h.id));
+  1175→    while (taken.has(id)) id = `${base}-${n++}`;
+  1176→    return id;
+  1177→  }
+  1178→
+  1179→  // --- Bash scripts (Scripts tab) ----------------------------------------
+  1180→  /** The user-defined bash scripts (for the Scripts tab). */
+  1181→  getBashScripts(): BashScript[] {
+  1182→    return this.settings.bashScripts;
+  1183→  }
+  1184→
+  1185→  /** A stable, collision-free bash-script id derived from the label. */
+  1186→  private generateBashScriptId(label: string): string {
+  1187→    const base =
+  1188→      label
+  1189→        .toLowerCase()
+  1190→        .replace(/[^a-z0-9]+/g, "-")
+  1191→        .replace(/^-+|-+$/g, "")
+  1192→        .slice(0, 32) || "script";
+  1193→    let id = base;
+  1194→    let n = 2;
+  1195→    const taken = new Set(this.settings.bashScripts.map((s) => s.id));
+  1196→    while (taken.has(id)) id = `${base}-${n++}`;
+  1197→    return id;
+  1198→  }
+  1199→
+  1200→  /**
+  1201→   * Add a bash script from the Scripts-tab form. `label` names it; `body` is the
+  1202→   * script source (multi-line ok). Returns an error string on rejection, else
+  1203→   * null. A stable id is generated.
+  1204→   */
+  1205→  async addBashScript(
+  1206→    label: string,
+  1207→    body: string,
+  1208→    launchMode: LaunchMode,
+  1209→    description?: string,
+  1210→  ): Promise<string | null> {
+  1211→    const trimmedLabel = label.trim();
+  1212→    if (!trimmedLabel) return "Script needs a name.";
+  1213→    if (!body.trim()) return "Script body is empty.";
+  1214→    const script: BashScript = {
+  1215→      id: this.generateBashScriptId(trimmedLabel),
+  1216→      label: trimmedLabel,
+  1217→      body,
+  1218→      launchMode: launchMode === "terminal" ? "terminal" : "headless",
+  1219→    };
+  1220→    const desc = description?.trim();
+  1221→    if (desc) script.description = desc;
+  1222→    this.settings.bashScripts.push(script);
+  1223→    await this.saveSettings();
+  1224→    this.refreshViews();
+  1225→    return null;
+  1226→  }
+  1227→
+  1228→  /** Update an existing bash script in place. Returns an error string, else null. */
+  1229→  async updateBashScript(
+  1230→    id: string,
+  1231→    label: string,
+  1232→    body: string,
+  1233→    launchMode: LaunchMode,
+  1234→    description?: string,
+  1235→  ): Promise<string | null> {
+  1236→    const script = this.settings.bashScripts.find((s) => s.id === id);
+  1237→    if (!script) return "Script not found.";
+  1238→    const trimmedLabel = label.trim();
+  1239→    if (!trimmedLabel) return "Script needs a name.";
+  1240→    if (!body.trim()) return "Script body is empty.";
+  1241→    script.label = trimmedLabel;
+  1242→    script.body = body;
+  1243→    script.launchMode = launchMode === "terminal" ? "terminal" : "headless";
+  1244→    const desc = description?.trim();
+  1245→    if (desc) script.description = desc;
+  1246→    else delete script.description;
+  1247→    await this.saveSettings();
+  1248→    this.refreshViews();
+  1249→    return null;
+  1250→  }
+  1251→
+  1252→  /** Remove a bash script by id. */
+  1253→  async removeBashScript(id: string): Promise<void> {
+  1254→    this.settings.bashScripts = this.settings.bashScripts.filter((s) => s.id !== id);
+  1255→    await this.saveSettings();
+  1256→    this.refreshViews();
+  1257→  }
+  1258→
+  1259→  /**
+  1260→   * Run a bash script by id, per its own launch mode:
+  1261→   *   - terminal → open the user's default terminal running the body (visible).
+  1262→   *   - headless → spawn `bash -c <body>` (or `cmd /c` on Windows) detached via
+  1263→   *     the shared hardened spawn surface, Notices only.
+  1264→   * The body is user-authored and runs only on this explicit click (same trust
+  1265→   * model as custom harnesses). cwd = vault. Desktop-gated.
+  1266→   */
+  1267→  runBashScript(id: string): void {
+  1268→    if (!this.detector.canScanExternal()) {
+  1269→      new Notice("Skill and Harness Manager: running scripts requires the desktop app.");
+  1270→      return;
+  1271→    }
+  1272→    const cwd = this.detector.vaultBasePath();
+  1273→    if (!cwd) {
+  1274→      new Notice("Skill and Harness Manager: could not resolve the vault path; not running.");
+  1275→      return;
+  1276→    }
+  1277→    const script = this.settings.bashScripts.find((s) => s.id === id);
+  1278→    if (!script) return;
+  1279→
+  1280→    if (script.launchMode === "terminal") {
+  1281→      this.runRawInTerminal(script.body, cwd, `script-${script.id}`);
+  1282→      new Notice(`Running "${script.label}" in your terminal…`);
+  1283→      return;
+  1284→    }
+  1285→    // Headless: bash -c <body> (cmd /c on Windows). The body is a single inert
+  1286→    // argv element (shell:false), so it is never re-tokenized by a shell WE spawn
+  1287→    // — `bash -c` interprets it, which is the intended behavior for a script.
+  1288→    const argv =
+  1289→      process.platform === "win32"
+  1290→        ? ["cmd.exe", "/c", script.body]
+  1291→        : ["/bin/bash", "-c", script.body];
+  1292→    this.spawnOmnigent(
+  1293→      argv,
+  1294→      cwd,
+  1295→      `Running "${script.label}" in the background — check for output via Notices.`,
+  1296→      script.label,
+  1297→    );
+  1298→  }
+  1299→
+  1300→  // --- omnigent-configured harness discovery (M15.3) ---------------------
+  1301→  /** Harnesses omnigent has configured (from `omnigent config list`). */
+  1302→  getConfiguredHarnesses(): ConfiguredHarness[] {
+  1303→    return this.configuredHarnesses;
+  1304→  }
+  1305→
+  1306→  /** True once a discovery attempt has completed (to distinguish "empty" from "not yet"). */
+  1307→  hasDiscoveredHarnesses(): boolean {
+  1308→    return this.harnessesDiscovered;
+  1309→  }
+  1310→
+  1311→  /**
+  1312→   * The omnigent `--harness` values offered in the per-skill dropdown. Prefers
+  1313→   * the discovered, CONFIGURED harnesses (lowercased, intersected with the
+  1314→   * hardcoded allowlist for safety/correctness); before discovery completes (or
+  1315→   * if it found none), falls back to the full allowlist so the dropdown is never
+  1316→   * empty. Deduped, order-preserving.
+  1317→   */
+  1318→  getOmnigentHarnessOptions(): string[] {
+  1319→    const discovered = this.configuredHarnesses
+  1320→      .filter((h) => h.configured)
+  1321→      .map((h) => h.name.toLowerCase())
+  1322→      .filter((n) => isAllowedHarness(n));
+  1323→    const source = discovered.length > 0 ? discovered : [...OMNIGENT_HARNESSES];
+  1324→    return Array.from(new Set(source));
+  1325→  }
+  1326→
+  1327→  /** Re-run harness discovery and refresh open views (the Refresh path). */
+  1328→  async refreshConfiguredHarnesses(): Promise<void> {
+  1329→    await this.discoverConfiguredHarnesses();
+  1330→    this.refreshViews();
+  1331→  }
+  1332→
+  1333→  /**
+  1334→   * Discover the harnesses omnigent has configured by running
+  1335→   * `omnigent config list` and parsing its "Credentials (by harness)" section.
+  1336→   * Best-effort + fail-quiet: desktop-gated, the omnigent binary resolved
+  1337→   * silently (no Notice), a bounded stdout capture with a hard timeout, and any
+  1338→   * failure leaves the cache empty (the dropdown then falls back to the full
+  1339→   * allowlist). This is a READ-ONLY omnigent query (config list), not a launch —
+  1340→   * distinct from the hardened launch spawn, and it never passes user input.
+  1341→   */
+  1342→  private async discoverConfiguredHarnesses(): Promise<void> {
+  1343→    const finish = (list: ConfiguredHarness[]) => {
+  1344→      this.configuredHarnesses = list;
+  1345→      this.harnessesDiscovered = true;
+  1346→      this.refreshViews();
+  1347→    };
+  1348→    if (!this.detector.canScanExternal()) return finish([]);
+  1349→    const resolution = resolveOmnigentBinary({
+  1350→      override: this.settings.omnigentBinaryPath,
+  1351→      homedir: os.homedir(),
+  1352→      exists: (p) => fs.existsSync(p),
+  1353→    });
+  1354→    if (resolution.status !== "ok") return finish([]);
+  1355→
+  1356→    const env = this.launchEnv();
+  1357→    let child;
+  1358→    try {
+  1359→      // Fixed args only; no user input. stdout piped for parsing; stderr/stdin ignored.
+  1360→      child = spawn(resolution.path, ["config", "list"], {
+  1361→        env,
+  1362→        shell: false,
+  1363→        windowsHide: true,
+  1364→        stdio: ["ignore", "pipe", "ignore"],
+  1365→      });
+  1366→    } catch (err) {
+  1367→      console.error("[skill-layer] harness discovery spawn threw:", err);
+  1368→      return finish([]);
+  1369→    }
+  1370→    let stdout = "";
+  1371→    let done = false;
+  1372→    const settle = (list: ConfiguredHarness[]) => {
+  1373→      if (done) return;
+  1374→      done = true;
+  1375→      finish(list);
+  1376→    };
+  1377→    // Hard timeout so a hung `omnigent` never leaves discovery pending.
+  1378→    const timer = window.setTimeout(() => {
+  1379→      try {
+  1380→        child.kill();
+  1381→      } catch {
+  1382→        /* ignore */
+  1383→      }
+  1384→      settle([]);
+  1385→    }, 8000);
+  1386→    child.stdout?.on("data", (chunk: Buffer) => {
+  1387→      // Bound the captured output defensively.
+  1388→      if (stdout.length < 64_000) stdout += chunk.toString();
+  1389→    });
+  1390→    child.on("error", (err) => {
+  1391→      console.error("[skill-layer] harness discovery error:", err);
+  1392→      window.clearTimeout(timer);
+  1393→      settle([]);
+  1394→    });
+  1395→    child.on("close", (code) => {
+  1396→      window.clearTimeout(timer);
+  1397→      settle(code === 0 ? parseConfiguredHarnesses(stdout) : []);
+  1398→    });
+  1399→    child.unref?.();
+  1400→  }
+  1401→
+  1402→  /**
+  1403→   * Persist the "show hidden folders" toggle and apply it live (M15). Enabling
+  1404→   * patches the vault adapter to reveal dot-folders; disabling reverts it. Both
+  1405→   * paths are idempotent and no-op on non-desktop / non-FileSystemAdapter.
+  1406→   */
+  1407→  async setShowHiddenFolders(value: boolean): Promise<void> {
+  1408→    this.settings.showHiddenFolders = value;
+  1409→    await this.saveSettings();
+  1410→    if (value) {
+  1411→      await this.hiddenFiles.enable();
+  1412→    } else {
+  1413→      await this.hiddenFiles.disable();
+  1414→    }
+  1415→  }
+  1416→
+  1417→  /** True on desktop with a real FileSystemAdapter (hidden-file reveal works). */
+  1418→  canRevealHiddenFolders(): boolean {
+  1419→    return this.hiddenFiles.canPatch();
+  1420→  }
+  1421→
+  1422→  /**
+  1423→   * Populate the file-explorer right-click menu (file-menu event). Desktop-only
+  1424→   * (consistent with M1 launch — no spawn capability on mobile). For each
+  1425→   * right-click-enabled skill, add an item that launches it one-shot with the
+  1426→   * clicked file/folder's ABSOLUTE path as context. The absolute path is
+  1427→   * path.join(vaultBasePath, file.path), which works identically for files and
+  1428→   * folders (both carry a vault-relative `path`).
+  1429→   */
+  1430→  private addFileMenuItems(menu: Menu, file: TAbstractFile): void {
+  1431→    // Same desktop + filesystem gate as launchSkill: if we can't spawn, don't
+  1432→    // advertise a launch action.
+  1433→    if (!this.detector.canScanExternal()) return;
+  1434→    const base = this.detector.vaultBasePath();
+  1435→    if (!base) return;
+  1436→    // file.path is vault-relative for both TFile and TFolder; join → absolute.
+  1437→    const contextAbsPath = nodePath.join(base, file.path);
+  1438→
+  1439→    const items = buildRightClickMenuItems(
+  1440→      this.skills,
+  1441→      (id) => this.isRightClickEnabled(id),
+  1442→      contextAbsPath,
+  1443→    );
+  1444→    for (const it of items) {
+  1445→      menu.addItem((item) => {
+  1446→        item
+  1447→          .setTitle(it.title)
+  1448→          .setIcon("brain-circuit")
+  1449→          .onClick(() => {
+  1450→            const skill = this.getSkillById(it.skillId);
+  1451→            if (skill) void this.launchSkill(skill, it.contextPath);
+  1452→          });
+  1453→      });
+  1454→    }
+  1455→  }
+  1456→
+  1457→  /** True if `id` renders to an <svg> glyph via `setIcon` (naming-scheme agnostic). */
+  1458→  private iconResolves(id: string): boolean {
+  1459→    if (!id) return false;
+  1460→    const el = activeDocument.createElement("div");
+  1461→    setIcon(el, id);
+  1462→    // Confirm an actual <svg> was inserted (not merely some child node), so an
+  1463→    // unknown id that produces a non-SVG node can't false-positive.
+  1464→    const ok = elementHasSvg(el);
+  1465→    el.remove();
+  1466→    return ok;
+  1467→  }
+  1468→
+  1469→  /**
+  1470→   * Resolve the icon a pinned skill should display: per-skill choice, else the
+  1471→   * legacy global icon (migration), else the built-in default — first one that
+  1472→   * actually renders.
+  1473→   */
+  1474→  iconFor(id: string): string {
+  1475→    return resolvePinnedIcon({
+  1476→      perSkill: this.settings.skillIcons[id],
+  1477→      legacyGlobal: this.settings.pinnedIcon,
+  1478→      isValid: (i) => this.iconResolves(i),
+  1479→    });
+  1480→  }
+  1481→
+  1482→  /**
+  1483→   * Handle a "Pin to ribbon" request: reuse the skill's remembered icon if it
+  1484→   * still resolves (pin immediately, no picker); otherwise open the picker.
+  1485→   */
+  1486→  requestPin(skill: Skill, onDone?: () => void): void {
+  1487→    const action = pinAction({
+  1488→      remembered: this.settings.skillIcons[skill.id],
+  1489→      isValid: (i) => this.iconResolves(i),
+  1490→    });
+  1491→    if (action.kind === "pin") {
+  1492→      void this.setSkillIcon(skill, action.icon, onDone);
+  1493→    } else {
+  1494→      this.openIconPicker(skill, onDone);
+  1495→    }
+  1496→  }
+  1497→
+  1498→  /**
+  1499→   * Open the searchable Lucide icon picker; choosing pins / re-icons the skill.
+  1500→   * `onDone` (M16) lets a caller — e.g. the per-skill Configuration modal —
+  1501→   * re-render itself after the choice is applied.
+  1502→   */
+  1503→  openIconPicker(skill: Skill, onDone?: () => void): void {
+  1504→    new IconPickerModal(this.app, this.settings.skillIcons[skill.id], (iconId) => {
+  1505→      void this.setSkillIcon(skill, iconId, onDone);
+  1506→    }).open();
+  1507→  }
+  1508→
+  1509→  /** The effective default pinned-ribbon icon (user global, else the built-in). */
+  1510→  defaultPinnedIcon(): string {
+  1511→    return this.settings.pinnedIcon ?? DEFAULT_PINNED_ICON;
+  1512→  }
+  1513→
+  1514→  /**
+  1515→   * Open the picker for the GLOBAL default pinned-ribbon icon (the fallback used
+  1516→   * by any pinned skill that hasn't chosen its own icon). `onDone` lets the
+  1517→   * settings tab re-render its preview after a choice.
+  1518→   */
+  1519→  openDefaultIconPicker(onDone?: () => void): void {
+  1520→    new IconPickerModal(this.app, this.defaultPinnedIcon(), (iconId) => {
+  1521→      void this.setDefaultPinnedIcon(iconId, onDone);
+  1522→    }).open();
+  1523→  }
+  1524→
+  1525→  /** Set the global default pinned-ribbon icon; refresh fallback-driven ribbons. */
+  1526→  async setDefaultPinnedIcon(iconId: string, onDone?: () => void): Promise<void> {
+  1527→    if (!this.iconResolves(iconId)) {
+  1528→      new Notice(`Skill and Harness Manager: "${iconId}" is not a known icon.`);
+  1529→      return;
+  1530→    }
+  1531→    this.settings.pinnedIcon = iconId;
+  1532→    await this.saveSettings();
+  1533→    this.refreshAllPinnedRibbons();
+  1534→    this.refreshViews();
+  1535→    onDone?.();
+  1536→  }
+  1537→
+  1538→  /** Clear the global default back to the built-in fallback ("play"). */
+  1539→  async clearDefaultPinnedIcon(onDone?: () => void): Promise<void> {
+  1540→    delete this.settings.pinnedIcon;
+  1541→    await this.saveSettings();
+  1542→    this.refreshAllPinnedRibbons();
+  1543→    this.refreshViews();
+  1544→    onDone?.();
+  1545→  }
+  1546→
+  1547→  /**
+  1548→   * Rebuild every persisted pin's ribbon icon. Pins with their own
+  1549→   * `skillIcons[id]` keep it; pins relying on the fallback pick up the new global
+  1550→   * default. Used after the global default changes.
+  1551→   */
+  1552→  private refreshAllPinnedRibbons(): void {
+  1553→    for (const el of this.ribbonIcons.values()) el.remove();
+  1554→    this.ribbonIcons.clear();
+  1555→    this.recreatePinnedRibbons();
+  1556→  }
+  1557→
+  1558→  /**
+  1559→   * Set a skill's ribbon icon (the pin action). Pins if not already pinned, or
+  1560→   * updates the existing ribbon icon in place. Persisted in data.json only.
+  1561→   */
+  1562→  async setSkillIcon(skill: Skill, iconId: string, onDone?: () => void): Promise<void> {
+  1563→    if (!this.iconResolves(iconId)) {
+  1564→      new Notice(`Skill and Harness Manager: "${iconId}" is not a known icon.`);
+  1565→      return;
+  1566→    }
+  1567→    const wasPinned = this.isPinned(skill.id);
+  1568→    this.settings.skillIcons[skill.id] = iconId;
+  1569→    if (!wasPinned) this.settings.pinnedSkillIds.push(skill.id);
+  1570→    await this.saveSettings();
+  1571→
+  1572→    // Recreate the ribbon icon in place (no duplicates / leaks).
+  1573→    const existing = this.ribbonIcons.get(skill.id);
+  1574→    if (existing) {
+  1575→      existing.remove();
+  1576→      this.ribbonIcons.delete(skill.id);
+  1577→    }
+  1578→    this.addPinnedRibbon(skill);
+  1579→    this.addPinnedCommand(skill); // no-op if already registered
+  1580→
+  1581→    new Notice(
+  1582→      `Skill and Harness Manager: ${wasPinned ? "updated icon for" : "pinned"} "${skill.name}".`,
+  1583→    );
+  1584→    this.refreshViews();
+  1585→    onDone?.();
+  1586→  }
+  1587→
+  1588→  async unpinById(id: string): Promise<void> {
+  1589→    this.settings.pinnedSkillIds = this.settings.pinnedSkillIds.filter(
+  1590→      (x) => x !== id,
+  1591→    );
+  1592→    // Keep settings.skillIcons[id] so the chosen icon is remembered across an
+  1593→    // unpin/re-pin cycle (re-pin reuses it without re-opening the picker).
+  1594→    await this.saveSettings();
+  1595→
+  1596→    const el = this.ribbonIcons.get(id);
+  1597→    if (el) {
+  1598→      el.remove();
+  1599→      this.ribbonIcons.delete(id);
+  1600→    }
+  1601→    this.removePinnedCommand(id);
+  1602→    this.refreshViews();
+  1603→  }
+  1604→
+  1605→  /** Refresh any open browser views (e.g. after a pin/icon change). */
+  1606→  private refreshViews(): void {
+  1607→    for (const leaf of this.app.workspace.getLeavesOfType(SKILL_LAYER_VIEW)) {
+  1608→      const view = leaf.view;
+  1609→      if (view instanceof SkillBrowserView) view.refresh();
+  1610→    }
+  1611→  }
+  1612→
+  1613→  /** Recreate ribbon icons + commands for all persisted pins (on load). */
+  1614→  private recreatePinnedRibbons(): void {
+  1615→    for (const id of this.settings.pinnedSkillIds) {
+  1616→      // Use the live skill if found, else a minimal placeholder by path so the
+  1617→      // pin still works (and can be unpinned) even if the file moved/vanished.
+  1618→      const skill = this.getSkillById(id) ?? this.placeholderSkill(id);
+  1619→      this.addPinnedRibbon(skill);
+  1620→      this.addPinnedCommand(skill);
+  1621→    }
+  1622→  }
+  1623→
+  1624→  private placeholderSkill(id: string): Skill {
+  1625→    const base = id.replace(/\\/g, "/").split("/").pop() ?? id;
+  1626→    return {
+  1627→      id,
+  1628→      name: base,
+  1629→      description: "(skill not currently detected)",
+  1630→      path: id,
+  1631→      vaultPath: null,
+  1632→      sourceRoot: "",
+  1633→      sourceLabel: "unknown",
+  1634→      detection: "external",
+  1635→      tags: [],
+  1636→    };
+  1637→  }
+  1638→
+  1639→  private addPinnedRibbon(skill: Skill): void {
+  1640→    if (this.ribbonIcons.has(skill.id)) return;
+  1641→    const el = this.addRibbonIcon(
+  1642→      this.iconFor(skill.id),
+  1643→      `Skill and Harness Manager: Run ${skill.name}`,
+  1644→      () => void this.launchSkill(this.getSkillById(skill.id) ?? skill),
+  1645→    );
+  1646→    this.ribbonIcons.set(skill.id, el);
+  1647→  }
+  1648→
+  1649→  private addPinnedCommand(skill: Skill): void {
+  1650→    if (this.pinnedCommandIds.has(skill.id)) return;
+  1651→    const localId = this.commandLocalId(skill.id);
+  1652→    this.addCommand({
+  1653→      id: localId,
+  1654→      name: `Run ${skill.name}`,
+  1655→      callback: () => void this.launchSkill(this.getSkillById(skill.id) ?? skill),
+  1656→    });
+  1657→    // The full, globally-unique id is `<pluginId>:<localId>` — build it
+  1658→    // ourselves so removal does not depend on the returned object's id.
+  1659→    this.pinnedCommandIds.set(skill.id, `${this.manifest.id}:${localId}`);
+  1660→  }
+  1661→
+  1662→  private removePinnedCommand(id: string): void {
+  1663→    const fullId = this.pinnedCommandIds.get(id);
+  1664→    if (!fullId) return;
+  1665→    // `removeCommand` is not in the public API; use it when present so the
+  1666→    // command disappears immediately, otherwise it clears on next reload.
+  1667→    const commands = (this.app as unknown as { commands?: CommandsApi }).commands;
+  1668→    commands?.removeCommand?.(fullId);
+  1669→    this.pinnedCommandIds.delete(id);
+  1670→    // Free the local id so it can be reused.
+  1671→    this.usedCommandLocalIds.delete(fullId.slice(this.manifest.id.length + 1));
+  1672→  }
+  1673→
+  1674→  /**
+  1675→   * Deterministic, charset-safe local command id. Combines a djb2 hash of the
+  1676→   * full path with a sanitized basename, then guarantees uniqueness against a
+  1677→   * live set so two distinct skills can never collide on the same id.
+  1678→   */
+  1679→  private commandLocalId(skillId: string): string {
+  1680→    let hash = 5381;
+  1681→    for (let i = 0; i < skillId.length; i++) {
+  1682→      hash = ((hash << 5) + hash + skillId.charCodeAt(i)) | 0;
+  1683→    }
+  1684→    const slug =
+  1685→      (skillId.replace(/\\/g, "/").split("/").pop() ?? "")
+  1686→        .toLowerCase()
+  1687→        .replace(/[^a-z0-9]+/g, "-")
+  1688→        .replace(/^-+|-+$/g, "")
+  1689→        .slice(0, 24) || "skill";
+  1690→    const stem = `run-${(hash >>> 0).toString(36)}-${slug}`;
+  1691→    let candidate = stem;
+  1692→    let n = 2;
+  1693→    while (this.usedCommandLocalIds.has(candidate)) {
+  1694→      candidate = `${stem}-${n++}`;
+  1695→    }
+  1696→    this.usedCommandLocalIds.add(candidate);
+  1697→    return candidate;
+  1698→  }
+  1699→
+  1700→  // --- Launch ------------------------------------------------------------
+  1701→  /**
+  1702→   * Expand + highlight a vault file in Obsidian's file-explorer (left pane), so
+  1703→   * the user sees the whole folder a multi-file skill lives in. Uses the
+  1704→   * file-explorer view's private `revealInFolder` — the SAME method the built-in
+  1705→   * "Reveal active file in navigation" command drives — behind a narrow guarded
+  1706→   * cast (no public API exists). Best-effort: if the explorer isn't open or the
+  1707→   * internal shape changes, it silently no-ops rather than throwing. `revealLeaf`
+  1708→   * ensures the sidebar is actually showing.
+  1709→   */
+  1710→  private revealInFileExplorer(file: TAbstractFile): void {
+  1711→    const leaf = this.app.workspace.getLeavesOfType("file-explorer")[0];
+  1712→    if (!leaf) return;
+  1713→    const view = leaf.view as unknown as {
+  1714→      revealInFolder?: (f: TAbstractFile) => void;
+  1715→      fileItems?: Record<
+  1716→        string,
+  1717→        {
+  1718→          file?: TAbstractFile;
+  1719→          collapsed?: boolean;
+  1720→          setCollapsed?: (collapsed: boolean) => unknown;
+  1721→        }
+  1722→      >;
+  1723→    };
+  1724→    try {
+  1725→      if (typeof view.revealInFolder !== "function") return;
+  1726→      // Expands ancestors + scrolls to + highlights the target folder.
+  1727→      view.revealInFolder(file);
+  1728→      void this.app.workspace.revealLeaf(leaf);
+  1729→
+  1730→      // Isolate the target: expand ONLY it and collapse its sibling folders, so
+  1731→      // clicking one skill doesn't leave every neighbour in `.claude/skills` or
+  1732→      // `.agents/skills` expanded. Only DIRECT siblings are touched — the rest
+  1733→      // of the user's tree state is left alone. Deferred a tick so the freshly
+  1734→      // revealed folder's tree item exists in `fileItems` before we toggle it.
+  1735→      const items = view.fileItems;
+  1736→      const parent = file.parent;
+  1737→      if (!items || !(file instanceof TFolder) || !parent) return;
+  1738→      window.setTimeout(() => {
+  1739→        for (const child of parent.children) {
+  1740→          if (!(child instanceof TFolder)) continue;
+  1741→          const item = items[child.path];
+  1742→          if (!item || typeof item.setCollapsed !== "function") continue;
+  1743→          const shouldExpand = child.path === file.path;
+  1744→          if (item.collapsed !== !shouldExpand) {
+  1745→            void item.setCollapsed(!shouldExpand);
+  1746→          }
+  1747→        }
+  1748→      }, 0);
+  1749→    } catch (err) {
+  1750→      console.error("[skill-layer] revealInFolder failed:", err);
+  1751→    }
+  1752→  }
+  1753→
+  1754→  /**
+  1755→   * Open a skill's file in Obsidian (vault file) or the OS default (dot/external),
+  1756→   * THEN surface where it lives so the user sees the sibling files a multi-file
+  1757→   * skill ships with (scripts/, references/, …):
+  1758→   *  - vault TFile → expand + highlight it in the file-explorer left pane.
+  1759→   *  - dot-folder / external file → reveal it in the OS file manager
+  1760→   *    (`shell.showItemInFolder` opens the containing folder, file selected),
+  1761→   *    since Obsidian's explorer can't show non-indexed paths.
+  1762→   */
+  1763→  async openSkill(skill: Skill): Promise<void> {
+  1764→    const tfile = this.detector.resolveTFile(skill.vaultPath);
+  1765→    if (tfile instanceof TFile) {
+  1766→      await this.openTFileAndRevealFolder(tfile);
+  1767→      return;
+  1768→    }
+  1769→    // A hidden vault skill (dot-folder, e.g. `.claude/skills/…`): it HAS a
+  1770→    // vault-relative path but isn't indexed because the global hidden reveal is
+  1771→    // off. Temporarily flip the reveal on, open it IN OBSIDIAN, and remember it
+  1772→    // so the reveal is turned back off when its tab closes (M16).
+  1773→    if (
+  1774→      skill.vaultPath &&
+  1775→      this.canRevealHiddenFolders() &&
+  1776→      !this.settings.showHiddenFolders
+  1777→    ) {
+  1778→      if (await this.openHiddenSkillTemporarily(skill.vaultPath)) return;
+  1779→      // Fell through: the file never indexed — fall back to the OS app below.
+  1780→    }
+  1781→    // External / fallback — open with the OS default app, then reveal its
+  1782→    // containing folder in the OS file manager.
+  1783→    try {
+  1784→      const result: string = await shell.openPath(skill.path);
+  1785→      if (result) new Notice(`Could not open file: ${result}`);
+  1786→      else shell.showItemInFolder(skill.path);
+  1787→    } catch (err) {
+  1788→      console.error("[skill-layer] openPath failed:", err);
+  1789→      new Notice("Could not open skill file.");
+  1790→    }
+  1791→  }
+  1792→
+  1793→  /** Open an in-vault TFile in a leaf and highlight its FOLDER in the explorer. */
+  1794→  private async openTFileAndRevealFolder(tfile: TFile): Promise<void> {
+  1795→    const leaf = this.app.workspace.getLeaf(false);
+  1796→    await leaf.openFile(tfile);
+  1797→    // Highlight the skill's OWN FOLDER (e.g. `omnigent-docs`), not the SKILL.md
+  1798→    // file — so the user sees which skill's folder is selected and its files.
+  1799→    this.revealInFileExplorer(tfile.parent ?? tfile);
+  1800→  }
+  1801→
+  1802→  /**
+  1803→   * Open a hidden (dot-folder) skill by temporarily enabling the global hidden
+  1804→   * reveal, then opening the now-indexed TFile in Obsidian. Sets
+  1805→   * `tempRevealActive` so `onLayoutChange` re-hides once no hidden file remains
+  1806→   * open. Returns false (and undoes the reveal if we just enabled it) when the
+  1807→   * file never becomes indexable — the caller then falls back to the OS app.
+  1808→   */
+  1809→  private async openHiddenSkillTemporarily(vaultPath: string): Promise<boolean> {
+  1810→    // Idempotent; surfaces ALL hidden folders (the ancestor chain must show).
+  1811→    const wasActive = this.tempRevealActive;
+  1812→    await this.hiddenFiles.enable();
+  1813→    const tfile = await this.waitForTFile(vaultPath, 40, 50); // up to ~2s
+  1814→    if (!(tfile instanceof TFile)) {
+  1815→      // Undo the reveal only if WE just enabled it (weren't already holding one).
+  1816→      if (!wasActive && !this.settings.showHiddenFolders) {
+  1817→        await this.hiddenFiles.disable();
+  1818→      }
+  1819→      return false;
+  1820→    }
+  1821→    this.tempRevealActive = true;
+  1822→    await this.openTFileAndRevealFolder(tfile);
+  1823→    this.refreshViews(); // flip the row's button to "Close file"
+  1824→    return true;
+  1825→  }
+  1826→
+  1827→  /**
+  1828→   * Open a hidden (dot-folder) AGENT config by temporarily enabling the global
+  1829→   * hidden reveal, waiting for it to index, then routing to the YAML Viewer when
+  1830→   * enabled (else a normal leaf) and revealing its folder. Mirrors
+  1831→   * `openHiddenSkillTemporarily` but ends at the YAML-viewer/leaf open instead of
+  1832→   * the SKILL.md open. Returns false (undoing a reveal we just enabled) when the
+  1833→   * file never indexes, so the caller falls back to the OS app.
+  1834→   */
+  1835→  private async openHiddenAgentTemporarily(vaultPath: string): Promise<boolean> {
+  1836→    const wasActive = this.tempRevealActive;
+  1837→    await this.hiddenFiles.enable();
+  1838→    const tfile = await this.waitForTFile(vaultPath, 40, 50); // up to ~2s
+  1839→    if (!(tfile instanceof TFile)) {
+  1840→      if (!wasActive && !this.settings.showHiddenFolders) {
+  1841→        await this.hiddenFiles.disable();
+  1842→      }
+  1843→      return false;
+  1844→    }
+  1845→    this.tempRevealActive = true;
+  1846→    // Now that it's indexed, prefer the YAML Viewer; else open in a normal leaf.
+  1847→    if (!(await this.openInYamlViewer(tfile.path))) {
+  1848→      await this.app.workspace.getLeaf(false).openFile(tfile);
+  1849→    }
+  1850→    this.revealInFileExplorer(tfile.parent ?? tfile);
+  1851→    this.refreshViews();
+  1852→    return true;
+  1853→  }
+  1854→
+  1855→  /** Absolute path → vault-relative forward-slash path, or null when out-of-vault. */
+  1856→  private absToVaultRelative(absPath: string): string | null {
+  1857→    const base = this.detector.vaultBasePath();
+  1858→    if (!base) return null;
+  1859→    const rel = nodePath.relative(base, absPath);
+  1860→    if (rel === "" || rel.startsWith("..") || nodePath.isAbsolute(rel)) return null;
+  1861→    return rel.split(nodePath.sep).join("/");
+  1862→  }
+  1863→
+  1864→  /** Poll for a vault-relative path to become an indexed TFile (post-reveal). */
+  1865→  private async waitForTFile(
+  1866→    vaultPath: string,
+  1867→    tries: number,
+  1868→    delayMs: number,
+  1869→  ): Promise<TFile | null> {
+  1870→    for (let i = 0; i < tries; i++) {
+  1871→      const tf = this.detector.resolveTFile(vaultPath);
+  1872→      if (tf instanceof TFile) return tf;
+  1873→      await new Promise<void>((r) => window.setTimeout(r, delayMs));
+  1874→    }
+  1875→    return this.detector.resolveTFile(vaultPath);
+  1876→  }
+  1877→
+  1878→  /** The skill's OWN folder (parent dir of SKILL.md), vault-relative, or null. */
+  1879→  private skillFolderPath(skill: Skill): string | null {
+  1880→    if (!skill.vaultPath) return null;
+  1881→    const i = skill.vaultPath.lastIndexOf("/");
+  1882→    return i > 0 ? skill.vaultPath.slice(0, i) : null;
+  1883→  }
+  1884→
+  1885→  /** Vault paths of every file currently open in ANY leaf (any view type). */
+  1886→  private openFilePaths(): Set<string> {
+  1887→    const paths = new Set<string>();
+  1888→    this.app.workspace.iterateAllLeaves((leaf) => {
+  1889→      const f = (leaf.view as unknown as { file?: TFile }).file;
+  1890→      if (f) paths.add(f.path);
+  1891→    });
+  1892→    return paths;
+  1893→  }
+  1894→
+  1895→  /**
+  1896→   * True iff ANY file within the skill's folder subtree is open — SKILL.md OR a
+  1897→   * sibling script/reference — so the user is still "in" the skill. Keying on the
+  1898→   * folder (not just SKILL.md) lets the user explore the skill's other files
+  1899→   * without the Close-file toggle flipping or a temporary reveal tearing down.
+  1900→   */
+  1901→  isSkillOpen(skill: Skill): boolean {
+  1902→    const folder = this.skillFolderPath(skill);
+  1903→    if (!folder) return false;
+  1904→    const prefix = folder + "/";
+  1905→    for (const p of this.openFilePaths()) if (p.startsWith(prefix)) return true;
+  1906→    return false;
+  1907→  }
+  1908→
+  1909→  /**
+  1910→   * Close ALL of a skill's open tabs — every file under its folder, not just
+  1911→   * SKILL.md (the "Close file" row action means "I'm done with this skill").
+  1912→   * Detaching fires a layout-change; `onLayoutChange` re-hides a temporary reveal
+  1913→   * and refreshes the buttons. We also reconcile inline for immediacy.
+  1914→   */
+  1915→  async closeSkill(skill: Skill): Promise<void> {
+  1916→    const folder = this.skillFolderPath(skill);
+  1917→    if (folder) {
+  1918→      const prefix = folder + "/";
+  1919→      const toDetach: WorkspaceLeaf[] = [];
+  1920→      this.app.workspace.iterateAllLeaves((leaf) => {
+  1921→        const f = (leaf.view as unknown as { file?: TFile }).file;
+  1922→        if (f && f.path.startsWith(prefix)) toDetach.push(leaf);
+  1923→      });
+  1924→      for (const leaf of toDetach) leaf.detach();
+  1925→    }
+  1926→    await this.onLayoutChange();
+  1927→  }
+  1928→
+  1929→  /**
+  1930→   * Set of skill ids that are "open" — i.e. at least one file within the skill's
+  1931→   * folder subtree is open in some leaf. Drives the Open/Close button state and
+  1932→   * the temporary-reveal teardown, so exploring sibling files keeps the skill
+  1933→   * "open" and the reveal alive; only leaving the folder entirely tears it down.
+  1934→   */
+  1935→  private openSkillIds(openPaths: Set<string> = this.openFilePaths()): Set<string> {
+  1936→    const ids = new Set<string>();
+  1937→    for (const s of this.getSkills()) {
+  1938→      const folder = this.skillFolderPath(s);
+  1939→      if (!folder) continue;
+  1940→      const prefix = folder + "/";
+  1941→      for (const p of openPaths) {
+  1942→        if (p.startsWith(prefix)) {
+  1943→          ids.add(s.id);
+  1944→          break;
+  1945→        }
+  1946→      }
+  1947→    }
+  1948→    return ids;
+  1949→  }
+  1950→
+  1951→  /**
+  1952→   * React to workspace layout changes. A TEMPORARY hidden reveal stays on while
+  1953→   * ANY open file is inside a hidden folder — so the user can move freely between
+  1954→   * hidden folders — and is turned back off only once NO open file is in a hidden
+  1955→   * folder (they opened a normal, visible file), and never while the global toggle
+  1956→   * is on. Re-renders the view (Open/Close labels) only when the open-state
+  1957→   * signature changes; the signature folds in the hidden-file state so closing
+  1958→   * the last hidden file (even a non-skill one) still triggers teardown.
+  1959→   */
+  1960→  private async onLayoutChange(): Promise<void> {
+  1961→    const openPaths = this.openFilePaths();
+  1962→    const open = this.openSkillIds(openPaths);
+  1963→    const configDir = this.app.vault.configDir;
+  1964→    const anyHiddenOpen = Array.from(openPaths).some((p) =>
+  1965→      isRevealableHiddenPath(p, configDir),
+  1966→    );
+  1967→    const sig =
+  1968→      Array.from(open).sort().join("|") + "|h:" + (anyHiddenOpen ? "1" : "0");
+  1969→    if (sig === this.lastOpenSkillSig) return;
+  1970→    this.lastOpenSkillSig = sig;
+  1971→
+  1972→    if (
+  1973→      this.tempRevealActive &&
+  1974→      !this.settings.showHiddenFolders &&
+  1975→      !anyHiddenOpen
+  1976→    ) {
+  1977→      await this.hiddenFiles.disable();
+  1978→      this.tempRevealActive = false;
+  1979→    }
+  1980→    this.refreshViews();
+  1981→  }
+  1982→
+  1983→  /**
+  1984→   * Copy the skill's invocation to the clipboard (row action). The copied form is
+  1985→   * an agent-aware CLI that respects the per-skill "Run with" selection — the
+  1986→   * stored choice is re-validated fail-closed by the SAME `resolveAgentLaunch`
+  1987→   * gate `launchSkill` uses, so a stale/invalid custom agent silently degrades to
+  1988→   * the Default (`omnigent run …`) form. The custom path + prompt are shell-quoted
+  1989→   * (see `buildSkillCliInvocation`); the bin NAME `omnigent` is used, not a
+  1990→   * resolved absolute binary, so no binary/desktop capability gate is needed.
+  1991→   */
+  1992→  async copyInvocation(skill: Skill): Promise<void> {
+  1993→    const resolvedH = resolveSkillHarness(
+  1994→      this.settings.skillHarness[skill.id],
+  1995→      this.settings.harnesses,
+  1996→    );
+  1997→    let invocation: string;
+  1998→    if (resolvedH.kind === "custom") {
+  1999→      // A custom harness spawns its own binary; the copyable form is its argv
+  2000→      // template with {prompt} filled in, each token shell-quoted.
+
+[showing lines 1-2000 of 2875; use offset=2001 with limit to continue reading]

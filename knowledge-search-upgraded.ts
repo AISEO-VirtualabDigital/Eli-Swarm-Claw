@@ -45,6 +45,11 @@ const SYNONYMS: Record<string, string[]> = {
   'marketing': ['growth', 'campaign', 'content', 'brand', 'audience'],
   'website': ['web', 'site', 'page', 'landing', 'blog', 'cms'],
   'code': ['programming', 'developer', 'algorithm', 'rust', 'python', 'javascript'],
+  'obsidian': ['vault', 'note', 'markdown', 'frontmatter', 'wikilink', 'plugin'],
+  'eli': ['agent eli', 'eli os', 'virtuallab', 'command center', 'growth intelligence'],
+  'skill': ['capability', 'harness', 'stack', 'agent skill', 'skill registry'],
+  'workflow': ['automation', 'pipeline', 'dag', 'execution', 'rewiring'],
+  'authority': ['human order', 'operator', 'policy', 'governance', 'approval'],
 };
 
 function expandQuery(query: string): string {
@@ -83,6 +88,12 @@ function extractCategory(content: string, filename: string): string {
   if (lower.includes('saas') || lower.includes('serverless') || lower.includes('ghl')) return 'saas';
   if (lower.includes('algorithm') || lower.includes('testing-tools') || lower.includes('scraper') || lower.includes('scrapegraph') || lower.includes('social-analyzer') || lower.includes('goindex') || lower.includes('google-drive-index') || lower.includes('google-maps-scraper') || lower.includes('schemacrawler')) return 'codebase';
   if (lower.includes('fmhy') || lower.includes('virtuallab-strategy') || lower.includes('googleapis-repo') || lower.includes('google-research') || lower.includes('google-services-samples') || lower.includes('google-api-python-docs') || lower.includes('googleapis-nodejs') || lower.includes('low-level-design')) return 'reference';
+  // --- Eli identity, architecture, skills ---
+  if (lower.includes('eli-core-identity') || lower.includes('eli-obsidian-agent-skills') || lower.includes('eli-obsidian-architecture') || lower.includes('eli-obsidian-manual-rewiring')) return 'eli-core';
+  // --- Obsidian vault, importer, skill harness ---
+  if (lower.includes('eli-obsidian') || lower.includes('obsidian-importer') || lower.includes('skill-harness-manager')) return 'obsidian';
+  // --- Agent Eli v1 specific ---
+  if (lower.includes('agent-eli-v1')) return 'agent-eli';
   return 'strategy';
 }
 
@@ -177,7 +188,7 @@ export async function buildKnowledgeMap(): Promise<string> {
     byCategory[c.category].push({ title: c.title, source: c.source, url: c.url });
   }
 
-  const lines: string[] = ['ELI\'S KNOWLEDGE MAP (99+ sources across 11 categories):', ''];
+  const lines: string[] = ['ELI\'S KNOWLEDGE MAP (123+ sources across 13 categories):', ''];
   const categoryLabels: Record<string, string> = {
     'seo': '🔍 SEO & Marketing',
     'codebase': '💻 Code & Scraping',
@@ -190,6 +201,9 @@ export async function buildKnowledgeMap(): Promise<string> {
     'strategy': '📋 Strategy & Planning',
     'analysis': '📊 Design Analysis',
     'screenshot': '📸 Screenshots',
+    'eli-core': '🧠 Eli Core Identity & Skills',
+    'obsidian': '📦 Obsidian Vault & Tools',
+    'agent-eli': '⚙️ Agent Eli v1 Architecture',
   };
 
   for (const [cat, items] of Object.entries(byCategory)) {

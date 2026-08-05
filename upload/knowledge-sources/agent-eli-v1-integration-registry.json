@@ -1,0 +1,112 @@
+[
+  {
+    "id": "baserow",
+    "name": "Baserow / PostgreSQL",
+    "category": "data_crm",
+    "provider": "self_hosted_or_cloud",
+    "auth": [
+      "api_token",
+      "database_dsn"
+    ],
+    "capabilities": [
+      "read_records",
+      "create_records",
+      "update_records",
+      "schema_discovery",
+      "sync_jobs"
+    ],
+    "approval_required": [
+      "delete_records",
+      "bulk_update"
+    ],
+    "status": "available"
+  },
+  {
+    "id": "custom-adapter",
+    "name": "Custom REST / Webhook / MCP",
+    "category": "custom",
+    "provider": "open",
+    "auth": [
+      "none",
+      "api_key",
+      "oauth",
+      "basic",
+      "bearer",
+      "custom"
+    ],
+    "capabilities": [
+      "custom_actions",
+      "webhooks",
+      "mcp_tools",
+      "python_scripts",
+      "local_commands"
+    ],
+    "approval_required": [
+      "external_side_effect",
+      "production_write"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "google-drive",
+    "name": "Google Drive",
+    "category": "knowledge",
+    "provider": "google",
+    "auth": [
+      "oauth",
+      "service_account"
+    ],
+    "capabilities": [
+      "search",
+      "read",
+      "export",
+      "folder_sync"
+    ],
+    "approval_required": [
+      "share_file",
+      "delete_file"
+    ],
+    "status": "available"
+  },
+  {
+    "id": "n8n",
+    "name": "n8n",
+    "category": "automation",
+    "provider": "self_hosted_or_cloud",
+    "auth": [
+      "api_key",
+      "webhook"
+    ],
+    "capabilities": [
+      "run_workflow",
+      "inspect_execution",
+      "schedule_workflow",
+      "pause_workflow"
+    ],
+    "approval_required": [
+      "production_webhook_change",
+      "credential_change"
+    ],
+    "status": "available"
+  },
+  {
+    "id": "siteone",
+    "name": "SiteOne Crawler",
+    "category": "crawler",
+    "provider": "self_hosted",
+    "auth": [
+      "local_process"
+    ],
+    "capabilities": [
+      "javascript_crawl",
+      "technical_seo",
+      "security_audit",
+      "accessibility_audit",
+      "performance_audit",
+      "screenshots",
+      "json_export"
+    ],
+    "approval_required": [],
+    "status": "available"
+  }
+]

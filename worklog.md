@@ -22,3 +22,28 @@ Stage Summary:
 - 3 Rust crates (2,811 lines) implementing SKILL.md parser, tiered policy engine, gRPC IPC handler
 - 3 Python modules (2,974 lines) implementing agent base class, IPC client, Kimi K2.7 Orchestrator
 - Integration notes with deployment architecture and implementation priority order
+
+---
+Task ID: 2
+Agent: Main
+Task: Absorb 4 uploaded zip archives into Eli's knowledge base
+
+Work Log:
+- Extracted 4 zip files: Eli-OS-Obsidian-Vault-v2 (48 md files), obsidian-importer-master (6 md + 40+ ts), skill-harness-manager-main (1 md + 15 ts), agent-eli-v1-complete (4 md + 12 ts + 12 json)
+- Read ALL content from all 4 archives via parallel subagent batches
+- Created absorb-zips-into-knowledge.py to consolidate archives into 26 knowledge source files
+- Eli-OS Obsidian Vault: 48 files → 13 consolidated .md (dashboard, orders, tasks, architecture, sprints, repo, agents, reviews, logs, glossary, templates, skills, rewiring)
+- Obsidian Importer: README + all format converters + base classes → 1 reference .md (100KB)
+- Skill Harness Manager: README + all source modules (types, launch, detector, sessions, folders, terminal, yamlViewer) → 1 reference .md (113KB)
+- Agent Eli v1: docs (architecture, roadmap, migration, security) + backend code + frontend prototype + registries (5 integrations, 6 skills, 1 workflow) → 9 files
+- Created eli-core-identity.md master document (16KB) — Eli's complete self-knowledge: identity, architecture, skills, authority model, security, SEO skill registry, workflow registry, glossary, roadmap
+- Updated knowledge-search-upgraded.ts: added 3 new categories (eli-core, obsidian, agent-eli), 5 new synonym expansions, updated knowledge map to 13 categories / 123+ sources
+- Updated eli-chat-upgraded.ts: system prompt now references 123+ sources, 13 categories, and mentions core identity, architecture, and agent skills
+- Verified all 10 test queries return relevant results from new knowledge sources
+- Verified z-ai chat CLI works with knowledge injection
+
+Stage Summary:
+- 26 new knowledge source files added (288KB total)
+- Knowledge base expanded from 97 → 123 files (9.2MB total)
+- 3 new categories: eli-core (4), obsidian (13), agent-eli (9)
+- Knowledge search now covers: Eli's identity/skills/authority, Obsidian vault structure, Obsidian importer, Skill harness manager, Agent Eli v1 architecture/code/skills/registries
