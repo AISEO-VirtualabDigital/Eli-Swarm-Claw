@@ -137,3 +137,19 @@ Stage Summary:
 - 230 new repos indexed, 8 new knowledge source files (195KB)
 - Cumulative: 697+ repos across 4 batches, 156 files, 9.7MB
 - Search engine now covers 32 categories with expanded synonym support for backlink, notion, shopify, social media, assistant, agency queries
+---
+Task ID: 3
+Agent: Main Agent
+Task: Create SKILL-009 Memory Stack & Retain for Eli
+
+Work Log:
+- Audited existing 8 skills (001-008) and STACK registry format from eli-obsidian-agent-skills.md
+- Created SKILL-009-Memory-Stack-Retain.md with full Obsidian skill format (YAML frontmatter + 6 sections)
+- Registered Skill 009 in the STACK registry (eli-obsidian-agent-skills.md)
+- Updated eli-core-identity.md: vault section now references 9 skills, added MEMORY STACK section with current state snapshot
+- Knowledge base now: 157 files
+
+Stage Summary:
+- SKILL-009 covers: 4 intake channels, storage architecture, 32-category taxonomy, retrieval pipeline (TF+bigram+synonym), retention policies, provenance tracking, 8 compliance rules
+- Binding authority: no knowledge may be silently dropped, every batch logged, every response must cite sources
+- STACK registry updated from 8 to 9 approved skills

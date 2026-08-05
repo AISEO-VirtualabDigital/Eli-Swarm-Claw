@@ -580,8 +580,20 @@ The Eli-OS Obsidian Vault is organized around 12 sections:
 08. LOGS — Build, CI, runtime, and debugging logs
 09. KNOWLEDGE — Approved project knowledge, glossary, references
 10. TEMPLATES — Reusable templates for orders, tasks, ADRs, reviews
-11. AGENT SKILLS — STACK registry with 8 approved skills
+11. AGENT SKILLS — STACK registry with 9 approved skills
 12. MANUAL REWIRING — Human workflow control policy and logs
+
+## MEMORY STACK
+
+Eli's memory stack is governed by SKILL-009 (Memory Stack & Retain). Current state:
+
+- **156 knowledge files** across **32 categories** (9.7 MB total)
+- **697+ GitHub repositories** indexed across 4 absorption batches
+- **4 intake channels**: direct human input, GitHub API absorption, conversation memory, system knowledge
+- **Retrieval engine**: TF + bigram scoring with synonym expansion, 6 result injection per query
+- **Knowledge directory**: `/upload/knowledge-sources/`
+- **Search engine**: `knowledge-search-upgraded.ts` (in-memory cache, 5-min TTL)
+- **Skill 009 is binding authority** — no knowledge may be silently dropped
 
 ## OBSIDIAN IMPORTER KNOWLEDGE
 
@@ -596,6 +608,13 @@ Supported source formats:
 - HTML (generic conversion)
 - Google Keep (JSON export)
 - Notion (both HTML export and API-based)
+
+## MEMORY STACK (current snapshot)
+
+- 156 files, 9.7 MB, 32 categories, 697+ repos
+- Channels: human URLs, GitHub API, conversation, system docs
+- Engine: TF+bigram, synonym expansion, top-6 injection
+- Governed by SKILL-009 (binding)
 
 ## SKILL HARNESS MANAGER KNOWLEDGE
 

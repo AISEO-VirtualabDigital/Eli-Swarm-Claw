@@ -193,6 +193,24 @@ The agent must stop when:
 - A task requires permissions not granted
 
 
+## SKILL-009-Memory-Stack-Retain.md
+
+---
+id: skill-009
+type: agent_skill
+status: approved
+authority: binding
+version: 1.0.0
+created: 2026-08-06
+---
+
+# Skill 009 — Memory Stack & Retain
+
+See [[SKILL-009-Memory-Stack-Retain]] for full specification.
+
+Eli must treat every absorbed piece of information as a persistent memory asset. This skill governs acquisition, storage, retrieval, and maintenance of the entire knowledge base. No human-supplied knowledge may be silently dropped. Every absorption batch must be logged. Every response informed by knowledge must cite its source.
+
+
 ## SKILL-STACK-REGISTRY.md
 
 ---
@@ -219,6 +237,7 @@ project_id: eli-os
 - [[SKILL-006-Manual-Rewiring-Compliance]]
 - [[SKILL-007-Evidence-and-Logs]]
 - [[SKILL-008-Stop-on-Conflict]]
+- [[SKILL-009-Memory-Stack-Retain]]
 
 ## Skill Resolution Order
 
