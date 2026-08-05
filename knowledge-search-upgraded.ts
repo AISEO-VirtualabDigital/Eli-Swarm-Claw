@@ -40,6 +40,13 @@ const SYNONYMS: Record<string, string[]> = {
   'automation': ['workflow', 'integration', 'zapier', 'no-code', 'trigger'],
   'youtube': ['video', 'channel', 'tags', 'thumbnail', 'yt'],
   'google': ['search', 'maps', 'drive', 'cloud', 'indexing', 'api'],
+  'crm': ['customer relationship', 'salesforce', 'hubspot', 'lead management', 'pipeline', 'contact'],
+  'project': ['kanban', 'agile', 'scrum', 'sprint', 'jira', 'asana', 'trello', 'gantt', 'task board'],
+  'cloud': ['aws', 'azure', 'gcp', 'kubernetes', 'k8s', 'docker', 'terraform', 'devops', 'serverless'],
+  'security': ['cybersecurity', 'pentest', 'vulnerability', 'malware', 'firewall', 'encryption', 'owasp'],
+  'database': ['sql', 'postgres', 'mysql', 'mongodb', 'redis', 'sqlite', 'orm', 'query'],
+  'vps': ['hosting', 'self-host', 'selfhost', 'homelab', 'server provisioning', 'dedicated server'],
+  'copywriting': ['content generation', 'ai writing', 'humanizer', 'paraphrase', 'rewriting', 'ghostwriter', 'jasper'],
   'backend': ['server', 'api', 'database', 'schema', 'architecture'],
   'productivity': ['notion', 'task', 'project', 'collaboration', 'notes'],
   'marketing': ['growth', 'campaign', 'content', 'brand', 'audience'],
@@ -92,7 +99,18 @@ function extractCategory(content: string, filename: string): string {
   // --- Google API (client libs, workspace, maps, AI, auth, scraping) ---
   if (lower.includes('github-google-api-topic') || lower.includes('google-api-client-libraries') || lower.includes('google-workspace-api') || lower.includes('google-maps-places') || lower.includes('google-ai-gemini') || lower.includes('google-auth-oauth') || lower.includes('google-scraping-automation')) return 'google-api';
   // --- SEO tools, frameworks, libraries ---
-  if (lower.includes('github-seo-tools') || lower.includes('awesome-seo') || lower.includes('claude-seo') || lower.includes('next-seo') || lower.includes('laravel-seo') || lower.includes('seo-tools-yoast') || lower.includes('image-seo')) return 'seo';
+  if (lower.includes('github-seo-tools') || lower.includes('awesome-seo') || lower.includes('claude-seo') || lower.includes('next-seo') || lower.includes('laravel-seo') || lower.includes('seo-tools-yoast') || lower.includes('image-seo') || lower.includes('github-seo-marketing')) return 'seo';
+  // --- Batch 3: Multi-topic GitHub repos ---
+  if (lower.includes('github-crm-sales')) return 'crm-sales';
+  if (lower.includes('github-project-management')) return 'project-mgmt';
+  if (lower.includes('github-copywriting-ai')) return 'copywriting-ai';
+  if (lower.includes('github-cloud-infrastructure')) return 'cloud-infra';
+  if (lower.includes('github-cybersecurity')) return 'cybersecurity';
+  if (lower.includes('github-design-ui-ux')) return 'design-uiux';
+  if (lower.includes('github-llm-ai-frameworks')) return 'llm-ai';
+  if (lower.includes('github-vps-hosting')) return 'vps-hosting';
+  if (lower.includes('github-database-tools')) return 'database';
+  if (lower.includes('github-multi-topic-directory')) return 'github-multi';
   // --- Eli identity, architecture, skills ---
   if (lower.includes('eli-core-identity') || lower.includes('eli-obsidian-agent-skills') || lower.includes('eli-obsidian-architecture') || lower.includes('eli-obsidian-manual-rewiring')) return 'eli-core';
   // --- Obsidian vault, importer, skill harness ---
@@ -193,7 +211,7 @@ export async function buildKnowledgeMap(): Promise<string> {
     byCategory[c.category].push({ title: c.title, source: c.source, url: c.url });
   }
 
-  const lines: string[] = ['ELI\'S KNOWLEDGE MAP (137+ sources across 14 categories):', ''];
+  const lines: string[] = ['ELI\'S KNOWLEDGE MAP (148+ sources across 24 categories):', ''];
   const categoryLabels: Record<string, string> = {
     'seo': '🔍 SEO & Marketing',
     'codebase': '💻 Code & Scraping',
@@ -210,6 +228,16 @@ export async function buildKnowledgeMap(): Promise<string> {
     'obsidian': '📦 Obsidian Vault & Tools',
     'agent-eli': '⚙️ Agent Eli v1 Architecture',
     'google-api': '🔗 Google API Ecosystem',
+    'crm-sales': '📊 CRM & Sales Tools',
+    'project-mgmt': '📋 Project Management',
+    'copywriting-ai': '✍️ Copywriting & AI Content',
+    'cloud-infra': '☁️ Cloud & Infrastructure',
+    'cybersecurity': '🔒 Cybersecurity',
+    'design-uiux': '🎨 Design & UI/UX Tools',
+    'llm-ai': '🤖 LLM & AI Frameworks',
+    'vps-hosting': '🖥️ VPS & Hosting',
+    'database': '🗄️ Database Tools',
+    'github-multi': '📂 GitHub Multi-Topic Directory',
   };
 
   for (const [cat, items] of Object.entries(byCategory)) {
