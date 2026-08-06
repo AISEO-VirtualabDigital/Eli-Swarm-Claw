@@ -1,0 +1,829 @@
+     1→#!/usr/bin/env python3
+     2→"""
+     3→VirtuaLab Digital - Complete Ecosystem System Architecture Blueprint
+     4→Systematic Approach: Baserow + n8n + GHL + AI Agent Orchestration
+     5→"""
+     6→
+     7→FONT_DIR = '/usr/share/fonts'
+     8→
+     9→from reportlab.lib.pagesizes import A4
+    10→from reportlab.lib.units import mm, inch
+    11→from reportlab.lib.colors import HexColor
+    12→from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    13→from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY, TA_RIGHT
+    14→from reportlab.platypus import (
+    15→    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+    16→    PageBreak, KeepTogether, HRFlowable
+    17→)
+    18→from reportlab.pdfbase import pdfmetrics
+    19→from reportlab.pdfbase.ttfonts import TTFont
+    20→from reportlab.pdfbase.pdfmetrics import registerFontFamily
+    21→
+    22→# ========================
+    23→# FONT REGISTRATION
+    24→# ========================
+    25→pdfmetrics.registerFont(TTFont('LibSans', f'{FONT_DIR}/truetype/liberation/LiberationSans-Regular.ttf'))
+    26→pdfmetrics.registerFont(TTFont('LibSans-Bold', f'{FONT_DIR}/truetype/liberation/LiberationSans-Bold.ttf'))
+    27→registerFontFamily('LibSans', normal='LibSans', bold='LibSans-Bold')
+    28→
+    29→# ========================
+    30→# PALETTE
+    31→# ========================
+    32→TABLE_STRIPE  = HexColor('#ecedee')
+    33→HEADER_FILL   = HexColor('#1a2e3b')
+    34→ACCENT        = HexColor('#2e7fa7')
+    35→TEXT_PRIMARY   = HexColor('#222526')
+    36→TEXT_MUTED     = HexColor('#71787b')
+    37→BORDER_COLOR  = HexColor('#bacbd3')
+    38→WHITE         = HexColor('#ffffff')
+    39→DARK_HEADER   = HexColor('#0f1c26')
+    40→MID_HEADER    = HexColor('#2a4758')
+    41→LIGHT_BG      = HexColor('#eef3f6')
+    42→TAG_BG        = HexColor('#d4e8f2')
+    43→
+    44→PAGE_W, PAGE_H = A4
+    45→LEFT_M = 20*mm
+    46→RIGHT_M = 20*mm
+    47→TOP_M = 22*mm
+    48→BOT_M = 22*mm
+    49→CONTENT_W = PAGE_W - LEFT_M - RIGHT_M
+    50→
+    51→styles = getSampleStyleSheet()
+    52→
+    53→s_h1 = ParagraphStyle('H1', fontName='LibSans-Bold', fontSize=20, leading=26, textColor=DARK_HEADER, spaceAfter=10, spaceBefore=16)
+    54→s_h2 = ParagraphStyle('H2', fontName='LibSans-Bold', fontSize=15, leading=20, textColor=ACCENT, spaceAfter=8, spaceBefore=14)
+    55→s_h3 = ParagraphStyle('H3', fontName='LibSans-Bold', fontSize=12, leading=16, textColor=MID_HEADER, spaceAfter=6, spaceBefore=10)
+    56→s_body = ParagraphStyle('Body', fontName='LibSans', fontSize=9.5, leading=14, textColor=TEXT_PRIMARY, alignment=TA_JUSTIFY, spaceAfter=5)
+    57→s_table_header = ParagraphStyle('TH', fontName='LibSans-Bold', fontSize=8, leading=10, textColor=WHITE, alignment=TA_CENTER)
+    58→s_table_cell = ParagraphStyle('TC', fontName='LibSans', fontSize=7.5, leading=10, textColor=TEXT_PRIMARY, alignment=TA_LEFT)
+    59→s_caption = ParagraphStyle('Caption', fontName='LibSans', fontSize=8, leading=11, textColor=TEXT_MUTED, alignment=TA_CENTER)
+    60→s_tag = ParagraphStyle('Tag', fontName='LibSans-Bold', fontSize=7, leading=9, textColor=ACCENT, backColor=TAG_BG, spaceBefore=2, spaceAfter=2, borderPadding=3)
+    61→s_callout = ParagraphStyle('Callout', fontName='LibSans', fontSize=9, leading=13, textColor=HEADER_FILL, backColor=LIGHT_BG, spaceBefore=6, spaceAfter=6, leftIndent=8, rightIndent=8, borderPadding=8)
+    62→
+    63→# ========================
+    64→# HELPERS
+    65→# ========================
+    66→def make_table(headers, rows, col_widths=None, header_bg=None):
+    67→    if header_bg is None:
+    68→        header_bg = HEADER_FILL
+    69→    hdr = [Paragraph(h, s_table_header) for h in headers]
+    70→    data = [hdr]
+    71→    for row in rows:
+    72→        data.append([Paragraph(str(c), s_table_cell) if not isinstance(c, Paragraph) else c for c in row])
+    73→    if col_widths is None:
+    74→        col_widths = [CONTENT_W / len(headers)] * len(headers)
+    75→    t = Table(data, colWidths=col_widths, repeatRows=1)
+    76→    cmds = [
+    77→        ('BACKGROUND', (0, 0), (-1, 0), header_bg),
+    78→        ('TEXTCOLOR', (0, 0), (-1, 0), WHITE),
+    79→        ('FONTNAME', (0, 0), (-1, 0), 'LibSans-Bold'),
+    80→        ('FONTSIZE', (0, 0), (-1, 0), 8),
+    81→        ('BOTTOMPADDING', (0, 0), (-1, 0), 5),
+    82→        ('TOPPADDING', (0, 0), (-1, 0), 5),
+    83→        ('GRID', (0, 0), (-1, -1), 0.4, BORDER_COLOR),
+    84→        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    85→        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+    86→        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+    87→        ('TOPPADDING', (0, 1), (-1, -1), 3),
+    88→        ('BOTTOMPADDING', (0, 1), (-1, -1), 3),
+    89→    ]
+    90→    for i in range(1, len(data)):
+    91→        if i % 2 == 0:
+    92→            cmds.append(('BACKGROUND', (0, i), (-1, i), TABLE_STRIPE))
+    93→    t.setStyle(TableStyle(cmds))
+    94→    return t
+    95→
+    96→def hr(): return HRFlowable(width='100%', thickness=0.8, color=BORDER_COLOR, spaceAfter=6, spaceBefore=6)
+    97→def sp(pts=6): return Spacer(1, pts)
+    98→
+    99→def callout(text):
+   100→    return Paragraph(text, s_callout)
+   101→
+   102→def tag(text):
+   103→    return Paragraph(text, s_tag)
+   104→
+   105→# ========================
+   106→# BUILD DOCUMENT
+   107→# ========================
+   108→output_path = '/home/z/my-project/download/VirtuaLab_Digital_Ecosystem_System_Architecture.pdf'
+   109→
+   110→doc = SimpleDocTemplate(
+   111→    output_path, pagesize=A4,
+   112→    leftMargin=LEFT_M, rightMargin=RIGHT_M,
+   113→    topMargin=TOP_M, bottomMargin=BOT_M,
+   114→    title='VirtuaLab Digital - Complete Ecosystem System Architecture',
+   115→    author='VirtuaLab Digital',
+   116→    subject='Systematic Ecosystem Blueprint: Baserow + n8n + GHL + AI Agent Orchestration',
+   117→)
+   118→
+   119→story = []
+   120→
+   121→# ========================
+   122→# COVER PAGE
+   123→# ========================
+   124→story.append(Paragraph('VirtuaLab Digital', ParagraphStyle('CT', fontName='LibSans-Bold', fontSize=30, leading=36, textColor=DARK_HEADER, alignment=TA_CENTER, spaceAfter=6)))
+   125→story.append(Paragraph('Complete Ecosystem System Architecture', ParagraphStyle('CS', fontName='LibSans-Bold', fontSize=18, leading=24, textColor=ACCENT, alignment=TA_CENTER, spaceAfter=4)))
+   126→story.append(Paragraph('Systematic Blueprint: No Guessing, Just Systems', ParagraphStyle('CS2', fontName='LibSans', fontSize=13, leading=17, textColor=TEXT_MUTED, alignment=TA_CENTER, spaceAfter=16)))
+   127→story.append(hr())
+   128→story.append(Paragraph('Baserow Data Layer | n8n Automation Layer | GoHighLevel CRM Layer | AI Agent Orchestration Layer', ParagraphStyle('CD', fontName='LibSans', fontSize=9.5, leading=13, textColor=TEXT_MUTED, alignment=TA_CENTER, spaceAfter=12)))
+   129→story.append(sp(20))
+   130→
+   131→meta_data = [
+   132→    ['Document Type', 'System Architecture Blueprint'],
+   133→    ['Framework', 'AISEO Framework v3.0 (75-Tab Strategic Blueprint)'],
+   134→    ['Prepared For', 'VirtuaLab Digital Operations'],
+   135→    ['Classification', 'Internal - Operational'],
+   136→    ['Date', 'August 2026'],
+   137→    ['Principle', 'Every action is data-driven, tracked, repeatable, and measurable.'],
+   138→]
+   139→meta_t = Table(meta_data, colWidths=[120, CONTENT_W - 120])
+   140→meta_t.setStyle(TableStyle([
+   141→    ('FONTNAME', (0, 0), (0, -1), 'LibSans-Bold'),
+   142→    ('FONTSIZE', (0, 0), (-1, -1), 9),
+   143→    ('TEXTCOLOR', (0, 0), (0, -1), HEADER_FILL),
+   144→    ('TEXTCOLOR', (1, 0), (1, -1), TEXT_PRIMARY),
+   145→    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+   146→    ('TOPPADDING', (0, 0), (-1, -1), 4),
+   147→    ('LINEBELOW', (0, 0), (-1, -2), 0.4, BORDER_COLOR),
+   148→    ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+   149→    ('RIGHTPADDING', (0, 0), (0, -1), 12),
+   150→]))
+   151→story.append(meta_t)
+   152→
+   153→story.append(PageBreak())
+   154→
+   155→# ========================
+   156→# CHAPTER 1: SYSTEM PHILOSOPHY
+   157→# ========================
+   158→story.append(Paragraph('1. System Philosophy: Why Systematic, Not Guessing', s_h1))
+   159→story.append(sp(4))
+   160→
+   161→story.append(Paragraph(
+   162→    'The fundamental problem with most digital marketing agencies is that their operations rely on tribal knowledge, individual heroics, and ad-hoc decision making. A senior SEO specialist "knows" what keywords to target based on experience. A content writer "feels" what topics will resonate. An account manager "remembers" to check client rankings every few weeks. This approach is fragile, unscalable, and fundamentally unmeasurable. When the specialist leaves, the knowledge leaves. When the workload doubles, quality halves. When a new client onboards, the process restarts from zero every time.', s_body))
+   163→
+   164→story.append(Paragraph(
+   165→    'VirtuaLab Digital operates on a different principle: every strategic decision, every content action, every client interaction, and every measurement must flow through a systematic, data-driven infrastructure. This ecosystem blueprint defines the exact data structures (Baserow), automation workflows (n8n), client management pipelines (GoHighLevel), and AI agent orchestration protocols that transform the 75-tab AISEO Framework from a static document into a living, breathing operational machine. The goal is simple: any trained operator should be able to execute the strategy by following the system, regardless of their individual expertise level. The system captures intelligence, automates repetition, enforces consistency, and measures everything.', s_body))
+   166→
+   167→story.append(Paragraph('1.1 The Four-Layer Architecture', s_h2))
+   168→story.append(Paragraph(
+   169→    'The VirtuaLab Digital ecosystem is organized into four interdependent layers, each with a distinct technological foundation and operational responsibility. The Data Layer (Baserow) serves as the single source of truth for all operational data including keywords, content, competitors, clients, and performance metrics. The Automation Layer (n8n) connects all systems, automates repetitive workflows, and enforces process consistency. The CRM and Client Delivery Layer (GoHighLevel) manages the client lifecycle from lead capture through onboarding, delivery, and retention. The AI Agent Orchestration Layer coordinates the six specialized AI agents defined in the AISEO Framework, ensuring that each agent receives the correct inputs, produces standardized outputs, and feeds results back into the data layer for continuous learning.', s_body))
+   170→
+   171→story.append(callout(
+   172→    '<b>Core Principle:</b> Data enters the system once, flows through automated workflows, triggers agent actions, surfaces in client reports, and feeds back into strategic decisions. No data lives in silos. No action is taken without a data trigger. No decision is made without a measurement checkpoint.'))
+   173→
+   174→story.append(Paragraph('1.2 Data Flow Architecture', s_h2))
+   175→story.append(Paragraph(
+   176→    'Information flows through the ecosystem in a unidirectional pipeline with feedback loops. Raw data enters through web search APIs, SERP monitoring tools, Google Search Console, and manual research inputs. This data is normalized and stored in Baserow tables. n8n workflows poll Baserow for new records, process them through AI agents (via LLM API calls), and write outputs back to Baserow. Client-facing actions (content publishing, report generation, email notifications) are triggered by n8n and executed through GoHighLevel or direct API calls. Performance data from published content flows back through web analytics APIs into Baserow, where it is compared against baselines and triggers optimization workflows. This closed-loop system ensures that every action is informed by data and every outcome is measured against objectives.', s_body))
+   177→
+   178→# Data flow table
+   179→flow_data = [
+   180→    ['1. Data Ingestion', 'External APIs, Manual Input', 'Baserow Tables', 'Keywords, competitors, SERP data, client info stored as structured records.'],
+   181→    ['2. Processing', 'Baserow (trigger)', 'n8n Workflows', 'New records trigger workflows: clustering, content briefs, competitor alerts.'],
+   182→    ['3. Agent Orchestration', 'n8n (dispatch)', 'AI Agent APIs', '6 specialized agents process tasks: research, positioning, analysis, strategy.'],
+   183→    ['4. Output Generation', 'AI Agents (return)', 'Baserow + n8n', 'Agent outputs stored: content briefs, keyword maps, optimization recommendations.'],
+   184→    ['5. Client Delivery', 'Baserow (status change)', 'GHL + n8n', 'Approved content published, reports generated, clients notified.'],
+   185→    ['6. Performance Feedback', 'Analytics APIs', 'Baserow Tables', 'Rankings, traffic, citations, leads flow back into measurement tables.'],
+   186→    ['7. Optimization Loop', 'Baserow (threshold)', 'n8n Workflows', 'Performance below threshold triggers re-optimization workflows.'],
+   187→]
+   188→t_flow = make_table(
+   189→    ['Stage', 'Trigger Source', 'Destination', 'Action'],
+   190→    flow_data,
+   191→    col_widths=[80, 75, 70, CONTENT_W - 225]
+   192→)
+   193→story.append(t_flow)
+   194→
+   195→story.append(PageBreak())
+   196→
+   197→# ========================
+   198→# CHAPTER 2: BASEROW DATA LAYER
+   199→# ========================
+   200→story.append(Paragraph('2. Baserow Data Layer: The Single Source of Truth', s_h1))
+   201→story.append(sp(4))
+   202→
+   203→story.append(Paragraph(
+   204→    'Baserow is the operational database backbone of the VirtuaLab Digital ecosystem. Every keyword, every competitor, every content piece, every client interaction, and every performance metric lives in Baserow. The database is organized into 12 interconnected tables grouped into four functional domains. Each table has defined fields, field types, relationships to other tables, and standardized status fields that trigger n8n workflows. The following specification defines every table, every field, and every relationship with enough precision that a database administrator can implement the entire structure without ambiguity.', s_body))
+   205→
+   206→story.append(Paragraph('2.1 Domain 1: Keyword Intelligence (3 Tables)', s_h2))
+   207→
+   208→# Table 1: Keywords Master
+   209→story.append(Paragraph('2.1.1 Table: Keywords Master', s_h3))
+   210→story.append(Paragraph(
+   211→    'This is the central keyword repository. Every keyword discovered through research, competitor analysis, or client input is stored here. Keywords are never deleted, only deprecated. Each record carries its complete research metadata including search intent classification, demand tier, competitive difficulty, and the specific page it maps to within the site architecture. The status field drives the content pipeline: when a keyword moves from "Research" to "Approved," it becomes eligible for content brief generation by the AI SEO Strategist agent.', s_body))
+   212→
+   213→kw_fields = [
+   214→    ['Keyword ID', 'Auto Number', 'Unique', 'System-generated unique identifier.'],
+   215→    ['Keyword', 'Text (Single Line)', 'Required', 'The exact search query string.'],
+   216→    ['Search Volume (Monthly)', 'Number', 'Optional', 'Monthly estimated search volume from GSC or third-party tool.'],
+   217→    ['CPC', 'Currency', 'Optional', 'Cost-per-click data for paid advertising reference.'],
+   218→    ['Keyword Difficulty', 'Rating (1-100)', 'Optional', 'Competitive difficulty score (0=easiest, 100=hardest).'],
+   219→    ['Search Intent', 'Single Select', 'Required', 'Informational / Commercial / Transactional / Navigational / Technical.'],
+   220→    ['Buyer Awareness Stage', 'Single Select', 'Required', 'Unaware / Problem-Aware / Solution-Aware / Most-Aware.'],
+   221→    ['Demand Tier', 'Single Select', 'Required', 'High / Medium / Emerging / Low / Seasonal.'],
+   222→    ['Keyword Cluster', 'Link to Table', 'Required', 'Links to Keyword Clusters table.'],
+   223→    ['Target Industry', 'Link to Table', 'Optional', 'Links to Industries table (HVAC, Roofing, etc.).'],
+   224→    ['Target Page URL', 'Text (URL)', 'Required', 'The specific page this keyword maps to on the site.'],
+   225→    ['Content Template', 'Single Select', 'Required', 'Hub Page / Service Detail / Resource Guide / Blog Post / FAQ / Industry Landing.'],
+   226→    ['Current SERP Position', 'Number', 'Optional', 'Current organic ranking position (updated by monitoring workflow).'],
+   227→    ['Current AI Citation Status', 'Single Select', 'Optional', 'Not Tracked / Not Cited / Cited (Positive) / Cited (Negative).'],
+   228→    ['Status', 'Single Select', 'Required', 'Research / Clustered / Approved / In Production / Published / Deprecated.'],
+   229→    ['Assigned To', 'Link to Table', 'Optional', 'Links to Team Members table.'],
+   230→    ['Date Discovered', 'Date', 'Auto', 'When this keyword was added to the database.'],
+   231→    ['Last Checked', 'Date', 'Auto', 'Last time SERP position was verified.'],
+   232→    ['Notes', 'Long Text', 'Optional', 'Strategic notes, observations, or instructions.'],
+   233→]
+   234→t_kw = make_table(
+   235→    ['Field Name', 'Field Type', 'Constraint', 'Description'],
+   236→    kw_fields,
+   237→    col_widths=[95, 75, 55, CONTENT_W - 225]
+   238→)
+   239→story.append(t_kw)
+   240→story.append(sp(6))
+   241→
+   242→# Table 2: Keyword Clusters
+   243→story.append(Paragraph('2.1.2 Table: Keyword Clusters', s_h3))
+   244→story.append(Paragraph(
+   245→    'Clusters group related keywords into topical entities. Each cluster represents a distinct theme that maps to a specific section of the website content architecture. Clusters prevent keyword cannibalization by establishing clear ownership boundaries. When the system detects that a new keyword might cannibalize an existing page, it flags the record for human review before content production begins.', s_body))
+   246→
+   247→cluster_fields = [
+   248→    ['Cluster ID', 'Auto Number', 'Unique', 'System-generated unique identifier.'],
+   249→    ['Cluster Name', 'Text', 'Required', 'e.g., "Core Agency Brand", "Google Maps and GBP", "GEO and AI Search".'],
+   250→    ['Cluster Description', 'Long Text', 'Required', 'Detailed description of what this cluster covers and why it exists.'],
+   251→    ['Primary Page URL', 'Text (URL)', 'Required', 'The hub page that owns this cluster.'],
+   252→    ['Supporting Pages', 'Array of URLs', 'Optional', 'Spoke pages that support the hub.'],
+   253→    ['Keywords Count', 'Formula (Count)', 'Auto', 'Count of linked keywords from Keywords Master table.'],
+   254→    ['Avg Keyword Difficulty', 'Formula (Avg)', 'Auto', 'Average difficulty of all linked keywords.'],
+   255→    ['Total Monthly Volume', 'Formula (Sum)', 'Auto', 'Sum of search volumes across all linked keywords.'],
+   256→    ['Cannibalization Rule', 'Long Text', 'Required', 'Keywords to EXCLUDE from this cluster to prevent overlap.'],
+   257→    ['Content Status', 'Single Select', 'Auto', 'No Content / In Progress / Published / Needs Update.'],
+   258→    ['Last Updated', 'Date', 'Auto', 'Last time any keyword in this cluster was modified.'],
+   259→]
+   260→t_cl = make_table(
+   261→    ['Field Name', 'Field Type', 'Constraint', 'Description'],
+   262→    cluster_fields,
+   263→    col_widths=[95, 75, 55, CONTENT_W - 225]
+   264→)
+   265→story.append(t_cl)
+   266→story.append(sp(6))
+   267→
+   268→# Table 3: SERP & LLM Citation Tracking
+   269→story.append(Paragraph('2.1.3 Table: SERP and LLM Citation Tracking', s_h3))
+   270→story.append(Paragraph(
+   271→    'This table stores the results of systematic SERP monitoring and AI citation tracking. Every week, the n8n SERP Monitoring workflow queries the top 50 target keywords across Google, ChatGPT, Perplexity, and Google AI Overviews. The results are stored here with structured fields for position, citation context, and citation source. This data feeds the monthly Citation Dominance Score calculation and triggers optimization workflows when performance drops below defined thresholds.', s_body))
+   272→
+   273→serp_fields = [
+   274→    ['Record ID', 'Auto Number', 'Unique', 'System-generated unique identifier.'],
+   275→    ['Keyword', 'Link to Keywords Master', 'Required', 'Which keyword is being tracked.'],
+   276→    ['Platform', 'Single Select', 'Required', 'Google Organic / Google Maps / ChatGPT / Perplexity / Gemini / AI Overviews.'],
+   277→    ['VirtuaLab Mentioned', 'Checkbox', 'Required', 'Whether VirtuaLab Digital was mentioned in results.'],
+   278→    ['Mention Context', 'Single Select', 'Required', 'Not Mentioned / Positive Citation / Neutral Mention / Negative / Competitor Only.'],
+   279→    ['Citation Source URL', 'Text (URL)', 'Optional', 'The URL of the source that AI cited about VirtuaLab.'],
+   280→    ['SERP Position', 'Number', 'Optional', 'Organic ranking position (1-100, or 0 if not found).'],
+   281→    ['Featured Snippet', 'Checkbox', 'Optional', 'Whether a featured snippet appeared for this query.'],
+   282→    ['AI Overview Present', 'Checkbox', 'Optional', 'Whether Google AI Overviews appeared.'],
+   283→    ['Top Competitor Cited', 'Link to Competitors', 'Optional', 'Which competitor was cited instead of VirtuaLab.'],
+   284→    ['Check Date', 'Date', 'Required', 'Date this check was performed.'],
+   285→    ['Triggered Action', 'Single Select', 'Auto', 'None / Content Gap Alert / Optimization Workflow / Parasite Content Needed.'],
+   286→]
+   287→t_serp = make_table(
+   288→    ['Field Name', 'Field Type', 'Constraint', 'Description'],
+   289→    serp_fields,
+   290→    col_widths=[95, 80, 50, CONTENT_W - 225]
+   291→)
+   292→story.append(t_serp)
+   293→
+   294→story.append(PageBreak())
+   295→
+   296→# ========================
+   297→# 2.2 Domain 2: Content Operations
+   298→# ========================
+   299→story.append(Paragraph('2.2 Domain 2: Content Operations (3 Tables)', s_h2))
+   300→
+   301→story.append(Paragraph('2.2.1 Table: Content Calendar', s_h3))
+   302→story.append(Paragraph(
+   303→    'Every piece of content, whether for the primary domain or a parasite platform, is tracked in the Content Calendar. This table is the operational backbone of the content pipeline. When a keyword moves to "Approved" status in Keywords Master, an n8n workflow automatically creates a draft Content Calendar record with a pre-filled content brief generated by the AI SEO Strategist agent. The content brief includes the target keyword, search intent, buyer awareness stage, recommended word count, internal linking targets, and GEO optimization requirements. Human editors review and approve briefs before content production begins.', s_body))
+   304→
+   305→content_fields = [
+   306→    ['Content ID', 'Auto Number', 'Unique', 'System-generated unique identifier.'],
+   307→    ['Title', 'Text', 'Required', 'Working title of the content piece.'],
+   308→    ['Content Type', 'Single Select', 'Required', 'Blog Post / Service Page / Industry Page / Resource Guide / FAQ / Parasite Article / YouTube Script / Social Post / GBP Post.'],
+   309→    ['Target Platform', 'Single Select', 'Required', 'Primary Domain / LinkedIn / Medium / YouTube / Reddit / Quora / GBP.'],
+   310→    ['Target Keyword', 'Link to Keywords Master', 'Required', 'Primary keyword this content targets.'],
+   311→    ['Secondary Keywords', 'Array (Link)', 'Optional', 'Additional keywords to naturally incorporate.'],
+   312→    ['Keyword Cluster', 'Link to Keyword Clusters', 'Required', 'Which cluster this content belongs to.'],
+   313→    ['Target Industry', 'Link to Industries', 'Optional', 'Industry vertical if applicable.'],
+   314→    ['Content Brief', 'Long Text', 'Required', 'Auto-generated by AI SEO Strategist. Includes outline, word count, GEO factors, internal links.'],
+   315→    ['GEO Requirements', 'Long Text', 'Optional', 'Specific GEO factors to implement: statistics, citations, BLUF, entities.'],
+   316→    ['Assigned Writer', 'Link to Team Members', 'Optional', 'Who is writing this content.'],
+   317→    ['Assigned Client', 'Link to Clients', 'Optional', 'If this is client-specific content.'],
+   318→    ['Word Count Target', 'Number', 'Required', 'Target word count for quality control.'],
+   319→    ['Status', 'Single Select', 'Required', 'Brief Generated / Brief Approved / In Writing / In Review / Approved / Published / Archived.'],
+   320→    ['Publish Date', 'Date', 'Required', 'Scheduled publication date.'],
+   321→    ['Actual Publish Date', 'Date', 'Optional', 'Actual date content went live.'],
+   322→    ['URL (Published)', 'Text (URL)', 'Optional', 'URL where content was published.'],
+   323→    ['Internal Links Added', 'Checkbox', 'Auto', 'Whether internal links were verified after publication.'],
+   324→    ['Schema Markup Added', 'Checkbox', 'Auto', 'Whether schema was added after publication.'],
+   325→    ['Performance Check Date', 'Date', 'Auto', 'Date when 30-day performance review is scheduled.'],
+   326→]
+   327→t_content = make_table(
+   328→    ['Field Name', 'Field Type', 'Constraint', 'Description'],
+   329→    content_fields,
+   330→    col_widths=[90, 72, 48, CONTENT_W - 210]
+   331→)
+   332→story.append(t_content)
+   333→story.append(sp(6))
+   334→
+   335→story.append(Paragraph('2.2.2 Table: Competitor Intelligence', s_h3))
+   336→story.append(Paragraph(
+   337→    'Every competitor identified in the strategy is tracked systematically. The Competitor Analysis Sentinel agent is responsible for maintaining this table with current data on competitor keywords, backlink profiles, content gaps, and pricing structures. When a competitor publishes new content or changes their pricing, the monitoring workflow updates this table and triggers an alert. This ensures that VirtuaLab always has current competitive intelligence without manual research efforts.', s_body))
+   338→
+   339→comp_fields = [
+   340→    ['Competitor ID', 'Auto Number', 'Unique', 'System identifier.'],
+   341→    ['Company Name', 'Text', 'Required', 'Competitor name.'],
+   342→    ['Website URL', 'Text (URL)', 'Required', 'Primary domain.'],
+   343→    ['Competitor Type', 'Single Select', 'Required', 'Direct Agency / Niche Specialist / Platform / Freelancer Network.'],
+   344→    ['Target Verticals', 'Array (Link)', 'Optional', 'Which industries they target.'],
+   345→    ['Pricing Model', 'Long Text', 'Optional', 'Known pricing tiers, minimums, contract terms.'],
+   346→    ['Key Strengths', 'Long Text', 'Required', 'Documented strengths from analysis.'],
+   347→    ['Key Weaknesses', 'Long Text', 'Required', 'Documented weaknesses and gaps.'],
+   348→    ['Content Gap Opportunities', 'Long Text', 'Required', 'Specific content/topics they lack that VirtuaLab can exploit.'],
+   349→    ['VirtuaLab Positioning', 'Long Text', 'Required', 'How VirtuaLab differentiates against this competitor.'],
+   350→    ['Est. Domain Authority', 'Number', 'Optional', 'Estimated or measured domain authority.'],
+   351→    ['Organic Keywords Tracked', 'Array (Link)', 'Optional', 'Keywords where this competitor ranks.'],
+   352→    ['LLM Citation Frequency', 'Number', 'Optional', 'How often they appear in AI-generated responses.'],
+   353→    ['Last Analyzed', 'Date', 'Auto', 'Last date of systematic competitive analysis.'],
+   354→    ['Alert Active', 'Checkbox', 'Auto', 'Whether monitoring alerts are active for this competitor.'],
+   355→]
+   356→t_comp = make_table(
+   357→    ['Field Name', 'Field Type', 'Constraint', 'Description'],
+   358→    comp_fields,
+   359→    col_widths=[95, 72, 48, CONTENT_W - 215]
+   360→)
+   361→story.append(t_comp)
+   362→
+   363→story.append(PageBreak())
+   364→
+   365→# ========================
+   366→# 2.3 Domain 3: Client Operations
+   367→# ========================
+   368→story.append(Paragraph('2.3 Domain 3: Client Operations (3 Tables)', s_h2))
+   369→
+   370→story.append(Paragraph('2.3.1 Table: Clients', s_h3))
+   371→client_fields = [
+   372→    ['Client ID', 'Auto Number', 'Unique', 'System identifier.'],
+   373→    ['Company Name', 'Text', 'Required', 'Client business name.'],
+   374→    ['Industry Vertical', 'Link to Industries', 'Required', 'Primary industry.'],
+   375→    ['Website URL', 'Text (URL)', 'Required', 'Client website domain.'],
+   376→    ['GBP URL', 'Text (URL)', 'Optional', 'Google Business Profile URL.'],
+   377→    ['Archetype', 'Single Select', 'Required', 'The Operator / The Practitioner / The Institution.'],
+   378→    ['Annual Revenue Range', 'Single Select', 'Required', 'Under $500K / $500K-$1M / $1M-$5M / $5M-$10M / $10M-$15M / Over $15M.'],
+   379→    ['Employee Count', 'Number', 'Optional', 'Approximate number of employees.'],
+   380→    ['Monthly Ad Spend', 'Currency', 'Optional', 'Current monthly paid advertising budget.'],
+   381→    ['Primary Pain Point', 'Single Select', 'Required', 'Paid Ad Fatigue / Maps Invisibility / Page 2 Syndrome / Leaky Leads / No SEO.'],
+   382→    ['Service Package', 'Link to Service Packages', 'Required', 'Which VirtuaLab service package they purchased.'],
+   383→    ['Contract Start Date', 'Date', 'Required', 'When the engagement began.'],
+   384→    ['Contract End Date', 'Date', 'Required', 'When the engagement ends.'],
+   385→    ['GHL Contact ID', 'Text', 'Optional', 'Linked GoHighLevel contact record.'],
+   386→    ['Onboarding Status', 'Single Select', 'Required', 'Lead / Qualified / Proposal Sent / Contract Signed / Onboarding / Active / Churned.'],
+   387→    ['Baseline Organic Traffic', 'Number', 'Optional', 'Monthly organic sessions at engagement start.'],
+   388→    ['Baseline Map Pack Rate', 'Number', 'Optional', 'Percentage of target keywords in Map Pack at start.'],
+   389→    ['Current Organic Traffic', 'Number', 'Auto', 'Latest monthly organic sessions (from GSC integration).'],
+   390→    ['Current Map Pack Rate', 'Number', 'Auto', 'Latest Map Pack appearance percentage.'],
+   391→    ['Lead Cost Baseline', 'Currency', 'Optional', 'Cost per lead at engagement start.'],
+   392→    ['Current Lead Cost', 'Currency', 'Auto', 'Latest calculated cost per lead.'],
+   393→]
+   394→t_client = make_table(
+   395→    ['Field Name', 'Field Type', 'Constraint', 'Description'],
+   396→    client_fields,
+   397→    col_widths=[95, 72, 48, CONTENT_W - 215]
+   398→)
+   399→story.append(t_client)
+   400→story.append(sp(6))
+   401→
+   402→story.append(Paragraph('2.3.2 Table: Service Packages', s_h3))
+   403→pkg_fields = [
+   404→    ['Package ID', 'Auto Number', 'Unique', 'System identifier.'],
+   405→    ['Package Name', 'Text', 'Required', 'e.g., "Local Visibility Starter", "Full AEO-Ready Website", "Multi-Location Dominance".'],
+   406→    ['Description', 'Long Text', 'Required', 'What the package includes.'],
+   407→    ['Price Range (Min)', 'Currency', 'Required', 'Minimum monthly or one-time fee.'],
+   408→    ['Price Range (Max)', 'Currency', 'Required', 'Maximum monthly or one-time fee.'],
+   409→    ['Billing Model', 'Single Select', 'Required', 'Monthly Retainer / One-Time Project / Hybrid.'],
+   410→    ['Included Services', 'Array (Link)', 'Required', 'Links to Services table.'],
+   411→    ['Deliverables', 'Long Text', 'Required', 'Specific deliverables per month/phase.'],
+   412→    ['Contract Duration', 'Single Select', 'Required', 'Month-to-Month / 3 Months / 6 Months / 12 Months.'],
+   413→    ['Active', 'Checkbox', 'Required', 'Whether this package is currently offered.'],
+   414→]
+   415→t_pkg = make_table(
+   416→    ['Field Name', 'Field Type', 'Constraint', 'Description'],
+   417→    pkg_fields,
+   418→    col_widths=[95, 80, 50, CONTENT_W - 225]
+   419→)
+   420→story.append(t_pkg)
+   421→
+   422→story.append(Paragraph('2.3.3 Table: Industries', s_h3))
+   423→ind_fields = [
+   424→    ['Industry ID', 'Auto Number', 'Unique', 'System identifier.'],
+   425→    ['Industry Name', 'Text', 'Required', 'e.g., HVAC, Plumbing, Roofing, Pest Control, Electrical, Dentistry, Landscaping.'],
+   426→    ['Slug', 'Text', 'Required', 'URL slug: /industries/hvac.'],
+   427→    ['Target Keywords Count', 'Formula', 'Auto', 'Count of keywords targeting this industry.'],
+   428→    ['Active Clients Count', 'Formula', 'Auto', 'Count of active clients in this vertical.'],
+   429→    ['Content Published Count', 'Formula', 'Auto', 'Count of published content pieces.'],
+   430→    ['Average Client Revenue', 'Formula (Avg)', 'Auto', 'Average revenue of active clients in this vertical.'],
+   431→    ['Seasonal Patterns', 'Long Text', 'Optional', 'Known seasonal demand patterns (e.g., HVAC peaks in summer).'],
+   432→    ['Specific Search Challenges', 'Long Text', 'Optional', 'Vertical-specific search behavior notes.'],
+   433→    ['Priority Level', 'Single Select', 'Required', 'Primary (active focus) / Secondary (established) / Emerging (new vertical).'],
+   434→]
+   435→t_ind = make_table(
+   436→    ['Field Name', 'Field Type', 'Constraint', 'Description'],
+   437→    ind_fields,
+   438→    col_widths=[95, 72, 55, CONTENT_W - 222]
+   439→)
+   440→story.append(t_ind)
+   441→
+   442→story.append(PageBreak())
+   443→
+   444→# ========================
+   445→# 2.4 Domain 4: Performance & Reporting
+   446→# ========================
+   447→story.append(Paragraph('2.4 Domain 4: Performance and Reporting (3 Tables)', s_h2))
+   448→
+   449→story.append(Paragraph('2.4.1 Table: KPI Dashboard', s_h3))
+   450→kpi_fields = [
+   451→    ['KPI ID', 'Auto Number', 'Unique', 'System identifier.'],
+   452→    ['Client', 'Link to Clients', 'Required', 'Which client this measures.'],
+   453→    ['Metric Name', 'Single Select', 'Required', 'Organic Traffic / Map Pack Rate / Citation Score / Cost Per Lead / Review Velocity / Keyword Rankings.'],
+   454→    ['Baseline Value', 'Number', 'Required', 'Value at contract start.'],
+   455→    ['Current Value', 'Number', 'Auto', 'Latest measured value.'],
+   456→    ['Target Value', 'Number', 'Required', 'Goal value for contract period.'],
+   457→    ['Progress Percentage', 'Formula', 'Auto', '(Current - Baseline) / (Target - Baseline) x 100.'],
+   458→    ['Measurement Date', 'Date', 'Auto', 'When this value was last measured.'],
+   459→    ['Data Source', 'Single Select', 'Required', 'Google Search Console / BrightLocal / Manual AI Query / GHL CRM / Ahrefs.'],
+   460→    ['Status', 'Formula', 'Auto', 'On Track (green) / At Risk (yellow) / Behind (red) - based on progress vs timeline.'],
+   461→]
+   462→t_kpi = make_table(
+   463→    ['Field Name', 'Field Type', 'Constraint', 'Description'],
+   464→    kpi_fields,
+   465→    col_widths=[90, 72, 48, CONTENT_W - 210]
+   466→)
+   467→story.append(t_kpi)
+   468→story.append(sp(6))
+   469→
+   470→story.append(Paragraph('2.4.2 Table: Parasite Platform Assets', s_h3))
+   471→para_fields = [
+   472→    ['Asset ID', 'Auto Number', 'Unique', 'System identifier.'],
+   473→    ['Platform', 'Single Select', 'Required', 'LinkedIn / Medium / YouTube / Reddit / Quora / Google Sites / Cloud Property.'],
+   474→    ['Profile URL', 'Text (URL)', 'Required', 'URL of the profile or property.'],
+   475→    ['Platform Authority (DA)', 'Number', 'Optional', 'Domain authority of the platform.'],
+   476→    ['Content Published Count', 'Formula', 'Auto', 'Count of content pieces published on this platform.'],
+   477→    ['Total Impressions', 'Number', 'Auto', 'Aggregate impressions across all content on this platform.'],
+   478→    ['Total Clicks', 'Number', 'Auto', 'Aggregate clicks to primary domain from this platform.'],
+   479→    ['Last Published Date', 'Date', 'Auto', 'Most recent content publication date.'],
+   480→    ['Publishing Cadence', 'Single Select', 'Required', 'Weekly / Bi-Weekly / Monthly / As Needed.'],
+   481→    ['Status', 'Single Select', 'Required', 'Active / Paused / Needs Setup.'],
+   482→]
+   483→t_para = make_table(
+   484→    ['Field Name', 'Field Type', 'Constraint', 'Description'],
+   485→    para_fields,
+   486→    col_widths=[95, 72, 48, CONTENT_W - 215]
+   487→)
+   488→story.append(t_para)
+   489→
+   490→story.append(Paragraph('2.4.3 Table: Team Members', s_h3))
+   491→team_fields = [
+   492→    ['Member ID', 'Auto Number', 'Unique', 'System identifier.'],
+   493→    ['Name', 'Text', 'Required', 'Team member name.'],
+   494→    ['Role', 'Single Select', 'Required', 'SEO Strategist / Content Writer / Technical SEO / Account Manager / Web Developer.'],
+   495→    ['Email', 'Email', 'Required', 'Contact email.'],
+   496→    ['GHL User ID', 'Text', 'Optional', 'Linked GoHighLevel user.'],
+   497→    ['Active Clients', 'Array (Link)', 'Auto', 'Clients assigned to this team member.'],
+   498→    ['Capacity Status', 'Single Select', 'Required', 'Available / At Capacity / Overloaded.'],
+   499→]
+   500→t_team = make_table(
+   501→    ['Field Name', 'Field Type', 'Constraint', 'Description'],
+   502→    team_fields,
+   503→    col_widths=[90, 72, 55, CONTENT_W - 217]
+   504→)
+   505→story.append(t_team)
+   506→
+   507→story.append(callout(
+   508→    '<b>Baserow Implementation Note:</b> All tables use Baserow Link to Table fields for relationships. Formula fields are calculated automatically. Single Select fields use predefined options (no free-text for status/intent fields). Auto fields are system-generated. The n8n integration uses Baserow API webhooks for real-time triggering on record creation and status changes.'))
+   509→
+   510→story.append(PageBreak())
+   511→
+   512→# ========================
+   513→# CHAPTER 3: n8n AUTOMATION LAYER
+   514→# ========================
+   515→story.append(Paragraph('3. n8n Automation Layer: The Nervous System', s_h1))
+   516→story.append(sp(4))
+   517→
+   518→story.append(Paragraph(
+   519→    'n8n is the automation engine that connects every component of the ecosystem. Without n8n, Baserow is a static database, GHL is a standalone CRM, and AI agents are isolated tools. With n8n, the entire ecosystem becomes a living system where data flows automatically between components, triggers actions based on business rules, and enforces process consistency. Every workflow defined below has a specific trigger, a defined process, and a measurable output. No workflow runs without a data trigger. No action is taken without a record being created or updated in Baserow.', s_body))
+   520→
+   521→story.append(Paragraph('3.1 Workflow 1: Keyword Research and Clustering Pipeline', s_h2))
+   522→story.append(Paragraph(
+   523→    'This workflow automates the discovery, classification, and clustering of new keywords. It runs on a weekly schedule and also triggers on-demand when a new client onboards. The workflow pulls search data from the web search API, classifies each keyword by intent and awareness stage using an LLM call, checks for cannibalization against existing clusters in Baserow, and creates new records in the Keywords Master table with all fields pre-filled. The AI SEO Strategist agent processes the clustering logic.', s_body))
+   524→
+   525→wf1_data = [
+   526→    ['Trigger', 'Weekly Schedule (Monday 6AM) OR Manual Webhook', 'Starts the pipeline on schedule or on demand.'],
+   527→    ['Step 1', 'Fetch Seed Keywords from Baserow', 'Pulls all keywords with Status = "Research" from Keywords Master.'],
+   528→    ['Step 2', 'Expand Keywords via Search API', 'For each seed keyword, query search API for related terms, PAA questions, and variations.'],
+   529→    ['Step 3', 'Classify Intent (LLM Call)', 'Send each keyword to AI SEO Strategist agent for intent/stage classification.'],
+   530→    ['Step 4', 'Check Cannibalization', 'Compare new keywords against existing Keyword Clusters to detect overlap.'],
+   531→    ['Step 5', 'Assign to Cluster', 'Based on intent + industry + cannibalization check, assign to appropriate cluster.'],
+   532→    ['Step 6', 'Calculate Difficulty', 'Pull SERP data for top 10 results, estimate difficulty score.'],
+   533→    ['Step 7', 'Write to Baserow', 'Create new records in Keywords Master with all fields populated.'],
+   534→    ['Step 8', 'Update Cluster Counts', 'Recalculate keyword counts and avg difficulty for affected clusters.'],
+   535→    ['Step 9', 'Alert if High-Value', 'If any keyword has High demand + Low difficulty + No content, send Slack/email alert.'],
+   536→]
+   537→t_wf1 = make_table(
+   538→    ['Step', 'Action', 'Description'],
+   539→    wf1_data,
+   540→    col_widths=[60, 160, CONTENT_W - 220]
+   541→)
+   542→story.append(t_wf1)
+   543→story.append(sp(6))
+   544→
+   545→story.append(Paragraph('3.2 Workflow 2: Content Brief Generation Pipeline', s_h2))
+   546→story.append(Paragraph(
+   547→    'When a keyword moves to "Approved" status in Baserow, this workflow automatically generates a comprehensive content brief. The brief is created by the AI SEO Strategist agent and includes the target keyword, secondary keywords, recommended word count, H2/H3 outline, GEO optimization requirements, internal linking targets, and the specific buyer awareness stage messaging angle. The brief is written to the Content Calendar table as a new record with Status = "Brief Generated." A notification is sent to the assigned writer for review and approval before content production begins.', s_body))
+   548→
+   549→wf2_data = [
+   550→    ['Trigger', 'Baserow Webhook: Keywords Master.Status changes to Approved', 'Reactive trigger on keyword approval.'],
+   551→    ['Step 1', 'Read Keyword Record', 'Fetch full keyword record including cluster, industry, intent, stage.'],
+   552→    ['Step 2', 'Fetch Cluster Context', 'Pull all keywords in the same cluster to understand topical boundaries.'],
+   553→    ['Step 3', 'Check Existing Content', 'Search Content Calendar for any existing content targeting this keyword.'],
+   554→    ['Step 4', 'Generate Brief (LLM Call)', 'AI SEO Strategist agent generates full content brief with outline.'],
+   555→    ['Step 5', 'Add GEO Requirements', 'Based on content type, add specific GEO factors to implement.'],
+   556→    ['Step 6', 'Create Content Calendar Record', 'Write brief to Content Calendar with Status = "Brief Generated".'],
+   557→    ['Step 7', 'Notify Writer', 'Send notification via GHL task or email to assigned writer.'],
+   558→]
+   559→t_wf2 = make_table(
+   560→    ['Step', 'Action', 'Description'],
+   561→    wf2_data,
+   562→    col_widths=[60, 160, CONTENT_W - 220]
+   563→)
+   564→story.append(t_wf2)
+   565→
+   566→story.append(Paragraph('3.3 Workflow 3: SERP and AI Citation Monitoring', s_h2))
+   567→story.append(Paragraph(
+   568→    'This workflow runs weekly and systematically checks the top 50 target keywords across six platforms: Google Organic, Google Maps, ChatGPT, Perplexity, Google Gemini, and Google AI Overviews. For each keyword-platform combination, the workflow records whether VirtuaLab was mentioned, the context of the mention, the ranking position, and which competitor was cited if VirtuaLab was not. This data flows into the SERP and LLM Citation Tracking table and feeds the monthly Citation Dominance Score report. When a tracked keyword drops more than 5 positions or loses an AI citation, the workflow triggers an optimization alert.', s_body))
+   569→
+   570→wf3_data = [
+   571→    ['Trigger', 'Weekly Schedule (Wednesday 6AM)', 'Systematic weekly check across all platforms.'],
+   572→    ['Step 1', 'Fetch Target Keywords', 'Pull all keywords with Status = "Published" or "Approved" from Baserow.'],
+   573→    ['Step 2', 'Query Google SERP', 'For each keyword, scrape top 10 organic results, record position.'],
+   574→    ['Step 3', 'Query Google Maps', 'Check Map Pack for local intent keywords, record appearance.'],
+   575→    ['Step 4', 'Query AI Platforms', 'Send target queries to ChatGPT, Perplexity, Gemini via API.'],
+   576→    ['Step 5', 'Parse AI Responses', 'Extract mentions, context, and cited sources from AI responses.'],
+   577→    ['Step 6', 'Write to Tracking Table', 'Create records in SERP and LLM Citation Tracking table.'],
+   578→    ['Step 7', 'Calculate Citation Score', 'Compute monthly Citation Dominance Score percentage.'],
+   579→    ['Step 8', 'Threshold Alert', 'If position drop > 5 or citation lost, create alert record.'],
+   580→    ['Step 9', 'Trigger Optimization', 'For alerts, create optimization task in Content Calendar.'],
+   581→]
+   582→t_wf3 = make_table(
+   583→    ['Step', 'Action', 'Description'],
+   584→    wf3_data,
+   585→    col_widths=[60, 150, CONTENT_W - 210]
+   586→)
+   587→story.append(t_wf3)
+   588→
+   589→story.append(Paragraph('3.4 Workflow 4: Competitor Monitoring Alert', s_h2))
+   590→story.append(Paragraph(
+   591→    'This workflow monitors the top 7 identified competitors (Hook Agency, Rival Digital, Blue Corona, Scorpion, RYNO Strategic, PlumberSEO.net, Sequoia GEO) for new content publications, pricing changes, and keyword movements. When a competitor publishes new content that targets keywords in VirtuaLab clusters, the workflow creates an alert in Baserow and optionally generates a response content brief. This ensures VirtuaLab can react quickly to competitive threats rather than discovering them months later during manual reviews.', s_body))
+   592→
+   593→wf4_data = [
+   594→    ['Trigger', 'Weekly Schedule (Friday 6AM)', 'Weekly competitor scan.'],
+   595→    ['Step 1', 'Fetch Active Competitors', 'Pull all competitors with Alert Active = true from Competitor Intelligence.'],
+   596→    ['Step 2', 'Scrape Competitor Blogs', 'Check for new blog posts or content pages published since last check.'],
+   597→    ['Step 3', 'Extract Target Keywords', 'Parse competitor content for target keyword usage.'],
+   598→    ['Step 4', 'Check for Overlap', 'Cross-reference competitor keywords with VirtuaLab keyword clusters.'],
+   599→    ['Step 5', 'Monitor Pricing Pages', 'Scrape pricing pages for changes in tiers or minimums.'],
+   600→    ['Step 6', 'Generate Alert', 'If overlap or pricing change detected, create alert in Baserow.'],
+   601→    ['Step 7', 'Optional: Generate Response Brief', 'If high-priority overlap, auto-generate response content brief.'],
+   602→    ['Step 8', 'Update Competitor Record', 'Update Last Analyzed date and citation frequency.'],
+   603→]
+   604→t_wf4 = make_table(
+   605→    ['Step', 'Action', 'Description'],
+   606→    wf4_data,
+   607→    col_widths=[60, 150, CONTENT_W - 210]
+   608→)
+   609→story.append(t_wf4)
+   610→
+   611→story.append(PageBreak())
+   612→
+   613→story.append(Paragraph('3.5 Workflow 5: Client Reporting Pipeline', s_h2))
+   614→story.append(Paragraph(
+   615→    'This workflow automates the generation of monthly client performance reports. On the first business day of each month, the workflow pulls KPI data from Google Search Console, BrightLocal (for local rankings), the SERP/LLM Citation Tracking table, and the GHL CRM (for lead data). It calculates month-over-month changes, computes progress toward targets, and generates a structured report that is uploaded to GHL as a PDF and sent to the client via email. The report includes organic traffic trends, Map Pack appearance rates, keyword ranking changes, AI citation progress, and cost-per-lead calculations. This eliminates the manual report-writing process and ensures every client receives a consistent, data-rich monthly report.', s_body))
+   616→
+   617→wf5_data = [
+   618→    ['Trigger', 'Monthly Schedule (1st of month, 7AM)', 'Automated monthly reporting.'],
+   619→    ['Step 1', 'Fetch Active Clients', 'Pull all clients with Onboarding Status = "Active" from Baserow.'],
+   620→    ['Step 2', 'Pull GSC Data', 'For each client, query Google Search Console API for last 30 days.'],
+   621→    ['Step 3', 'Pull Local Data', 'Query BrightLocal API for Map Pack and local ranking data.'],
+   622→    ['Step 4', 'Pull Citation Data', 'Aggregate SERP/LLM Citation Tracking data for the month.'],
+   623→    ['Step 5', 'Pull Lead Data', 'Query GHL CRM for leads generated, conversion rate, cost per lead.'],
+   624→    ['Step 6', 'Calculate KPIs', 'Compute all KPI values and update KPI Dashboard table in Baserow.'],
+   625→    ['Step 7', 'Generate Report (LLM)', 'AI agent generates narrative analysis of the data.'],
+   626→    ['Step 8', 'Create PDF Report', 'Render report as PDF using template system.'],
+   627→    ['Step 9', 'Upload to GHL', 'Attach PDF to client contact record in GoHighLevel.'],
+   628→    ['Step 10', 'Send Email', 'Send report email to client with PDF attachment.'],
+   629→]
+   630→t_wf5 = make_table(
+   631→    ['Step', 'Action', 'Description'],
+   632→    wf5_data,
+   633→    col_widths=[60, 140, CONTENT_W - 200]
+   634→)
+   635→story.append(t_wf5)
+   636→
+   637→story.append(Paragraph('3.6 Workflow 6: Content Publishing and Verification', s_h2))
+   638→story.append(Paragraph(
+   639→    'When content moves to "Approved" status in the Content Calendar, this workflow manages the publication process. For primary domain content, it triggers a notification for the web developer to publish. For parasite platform content, it generates platform-specific formatting and posts via API where possible (LinkedIn, Medium). After publication, the workflow verifies that the content is live, checks that internal links are functional, confirms schema markup is present, and updates the content record with the published URL and date. It also schedules a 30-day performance review by creating a future-dated task in the system.', s_body))
+   640→
+   641→story.append(Paragraph('3.7 n8n Workflow Summary', s_h2))
+   642→wf_summary = [
+   643→    ['WF-01: Keyword Research and Clustering', 'Weekly + On-Demand', 'Baserow Webhook', 'Keywords Master', 'Auto-discover, classify, and cluster keywords.'],
+   644→    ['WF-02: Content Brief Generation', 'Reactive (on keyword approval)', 'Baserow Webhook', 'Content Calendar', 'Generate AI content briefs for approved keywords.'],
+   645→    ['WF-03: SERP and AI Citation Monitoring', 'Weekly', 'Schedule', 'SERP/LLM Tracking', 'Track rankings and AI citations across 6 platforms.'],
+   646→    ['WF-04: Competitor Monitoring', 'Weekly', 'Schedule', 'Competitor Intelligence', 'Monitor competitors for new content and pricing changes.'],
+   647→    ['WF-05: Client Reporting', 'Monthly', 'Schedule', 'KPI Dashboard + GHL', 'Generate and deliver monthly performance reports.'],
+   648→    ['WF-06: Content Publishing', 'Reactive (on content approval)', 'Baserow Webhook', 'Content Calendar', 'Manage publication and post-publish verification.'],
+   649→    ['WF-07: Review Generation Nudge', 'Bi-Weekly', 'Schedule', 'GHL Tasks', 'Nudge clients to request Google reviews from customers.'],
+   650→    ['WF-08: GBP Post Scheduling', 'Bi-Weekly', 'Schedule', 'Content Calendar', 'Schedule and track Google Business Profile posts.'],
+   651→]
+   652→t_wf_sum = make_table(
+   653→    ['Workflow', 'Frequency', 'Trigger', 'Writes To', 'Purpose'],
+   654→    wf_summary,
+   655→    col_widths=[105, 55, 55, 72, CONTENT_W - 287]
+   656→)
+   657→story.append(t_wf_sum)
+   658→
+   659→story.append(PageBreak())
+   660→
+   661→# ========================
+   662→# CHAPTER 4: GHL CRM LAYER
+   663→# ========================
+   664→story.append(Paragraph('4. GoHighLevel CRM Layer: Client Delivery Pipeline', s_h1))
+   665→story.append(sp(4))
+   666→
+   667→story.append(Paragraph(
+   668→    'GoHighLevel (GHL) serves as the client-facing operational layer of the ecosystem. While Baserow is the internal data backbone and n8n is the automation engine, GHL is where client interactions happen: lead capture, proposal delivery, contract signing, onboarding checklists, task management, communication, and reporting. The GHL pipeline is designed to mirror the buyer journey defined in the strategy document, with pipeline stages that correspond to each step from initial awareness through active delivery and renewal.', s_body))
+   669→
+   670→story.append(Paragraph('4.1 Pipeline Stages', s_h2))
+   671→ghl_stages = [
+   672→    ['Stage 1: New Lead', 'Contact created via website form, diagnostic audit request, or referral. No qualification yet.', 'Auto-respond with diagnostic audit delivery (if applicable). Add to nurture sequence.'],
+   673→    ['Stage 2: Qualified', 'Lead has engaged with content, requested audit, or met qualification criteria ($1M+ revenue, local service, paid ad dependency).', 'Trigger n8n to create Client record in Baserow. Assign account manager.'],
+   674→    ['Stage 3: Proposal Sent', 'Custom proposal generated based on industry vertical, pain points, and service needs. Sent via GHL email/document system.', 'Proposal includes specific deliverables, timeline, pricing, and case study references. Track open rate.'],
+   675→    ['Stage 4: Contract Signed', 'Client has signed the engagement contract and paid initial invoice.', 'Trigger n8n onboarding workflow: create Baserow records, set up GSC access, schedule kick-off call.'],
+   676→    ['Stage 5: Onboarding (Week 1-2)', 'Technical audit completed. Access established. Baseline metrics recorded in Baserow. KPI Dashboard initialized.', 'Complete onboarding checklist: GSC, GBP access, CRM integration, baseline report.'],
+   677→    ['Stage 6: Active Delivery', 'Ongoing SEO, content, and optimization work. Monthly reports delivered. Weekly tasks assigned and tracked.', 'n8n workflows drive content pipeline, reporting, and monitoring automatically.'],
+   678→    ['Stage 7: Renewal (60 days before end)', 'Renewal conversation initiated. Performance data compiled. ROI presentation prepared.', 'Generate ROI summary from Baserow KPI Dashboard. Prepare renewal proposal.'],
+   679→    ['Stage 8: Churned / Lost', 'Client did not renew or terminated early. Reason recorded for analysis.', 'Log churn reason in Baserow. Trigger post-mortem analysis workflow.'],
+   680→]
+   681→t_ghl = make_table(
+   682→    ['Pipeline Stage', 'Definition', 'Automated Actions'],
+   683→    ghl_stages,
+   684→    col_widths=[80, 175, CONTENT_W - 255]
+   685→)
+   686→story.append(t_ghl)
+   687→
+   688→story.append(Paragraph('4.2 GHL Automation Rules', s_h2))
+   689→story.append(Paragraph(
+   690→    'GHL workflows complement n8n automations by handling the client communication and task management layer. When a new lead enters Stage 1, GHL automatically sends a welcome email with the diagnostic audit results (if applicable) and adds the contact to a 5-email nurture sequence. The nurture sequence is paced over 14 days and includes educational content about local SEO, paid ad dependency, and GEO. Each email includes a tracking pixel that updates the lead score in GHL based on opens and clicks. When a lead score reaches a defined threshold, GHL automatically moves the contact to Stage 2 (Qualified) and assigns an account manager through a round-robin distribution rule.', s_body))
+   691→
+   692→story.append(Paragraph(
+   693→    'During Active Delivery (Stage 6), GHL task management ensures that every weekly deliverable is tracked. n8n creates GHL tasks for content publication, review requests, and reporting deadlines. Each task has a due date, an assignee, and a checklist of completion criteria. When a task is marked complete, GHL triggers a webhook to n8n, which updates the corresponding Baserow record and proceeds to the next step in the workflow. This bidirectional integration between GHL and Baserow (mediated by n8n) ensures that client-facing task management and internal data management stay perfectly synchronized.', s_body))
+   694→
+   695→story.append(Paragraph('4.3 GHL Dashboard Configuration', s_h2))
+   696→story.append(Paragraph(
+   697→    'The GHL dashboard is configured to show account managers a real-time view of their client portfolio. The primary dashboard displays each active client with key metrics: organic traffic trend (sparkline), Map Pack appearance rate, citation score, leads this month, and cost per lead. Color coding (green/yellow/red) reflects KPI status from the Baserow KPI Dashboard table. A secondary dashboard shows the content pipeline: how many briefs are pending, in writing, in review, and published this month. A third dashboard shows parasite platform performance: impressions, clicks, and citation contributions from each external platform. All dashboard data is pulled from Baserow via n8n API calls, ensuring a single source of truth.', s_body))
+   698→
+   699→story.append(PageBreak())
+   700→
+   701→# ========================
+   702→# CHAPTER 5: AI AGENT ORCHESTRATION
+   703→# ========================
+   704→story.append(Paragraph('5. AI Agent Orchestration Layer', s_h1))
+   705→story.append(sp(4))
+   706→
+   707→story.append(Paragraph(
+   708→    'The AISEO Framework defines six specialized AI agents that operate within the ecosystem. Each agent has a distinct role, a defined input/output specification, and a clear integration point with the Baserow/n8n infrastructure. Agents are not autonomous decision-makers; they are specialized processors that receive structured inputs from Baserow (via n8n), apply their expertise, and return structured outputs that are written back to Baserow. Human operators review agent outputs before they trigger client-facing actions. This ensures quality control while leveraging AI speed and consistency for data-heavy tasks.', s_body))
+   709→
+   710→story.append(Paragraph('5.1 Agent Specifications', s_h2))
+   711→
+   712→agent_data = [
+   713→    ['1. Deep Marketing Strategist', 'Market analysis, buyer psychology, demand modeling, competitive positioning', 'Baserow: Clients table, Industries table, Competitor Intelligence table', 'Baserow: Updates client ICP notes, industry demand patterns, positioning recommendations', 'n8n WF-01 (keyword expansion), WF-04 (competitor analysis)', 'LLM system prompt includes full ICP data and psychographic profiles from strategy doc. Outputs must include data citations.'],
+   714→    ['2. Positioning Strategist', 'Brand messaging, differentiation analysis, value proposition development, content angle creation', 'Baserow: Competitor Intelligence, Keywords Master (commercial intent), Content Calendar', 'Baserow: Content briefs with messaging angles, competitor differentiation notes', 'n8n WF-02 (content brief generation)', 'Inputs include competitor strengths/weaknesses. Outputs must specify unique angles vs each competitor.'],
+   715→    ['3. Competitor Analysis Sentinel', 'SERP analysis, competitor content monitoring, backlink profiling, gap identification', 'Baserow: Competitor Intelligence, SERP/LLM Citation Tracking, Keywords Master', 'Baserow: Competitor records, gap opportunities, alert triggers', 'n8n WF-03 (SERP monitoring), WF-04 (competitor alerts)', 'Must track all 7 primary competitors. Output must include specific URL-level gaps.'],
+   716→    ['4. AI SEO Strategist', 'Keyword clustering, content brief generation, GEO optimization, topic mapping', 'Baserow: Keywords Master, Keyword Clusters, Content Calendar', 'Baserow: Keyword clusters, content briefs, GEO requirements', 'n8n WF-01 (clustering), WF-02 (briefs)', 'Core agent for content pipeline. Must implement all 9 GEO factors in briefs.'],
+   717→    ['5. Parasite SEO Strategist', 'Platform selection, content formatting per platform, publishing cadence, citation tracking', 'Baserow: Parasite Platform Assets, Content Calendar (parasite type), SERP/LLM Tracking', 'Baserow: Platform-specific content guidelines, publication calendar, performance tracking', 'n8n WF-06 (publishing), WF-03 (citation tracking)', 'Must know platform-specific DA, audience, and content format rules.'],
+   718→    ['6. Sentinel (Quality Gate)', 'Output validation, quality scoring, cannibalization checking, brand voice compliance', 'Baserow: All tables (read-only audit)', 'Baserow: Quality scores, validation flags, required revision notes', 'All workflows (post-processing step)', 'Final gate before any content reaches human review or publication. Rejects content that violates brand rules.'],
+   719→]
+   720→
+   721→agent_t = make_table(
+   722→    ['Agent', 'Responsibilities', 'Input Sources (Baserow)', 'Output Destinations', 'n8n Integration', 'Operating Rules'],
+   723→    agent_data,
+   724→    col_widths=[60, 72, 65, 65, 58, CONTENT_W - 320]
+   725→)
+   726→story.append(agent_t)
+   727→
+   728→story.append(Paragraph('5.2 Agent Communication Protocol', s_h2))
+   729→story.append(Paragraph(
+   730→    'Agents communicate through Baserow, not directly with each other. When the AI SEO Strategist generates a content brief, it writes the brief to the Content Calendar table. The Sentinel agent then reads the brief from Baserow, validates it against quality rules, and writes a quality score and any revision notes back to the same record. This indirect communication pattern ensures that every agent interaction is logged, auditable, and recoverable. If an agent produces an error, the record in Baserow shows exactly what went wrong and which agent was responsible.', s_body))
+   731→
+   732→story.append(Paragraph(
+   733→    'The n8n workflow acts as the orchestrator that sequences agent calls. For example, in the content brief generation workflow (WF-02), n8n first calls the AI SEO Strategist to generate the brief, then calls the Sentinel to validate it. If the Sentinel approves, the record status moves to "Brief Generated" and a notification is sent. If the Sentinel rejects, the record stays in draft and a revision task is created. This sequential, quality-gated approach ensures that no substandard output reaches human reviewers or clients.', s_body))
+   734→
+   735→story.append(Paragraph('5.3 Agent Input/Output Schema', s_h2))
+   736→story.append(Paragraph(
+   737→    'Every agent interaction follows a standardized JSON schema that is stored in Baserow Long Text fields. This ensures consistency and enables the Sentinel agent to validate outputs programmatically. The schema includes: agent_id (which agent produced this), input_data (the structured inputs received), output_data (the structured response), quality_score (0-100, assigned by Sentinel), validation_flags (array of issues found), timestamp, and processing_time_ms. This structured logging enables performance tracking across agents, identification of which agents produce the highest-quality outputs, and continuous improvement of agent prompts based on quality data.', s_body))
+   738→
+   739→story.append(PageBreak())
+   740→
+   741→# ========================
+   742→# CHAPTER 6: MEASUREMENT PROTOCOL
+   743→# ========================
+   744→story.append(Paragraph('6. Measurement and Feedback Protocol', s_h1))
+   745→story.append(sp(4))
+   746→
+   747→story.append(Paragraph(
+   748→    'The measurement protocol defines exactly what is measured, how often, by which tool, and what actions are triggered by the results. This is the layer that closes the feedback loop and transforms the ecosystem from a static system into a self-improving machine. Every metric has a defined data source, collection frequency, storage location (Baserow table), threshold for action, and automated response workflow. There is no metric that is tracked without a corresponding action trigger. If a metric is worth measuring, it is worth acting on when it crosses a threshold.', s_body))
+   749→
+   750→story.append(Paragraph('6.1 Measurement Cadence', s_h2))
+   751→cadence_data = [
+   752→    ['Organic Traffic', 'Google Search Console API', 'Daily (auto-pull)', 'KPI Dashboard', '30-day trend drops > 15%', 'n8n WF-05 + Content Calendar alert'],
+   753→    ['Keyword Rankings (Top 50)', 'Ahrefs / SEMrush API', 'Bi-Weekly', 'Keywords Master.SERP Position', 'Position drop > 5 positions', 'n8n WF-03 + optimization task'],
+   754→    ['Map Pack Appearance', 'BrightLocal API', 'Weekly', 'KPI Dashboard', 'Drop below 30% for target suburbs', 'n8n WF-05 + GBP optimization task'],
+   755→    ['AI Citation Score', 'Manual AI Query (via n8n LLM calls)', 'Monthly', 'SERP/LLM Tracking', 'Score drops below 15%', 'n8n WF-03 + parasite content task'],
+   756→    ['Cost Per Lead', 'GHL CRM (leads / ad spend)', 'Monthly', 'KPI Dashboard', 'Increase > 20% from baseline', 'Account manager alert in GHL'],
+   757→    ['Review Velocity', 'Google Business Profile API', 'Bi-Weekly', 'KPI Dashboard', 'Below 3 reviews/month', 'n8n WF-07 (review nudge workflow)'],
+   758→    ['Competitor Keywords', 'Ahrefs API', 'Monthly', 'Competitor Intelligence', 'New competitor keyword in our cluster', 'n8n WF-04 + content response brief'],
+   759→    ['Content Performance', 'GSC + Baserow', 'Monthly (30-day post-publish)', 'Content Calendar', '0 organic impressions after 30 days', 'Content revision task'],
+   760→    ['Parasite Impressions', 'Platform Analytics APIs', 'Monthly', 'Parasite Platform Assets', 'Below 1K monthly impressions', 'Platform content refresh task'],
+   761→    ['Client Satisfaction', 'GHL (manual or survey)', 'Quarterly', 'Clients table (notes field)', 'NPS score below 7', 'Account manager escalation'],
+   762→]
+   763→t_cadence = make_table(
+   764→    ['Metric', 'Data Source', 'Frequency', 'Stored In', 'Action Threshold', 'Triggered Response'],
+   765→    cadence_data,
+   766→    col_widths=[65, 72, 55, 60, 72, CONTENT_W - 324]
+   767→)
+   768→story.append(t_cadence)
+   769→
+   770→story.append(Paragraph('6.2 Weekly Review Protocol', s_h2))
+   771→story.append(Paragraph(
+   772→    'Every Monday, the system generates an automated Weekly Operations Digest that is sent to all team members via GHL. The digest includes: total keywords in pipeline (by status), content published this week, content due next week, SERP position changes for tracked keywords, new competitor content detected, AI citation mentions gained/lost, and any alerts requiring human attention. This digest is generated by n8n pulling data from Baserow and formatting it through an LLM call that adds narrative context. The review ensures that every team member starts the week with complete operational awareness without manually checking multiple systems.', s_body))
+   773→
+   774→story.append(Paragraph('6.3 Monthly Strategic Review', s_h2))
+   775→story.append(Paragraph(
+   776→    'On the first Wednesday of every month, a strategic review is conducted that goes beyond operational metrics. This review examines: keyword cluster performance trends (which clusters are gaining/losing authority), content ROI analysis (which content types generate the most business impact), competitor landscape shifts (new entrants, positioning changes), AI citation trajectory (month-over-month growth rate), and client health scores (aggregated NPS and retention indicators). The review is documented in Baserow as a Strategic Review record and drives adjustments to the keyword strategy, content calendar, and resource allocation for the following month. This is the mechanism by which the system adapts and improves over time based on measured outcomes rather than assumptions.', s_body))
+   777→
+   778→story.append(PageBreak())
+   779→
+   780→# ========================
+   781→# CHAPTER 7: IMPLEMENTATION SEQUENCE
+   782→# ========================
+   783→story.append(Paragraph('7. Implementation Sequence', s_h1))
+   784→story.append(sp(4))
+   785→
+   786→story.append(Paragraph(
+   787→    'The ecosystem must be built in a specific sequence to ensure that each layer functions correctly before the next layer depends on it. Building the n8n workflows before Baserow tables exist would fail. Building the GHL pipeline before the Baserow data model is defined would create orphaned client records. The implementation sequence below ensures that each step creates the prerequisite for the next, minimizing rework and ensuring that the system is functional at every stage.', s_body))
+   788→
+   789→impl_data = [
+   790→    ['Phase 1: Foundation', 'Week 1-2', 'Create all 12 Baserow tables with exact field specifications from Chapter 2. Configure all Link to Table relationships. Set up Single Select options for all status/intent/type fields. Create formula fields for auto-calculations. Test with 10 sample keyword records.', 'Baserow is operational with complete schema.'],
+   791→    ['Phase 2: Core Workflows', 'Week 3-4', 'Build n8n WF-01 (Keyword Research) and WF-02 (Content Brief Generation) end-to-end. Test with 5 real keywords from the strategy. Verify Baserow records are created correctly. Verify LLM agent calls return valid outputs. Verify Sentinel quality gate works.', 'Keywords can be researched and content briefs generated automatically.'],
+   792→    ['Phase 3: Monitoring', 'Week 5-6', 'Build n8n WF-03 (SERP/AI Monitoring) and WF-04 (Competitor Monitoring). Configure weekly schedules. Run first full monitoring cycle across 50 keywords and 7 competitors. Verify tracking data flows into Baserow correctly.', 'System can track rankings, citations, and competitors automatically.'],
+   793→    ['Phase 4: Client Delivery', 'Week 7-8', 'Configure GHL pipeline stages (8 stages). Build n8n WF-05 (Client Reporting) and WF-06 (Content Publishing). Set up GHL automation rules (nurture sequences, task creation, round-robin assignment). Test with 1 internal client (VirtuaLab itself).', 'Full client lifecycle from lead to reporting is automated.'],
+   794→    ['Phase 5: Integration', 'Week 9-10', 'Build remaining workflows (WF-07 Review Nudge, WF-08 GBP Posts). Connect all bidirectional integrations (Baserow <-> n8n <-> GHL). Run full system test with 5 simulated client scenarios. Fix integration issues.', 'All 8 workflows operational. All 4 layers communicating.'],
+   795→    ['Phase 6: Data Population', 'Week 11-12', 'Import all keywords from the strategy document into Baserow. Enter all 7 competitors. Create parasite platform asset records. Set up team member records. Initialize KPI baselines for first client.', 'System is fully populated with real data and ready for production use.'],
+   796→    ['Phase 7: Go-Live', 'Week 13+', 'Begin operating the system for real client delivery. Monitor for 4 weeks. Collect feedback from team. Iterate on workflows, agent prompts, and dashboard configurations based on actual usage patterns.', 'System is production-ready and self-improving.'],
+   797→]
+   798→t_impl = make_table(
+   799→    ['Phase', 'Timeline', 'Actions', 'Success Criteria'],
+   800→    impl_data,
+   801→    col_widths=[65, 50, CONTENT_W - 170, 55]
+   802→)
+   803→story.append(t_impl)
+   804→
+   805→story.append(Paragraph('7.1 System Dependencies Map', s_h2))
+   806→dep_data = [
+   807→    ['Baserow Tables', 'None', 'Everything else depends on data structures being defined first.'],
+   808→    ['n8n Workflows', 'Baserow Tables', 'Workflows read from and write to Baserow. Cannot function without tables.'],
+   809→    ['AI Agent Prompts', 'Baserow schema + Strategy Doc', 'Agent prompts reference exact field names and table structures.'],
+   810→    ['GHL Pipeline', 'Baserow Clients table', 'GHL pipeline creates records that sync back to Baserow.'],
+   811→    ['GHL Automations', 'GHL Pipeline stages', 'Automation rules trigger based on pipeline stage changes.'],
+   812→    ['n8n-GHL Integration', 'Both n8n and GHL configured', 'Bidirectional sync requires both systems operational.'],
+   813→    ['Client Reporting', 'All above', 'Reports pull from Baserow, format via n8n, deliver via GHL.'],
+   814→    ['Measurement Protocol', 'Baserow KPI Dashboard + n8n', 'Threshold alerts require Baserow data and n8n trigger logic.'],
+   815→]
+   816→t_dep = make_table(
+   817→    ['Component', 'Depends On', 'Rationale'],
+   818→    dep_data,
+   819→    col_widths=[90, 110, CONTENT_W - 200]
+   820→)
+   821→story.append(t_dep)
+   822→
+   823→# ========================
+   824→# BUILD
+   825→# ========================
+   826→doc.build(story)
+   827→print(f'PDF generated successfully: {output_path}')
+   828→print(f'Pages: {doc.page}')
+   829→

@@ -5,7 +5,6 @@ Generates a comprehensive system blueprint document.
 """
 
 import os
-import sys
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -13,7 +12,7 @@ from reportlab.lib.units import mm, inch
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY, TA_RIGHT
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, KeepTogether, HRFlowable, Image
+    PageBreak, KeepTogether, HRFlowable
 )
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -30,22 +29,14 @@ pdfmetrics.registerFont(TTFont('LibSans-BoldItalic', f'{FONT_DIR}/truetype/liber
 registerFontFamily('LibSans', normal='LibSans', bold='LibSans-Bold', italic='LibSans-Italic', boldItalic='LibSans-BoldItalic')
 
 # ── Cascade Palette ──
-PAGE_BG       = colors.HexColor('#f3f4f4')
-SECTION_BG    = colors.HexColor('#edeeef')
-CARD_BG       = colors.HexColor('#e3e6e8')
 TABLE_STRIPE  = colors.HexColor('#eff1f2')
 HEADER_FILL   = colors.HexColor('#486a7b')
 COVER_BLOCK   = colors.HexColor('#567482')
 BORDER        = colors.HexColor('#c8d3d8')
 ICON          = colors.HexColor('#3d7692')
 ACCENT        = colors.HexColor('#3787af')
-ACCENT_2      = colors.HexColor('#d07556')
 TEXT_PRIMARY   = colors.HexColor('#191b1c')
 TEXT_MUTED     = colors.HexColor('#757c7f')
-SEM_SUCCESS   = colors.HexColor('#42995f')
-SEM_WARNING   = colors.HexColor('#a48443')
-SEM_ERROR     = colors.HexColor('#a15852')
-SEM_INFO      = colors.HexColor('#557da6')
 WHITE         = colors.white
 
 # ── Styles ──
@@ -88,10 +79,6 @@ styles.add(ParagraphStyle(
     'BulletItem', fontName='LibSans', fontSize=10, leading=14,
     textColor=TEXT_PRIMARY, leftIndent=20, bulletIndent=8,
     spaceAfter=3, bulletFontName='LibSans', bulletFontSize=10
-))
-styles.add(ParagraphStyle(
-    'SmallText', fontName='LibSans', fontSize=8, leading=11,
-    textColor=TEXT_MUTED, alignment=TA_LEFT
 ))
 styles.add(ParagraphStyle(
     'TableHeader', fontName='LibSans-Bold', fontSize=9, leading=12,
@@ -175,9 +162,6 @@ def bullet(text):
 
 def bold_body(text):
     return Paragraph(text, styles['BodyBold'])
-
-def small(text):
-    return Paragraph(text, styles['SmallText'])
 
 def code(text):
     return Paragraph(text, styles['CodeBlock'])

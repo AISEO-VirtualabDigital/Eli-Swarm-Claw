@@ -4,17 +4,13 @@ VirtuaLab Digital - Complete Ecosystem System Architecture Blueprint
 Systematic Approach: Baserow + n8n + GHL + AI Agent Orchestration
 """
 
-import os
-import sys
-
-PDF_SKILL_DIR = '/home/z/my-project/skills/pdf'
 FONT_DIR = '/usr/share/fonts'
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm, inch
 from reportlab.lib.colors import HexColor
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY, TA_RIGHT
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
     PageBreak, KeepTogether, HRFlowable
@@ -33,19 +29,15 @@ registerFontFamily('LibSans', normal='LibSans', bold='LibSans-Bold')
 # ========================
 # PALETTE
 # ========================
-PAGE_BG       = HexColor('#f5f6f6')
 TABLE_STRIPE  = HexColor('#ecedee')
 HEADER_FILL   = HexColor('#1a2e3b')
 ACCENT        = HexColor('#2e7fa7')
-ACCENT2       = HexColor('#cb7458')
 TEXT_PRIMARY   = HexColor('#222526')
 TEXT_MUTED     = HexColor('#71787b')
 BORDER_COLOR  = HexColor('#bacbd3')
 WHITE         = HexColor('#ffffff')
 DARK_HEADER   = HexColor('#0f1c26')
 MID_HEADER    = HexColor('#2a4758')
-SUCCESS       = HexColor('#488b5e')
-WARNING       = HexColor('#b08d47')
 LIGHT_BG      = HexColor('#eef3f6')
 TAG_BG        = HexColor('#d4e8f2')
 
@@ -62,11 +54,8 @@ s_h1 = ParagraphStyle('H1', fontName='LibSans-Bold', fontSize=20, leading=26, te
 s_h2 = ParagraphStyle('H2', fontName='LibSans-Bold', fontSize=15, leading=20, textColor=ACCENT, spaceAfter=8, spaceBefore=14)
 s_h3 = ParagraphStyle('H3', fontName='LibSans-Bold', fontSize=12, leading=16, textColor=MID_HEADER, spaceAfter=6, spaceBefore=10)
 s_body = ParagraphStyle('Body', fontName='LibSans', fontSize=9.5, leading=14, textColor=TEXT_PRIMARY, alignment=TA_JUSTIFY, spaceAfter=5)
-s_body_sm = ParagraphStyle('BodySm', fontName='LibSans', fontSize=8.5, leading=12, textColor=TEXT_MUTED, spaceAfter=4)
 s_table_header = ParagraphStyle('TH', fontName='LibSans-Bold', fontSize=8, leading=10, textColor=WHITE, alignment=TA_CENTER)
 s_table_cell = ParagraphStyle('TC', fontName='LibSans', fontSize=7.5, leading=10, textColor=TEXT_PRIMARY, alignment=TA_LEFT)
-s_table_cell_c = ParagraphStyle('TCC', parent=s_table_cell, alignment=TA_CENTER)
-s_caption = ParagraphStyle('Caption', fontName='LibSans', fontSize=8, leading=11, textColor=TEXT_MUTED, alignment=TA_CENTER)
 s_tag = ParagraphStyle('Tag', fontName='LibSans-Bold', fontSize=7, leading=9, textColor=ACCENT, backColor=TAG_BG, spaceBefore=2, spaceAfter=2, borderPadding=3)
 s_callout = ParagraphStyle('Callout', fontName='LibSans', fontSize=9, leading=13, textColor=HEADER_FILL, backColor=LIGHT_BG, spaceBefore=6, spaceAfter=6, leftIndent=8, rightIndent=8, borderPadding=8)
 

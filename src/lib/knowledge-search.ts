@@ -45,7 +45,7 @@ const SYNONYMS: Record<string, string[]> = {
   'assistant': ['executive', 'virtual assistant', 'scheduling', 'calendar', 'meeting', 'productivity', 'copilot'],
   'agency': ['gohighlevel', 'highlevel', 'funnel', 'landing page', 'white label', 'marketing automation', 'lead generation'],
   'youtube': ['video', 'channel', 'tags', 'thumbnail', 'yt'],
-  'google': ['search', 'maps', 'drive', 'cloud', 'indexing', 'api'],
+  'google': ['search', 'maps', 'drive', 'cloud', 'indexing', 'api', 'gcloud', 'gcp', 'workspace', 'gmail', 'calendar', 'sheets', 'docs', 'gemini', 'places', 'oauth'],
   'crm': ['customer relationship', 'salesforce', 'hubspot', 'lead management', 'pipeline', 'contact'],
   'project': ['kanban', 'agile', 'scrum', 'sprint', 'jira', 'asana', 'trello', 'gantt', 'task board'],
   'cloud': ['aws', 'azure', 'gcp', 'kubernetes', 'k8s', 'docker', 'terraform', 'devops', 'serverless'],
@@ -63,7 +63,6 @@ const SYNONYMS: Record<string, string[]> = {
   'skill': ['capability', 'harness', 'stack', 'agent skill', 'skill registry'],
   'workflow': ['automation', 'pipeline', 'dag', 'execution', 'rewiring'],
   'authority': ['human order', 'operator', 'policy', 'governance', 'approval'],
-  'google': ['google api', 'gcloud', 'gcp', 'workspace', 'gmail', 'drive', 'calendar', 'sheets', 'docs', 'gemini', 'maps', 'places', 'oauth'],
 };
 
 function expandQuery(query: string): string {

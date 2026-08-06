@@ -21,12 +21,10 @@ Knowledge Map length: ${map.length} chars`);
     'AI tools for productivity',
   ];
   
-  console.log('
-=== SEARCH RESULTS (upgraded) ===');
+  console.log('\n=== SEARCH RESULTS (upgraded) ===');
   for (const q of queries) {
     const r = await searchKnowledge(q, {maxResults: 3, minScore: 1});
-    console.log(`
-Query: "${q}" → ${r.length} results`);
+    console.log(`\nQuery: "${q}" → ${r.length} results`);
     r.forEach((x: any, i: number) => console.log(`  ${i+1}. [${x.score.toFixed(1)}] ${x.chunk.title} (${x.chunk.category}) [${x.matchedTerms.slice(0,5).join(',')}]`));
   }
 }

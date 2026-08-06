@@ -47,7 +47,7 @@ directory += '|---|---|---|---|\n'
 for r in repos:
     name = r['full_name']
     stars = star_map.get(name, r['stars'])
-    desc = r['description'].replace('|', '\|')[:80]
+    desc = r['description'].replace('|', '\\|')[:80]
     lang = r['language']
     directory += f'| [{name}]({r["url"]}) | {desc} | {lang} | ⭐{stars:,} |\n'
 

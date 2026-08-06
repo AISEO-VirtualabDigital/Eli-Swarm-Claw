@@ -17,7 +17,7 @@ from reportlab.platypus.tableofcontents import TableOfContents
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase.pdfmetrics import registerFontFamily
-from reportlab.pdfbase.pdfmetrics import _fonts
+# _fonts import removed (was unused)
 
 # ━━━ Paths ━━━
 PDF_SKILL_DIR = "/home/z/my-project/skills/pdf"
@@ -34,12 +34,12 @@ pdfmetrics.registerFont(TTFont('FreeSerif', f'{FONT_DIR}/truetype/freefont/FreeS
 pdfmetrics.registerFont(TTFont('FreeSerif-Bold', f'{FONT_DIR}/truetype/freefont/FreeSerifBold.ttf'))
 pdfmetrics.registerFont(TTFont('FreeSerif-Italic', f'{FONT_DIR}/truetype/freefont/FreeSerifItalic.ttf'))
 pdfmetrics.registerFont(TTFont('FreeSerif-BoldItalic', f'{FONT_DIR}/truetype/freefont/FreeSerifBoldItalic.ttf'))
-pdfmetrics.registerFont(TTFont('DejaVuSans', f'{FONT_DIR}/truetype/dejavu/DejaVuSansMono.ttf'))
+pdfmetrics.registerFont(TTFont('DejaVuMono', f'{FONT_DIR}/truetype/dejavu/DejaVuSansMono.ttf'))
 
 registerFontFamily('NotoSerifSC', normal='NotoSerifSC', bold='NotoSerifSC-Bold')
 # Noto Sans SC variable font skipped (ReportLab compat); SarasaMonoSC used for monospace
 registerFontFamily('FreeSerif', normal='FreeSerif', bold='FreeSerif-Bold', italic='FreeSerif-Italic', boldItalic='FreeSerif-BoldItalic')
-registerFontFamily('DejaVuSans', normal='DejaVuSans', bold='DejaVuSans')
+registerFontFamily('DejaVuMono', normal='DejaVuMono', bold='DejaVuMono')
 
 # Install fallback
 sys.path.insert(0, os.path.join(PDF_SKILL_DIR, 'scripts'))

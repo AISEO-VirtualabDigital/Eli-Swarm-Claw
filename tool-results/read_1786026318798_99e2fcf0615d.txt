@@ -1,0 +1,1104 @@
+     1→#!/usr/bin/env python3
+     2→"""
+     3→VirtuaLab Digital Ecosystem Systematic Architecture PDF
+     4→Generates a comprehensive system blueprint document.
+     5→"""
+     6→
+     7→import os
+     8→import sys
+     9→from reportlab.lib import colors
+    10→from reportlab.lib.pagesizes import A4
+    11→from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    12→from reportlab.lib.units import mm, inch
+    13→from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY, TA_RIGHT
+    14→from reportlab.platypus import (
+    15→    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+    16→    PageBreak, KeepTogether, HRFlowable, Image
+    17→)
+    18→from reportlab.pdfbase import pdfmetrics
+    19→from reportlab.pdfbase.ttfonts import TTFont
+    20→from reportlab.pdfbase.pdfmetrics import registerFontFamily
+    21→from reportlab.graphics.shapes import Drawing, Line, Rect, String, Circle
+    22→from reportlab.graphics import renderPDF
+    23→
+    24→# ── Font Registration ──
+    25→FONT_DIR = '/usr/share/fonts'
+    26→pdfmetrics.registerFont(TTFont('LibSans', f'{FONT_DIR}/truetype/liberation/LiberationSans-Regular.ttf'))
+    27→pdfmetrics.registerFont(TTFont('LibSans-Bold', f'{FONT_DIR}/truetype/liberation/LiberationSans-Bold.ttf'))
+    28→pdfmetrics.registerFont(TTFont('LibSans-Italic', f'{FONT_DIR}/truetype/liberation/LiberationSans-Italic.ttf'))
+    29→pdfmetrics.registerFont(TTFont('LibSans-BoldItalic', f'{FONT_DIR}/truetype/liberation/LiberationSans-BoldItalic.ttf'))
+    30→registerFontFamily('LibSans', normal='LibSans', bold='LibSans-Bold', italic='LibSans-Italic', boldItalic='LibSans-BoldItalic')
+    31→
+    32→# ── Cascade Palette ──
+    33→PAGE_BG       = colors.HexColor('#f3f4f4')
+    34→SECTION_BG    = colors.HexColor('#edeeef')
+    35→CARD_BG       = colors.HexColor('#e3e6e8')
+    36→TABLE_STRIPE  = colors.HexColor('#eff1f2')
+    37→HEADER_FILL   = colors.HexColor('#486a7b')
+    38→COVER_BLOCK   = colors.HexColor('#567482')
+    39→BORDER        = colors.HexColor('#c8d3d8')
+    40→ICON          = colors.HexColor('#3d7692')
+    41→ACCENT        = colors.HexColor('#3787af')
+    42→ACCENT_2      = colors.HexColor('#d07556')
+    43→TEXT_PRIMARY   = colors.HexColor('#191b1c')
+    44→TEXT_MUTED     = colors.HexColor('#757c7f')
+    45→SEM_SUCCESS   = colors.HexColor('#42995f')
+    46→SEM_WARNING   = colors.HexColor('#a48443')
+    47→SEM_ERROR     = colors.HexColor('#a15852')
+    48→SEM_INFO      = colors.HexColor('#557da6')
+    49→WHITE         = colors.white
+    50→
+    51→# ── Styles ──
+    52→styles = getSampleStyleSheet()
+    53→
+    54→styles.add(ParagraphStyle(
+    55→    'CoverTitle', fontName='LibSans-Bold', fontSize=36, leading=42,
+    56→    textColor=WHITE, alignment=TA_LEFT, spaceAfter=6
+    57→))
+    58→styles.add(ParagraphStyle(
+    59→    'CoverSubtitle', fontName='LibSans', fontSize=16, leading=22,
+    60→    textColor=colors.HexColor('#b0c4d0'), alignment=TA_LEFT, spaceAfter=4
+    61→))
+    62→styles.add(ParagraphStyle(
+    63→    'CoverMeta', fontName='LibSans', fontSize=12, leading=16,
+    64→    textColor=colors.HexColor('#8aa8b8'), alignment=TA_LEFT
+    65→))
+    66→styles.add(ParagraphStyle(
+    67→    'H1', fontName='LibSans-Bold', fontSize=22, leading=28,
+    68→    textColor=HEADER_FILL, spaceBefore=20, spaceAfter=10,
+    69→    borderPadding=(0, 0, 4, 0)
+    70→))
+    71→styles.add(ParagraphStyle(
+    72→    'H2', fontName='LibSans-Bold', fontSize=16, leading=22,
+    73→    textColor=ACCENT, spaceBefore=14, spaceAfter=8
+    74→))
+    75→styles.add(ParagraphStyle(
+    76→    'H3', fontName='LibSans-Bold', fontSize=12, leading=16,
+    77→    textColor=ICON, spaceBefore=10, spaceAfter=6
+    78→))
+    79→styles.add(ParagraphStyle(
+    80→    'Body', fontName='LibSans', fontSize=10, leading=15,
+    81→    textColor=TEXT_PRIMARY, alignment=TA_JUSTIFY, spaceAfter=6
+    82→))
+    83→styles.add(ParagraphStyle(
+    84→    'BodyBold', fontName='LibSans-Bold', fontSize=10, leading=15,
+    85→    textColor=TEXT_PRIMARY, alignment=TA_JUSTIFY, spaceAfter=6
+    86→))
+    87→styles.add(ParagraphStyle(
+    88→    'BulletItem', fontName='LibSans', fontSize=10, leading=14,
+    89→    textColor=TEXT_PRIMARY, leftIndent=20, bulletIndent=8,
+    90→    spaceAfter=3, bulletFontName='LibSans', bulletFontSize=10
+    91→))
+    92→styles.add(ParagraphStyle(
+    93→    'SmallText', fontName='LibSans', fontSize=8, leading=11,
+    94→    textColor=TEXT_MUTED, alignment=TA_LEFT
+    95→))
+    96→styles.add(ParagraphStyle(
+    97→    'TableHeader', fontName='LibSans-Bold', fontSize=9, leading=12,
+    98→    textColor=WHITE, alignment=TA_CENTER
+    99→))
+   100→styles.add(ParagraphStyle(
+   101→    'TableCell', fontName='LibSans', fontSize=8.5, leading=12,
+   102→    textColor=TEXT_PRIMARY, alignment=TA_LEFT
+   103→))
+   104→styles.add(ParagraphStyle(
+   105→    'TableCellCenter', fontName='LibSans', fontSize=8.5, leading=12,
+   106→    textColor=TEXT_PRIMARY, alignment=TA_CENTER
+   107→))
+   108→styles.add(ParagraphStyle(
+   109→    'CodeBlock', fontName='LibSans', fontSize=8, leading=11,
+   110→    textColor=colors.HexColor('#2d3748'), backColor=colors.HexColor('#f7f8fa'),
+   111→    leftIndent=12, rightIndent=12, spaceBefore=6, spaceAfter=6,
+   112→    borderPadding=(6, 6, 6, 6)
+   113→))
+   114→styles.add(ParagraphStyle(
+   115→    'Caption', fontName='LibSans-Italic', fontSize=8, leading=11,
+   116→    textColor=TEXT_MUTED, alignment=TA_LEFT, spaceBefore=4, spaceAfter=8
+   117→))
+   118→styles.add(ParagraphStyle(
+   119→    'TOCEntry', fontName='LibSans', fontSize=11, leading=18,
+   120→    textColor=TEXT_PRIMARY, leftIndent=0, spaceAfter=2
+   121→))
+   122→styles.add(ParagraphStyle(
+   123→    'TOCEntry2', fontName='LibSans', fontSize=10, leading=16,
+   124→    textColor=TEXT_MUTED, leftIndent=20, spaceAfter=1
+   125→))
+   126→
+   127→# ── Helpers ──
+   128→def make_table(headers, rows, col_widths=None):
+   129→    """Create a styled table with header row."""
+   130→    avail_w = 460
+   131→    if col_widths is None:
+   132→        n = len(headers)
+   133→        col_widths = [avail_w / n] * n
+   134→    
+   135→    hdr_cells = [Paragraph(h, styles['TableHeader']) for h in headers]
+   136→    data = [hdr_cells]
+   137→    for row in rows:
+   138→        data.append([Paragraph(str(c), styles['TableCell']) if i == 0 else Paragraph(str(c), styles['TableCellCenter']) if len(str(c)) < 20 else Paragraph(str(c), styles['TableCell']) for i, c in enumerate(row)])
+   139→    
+   140→    t = Table(data, colWidths=col_widths, repeatRows=1)
+   141→    style_cmds = [
+   142→        ('BACKGROUND', (0, 0), (-1, 0), HEADER_FILL),
+   143→        ('TEXTCOLOR', (0, 0), (-1, 0), WHITE),
+   144→        ('FONTNAME', (0, 0), (-1, 0), 'LibSans-Bold'),
+   145→        ('FONTSIZE', (0, 0), (-1, 0), 9),
+   146→        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+   147→        ('TOPPADDING', (0, 0), (-1, 0), 6),
+   148→        ('GRID', (0, 0), (-1, -1), 0.5, BORDER),
+   149→        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+   150→        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+   151→        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+   152→        ('TOPPADDING', (0, 1), (-1, -1), 4),
+   153→        ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
+   154→    ]
+   155→    for i in range(1, len(data)):
+   156→        if i % 2 == 0:
+   157→            style_cmds.append(('BACKGROUND', (0, i), (-1, i), TABLE_STRIPE))
+   158→    t.setStyle(TableStyle(style_cmds))
+   159→    return t
+   160→
+   161→def h1(text):
+   162→    return Paragraph(text, styles['H1'])
+   163→
+   164→def h2(text):
+   165→    return Paragraph(text, styles['H2'])
+   166→
+   167→def h3(text):
+   168→    return Paragraph(text, styles['H3'])
+   169→
+   170→def body(text):
+   171→    return Paragraph(text, styles['Body'])
+   172→
+   173→def bullet(text):
+   174→    return Paragraph(text, styles['BulletItem'])
+   175→
+   176→def bold_body(text):
+   177→    return Paragraph(text, styles['BodyBold'])
+   178→
+   179→def small(text):
+   180→    return Paragraph(text, styles['SmallText'])
+   181→
+   182→def code(text):
+   183→    return Paragraph(text, styles['CodeBlock'])
+   184→
+   185→def caption(text):
+   186→    return Paragraph(text, styles['Caption'])
+   187→
+   188→def spacer(h=6):
+   189→    return Spacer(1, h)
+   190→
+   191→def section_divider():
+   192→    return HRFlowable(width="100%", thickness=1, color=BORDER, spaceBefore=12, spaceAfter=12)
+   193→
+   194→# ── Page numbering ──
+   195→def page_footer(canvas, doc):
+   196→    canvas.saveState()
+   197→    canvas.setFont('LibSans', 8)
+   198→    canvas.setFillColor(TEXT_MUTED)
+   199→    canvas.drawRightString(A4[0] - 40*mm, 15*mm, f"Page {doc.page}")
+   200→    canvas.drawString(40*mm, 15*mm, "VirtuaLab Digital | Ecosystem Systematic Architecture")
+   201→    canvas.restoreState()
+   202→
+   203→# ── Cover Page (ReportLab-based) ──
+   204→def build_cover():
+   205→    elements = []
+   206→    d = Drawing(460, 670)
+   207→    # Background
+   208→    d.add(Rect(0, 0, 460, 670, fillColor=HEADER_FILL, strokeColor=None))
+   209→    # Decorative block
+   210→    d.add(Rect(0, 350, 460, 320, fillColor=COVER_BLOCK, strokeColor=None))
+   211→    # Accent line
+   212→    d.add(Line(50, 375, 410, 375, strokeColor=ACCENT, strokeWidth=3))
+   213→    # Grid dots
+   214→    for x in range(50, 460, 30):
+   215→        for y in range(30, 670, 30):
+   216→            d.add(Circle(x, y, 0.8, fillColor=colors.HexColor('#ffffff10'), strokeColor=None))
+   217→    
+   218→    d.add(String(60, 580, "SYSTEMATIC ARCHITECTURE", fontName='LibSans', fontSize=12, fillColor=colors.HexColor('#8ab8d0')))
+   219→    d.add(String(60, 520, "VirtuaLab Digital", fontName='LibSans-Bold', fontSize=38, fillColor=WHITE))
+   220→    d.add(String(60, 475, "Ecosystem Blueprint", fontName='LibSans-Bold', fontSize=38, fillColor=WHITE))
+   221→    d.add(String(60, 420, "AISEO Framework | Eli-OS Agent Mesh | Baserow + n8n + GHL", fontName='LibSans', fontSize=13, fillColor=colors.HexColor('#b0c4d0')))
+   222→    d.add(String(60, 320, 'Converting 75-tab strategic blueprint into a repeatable, data-driven operating system for asymmetric and parasitic SEO.', fontName='LibSans', fontSize=11, fillColor=colors.HexColor('#c0d4e0')))
+   223→    d.add(String(60, 60, "Prepared by: Asymmetric SEO Strategist & Parasite SEO Strategist", fontName='LibSans', fontSize=9, fillColor=colors.HexColor('#8aa8b8')))
+   224→    d.add(String(60, 42, "Date: August 2026 | Classification: Internal Operations", fontName='LibSans', fontSize=9, fillColor=colors.HexColor('#8aa8b8')))
+   225→    d.add(String(60, 24, "Version: 1.0 | Status: SYSTEMATIC APPROACH FOUNDATION", fontName='LibSans', fontSize=9, fillColor=colors.HexColor('#8aa8b8')))
+   226→    elements.append(d)
+   227→    elements.append(PageBreak())
+   228→    return elements
+   229→
+   230→# ── TOC ──
+   231→def build_toc():
+   232→    elements = []
+   233→    elements.append(h1("Table of Contents"))
+   234→    elements.append(spacer(8))
+   235→    toc_entries = [
+   236→        ("1", "Executive Summary: Why Systematic, Not Guessing"),
+   237→        ("2", "Current State Assessment: The 75-Tab Blueprint Dissection"),
+   238→        ("3", "The Eli-OS Agent Operating System"),
+   239→        ("  3.1", "12-Agent Fleet Architecture"),
+   240→        ("  3.2", "Rust Control Plane: Policy Engine & IPC"),
+   241→        ("  3.3", "SKILL.md Governance Paradigm"),
+   242→        ("4", "Baserow Database Schema: Single Source of Truth"),
+   243→        ("  4.1", "Master Data Tables"),
+   244→        ("  4.2", "Client & Campaign Management"),
+   245→        ("  4.3", "Content Operations Tables"),
+   246→        ("  4.4", "Off-Page & Parasite SEO Tables"),
+   247→        ("  4.5", "Technical SEO & Indexing Tables"),
+   248→        ("  4.6", "GEO & AI Citation Tracking Tables"),
+   249→        ("  4.7", "Reporting & Analytics Tables"),
+   250→        ("5", "n8n Workflow Automation: The Nervous System"),
+   251→        ("  5.1", "Client Onboarding Pipeline"),
+   252→        ("  5.2", "Keyword Research & Clustering Pipeline"),
+   253→        ("  5.3", "Content Production & Publishing Pipeline"),
+   254→        ("  5.4", "Parasite SEO Distribution Pipeline"),
+   255→        ("  5.5", "GEO Citation Monitoring Pipeline"),
+   256→        ("  5.6", "Client Reporting Pipeline"),
+   257→        ("6", "GHL / GoHighLevel CRM Integration"),
+   258→        ("  6.1", "Lead Attribution Architecture"),
+   259→        ("  6.2", "Automated Follow-Up Sequences"),
+   260→        ("  6.3", "Pipeline Stage Tracking"),
+   261→        ("7", "Asymmetric SEO Systematic Methodology"),
+   262→        ("  7.1", "Structural Gap Exploitation Framework"),
+   263→        ("  7.2", "Non-Linear Competitive Advantage Model"),
+   264→        ("8", "Parasite SEO Systematic Methodology"),
+   265→        ("  8.1", "Platform Scoring & TOS Compliance"),
+   266→        ("  8.2", "Content Distribution Orchestration"),
+   267→        ("9", "GEO (Generative Engine Optimization) System"),
+   268→        ("  9.1", "Citation Probability Model"),
+   269→        ("  9.2", "BLUF Content Formatting Standard"),
+   270→        ("  9.3", "llms.txt Implementation"),
+   271→        ("10", "Content Operations System"),
+   272→        ("  10.1", "7-Platform AI Review Workflow"),
+   273→        ("  10.2", "Semantic Writing Standards"),
+   274→        ("11", "Free Tools Ecosystem"),
+   275→        ("12", "Implementation Roadmap: 6-Week Deployment"),
+   276→        ("13", "Data Flow Architecture"),
+   277→        ("14", "Governance, Escalation & Quality Assurance"),
+   278→    ]
+   279→    for num, title in toc_entries:
+   280→        if num.strip().startswith("  "):
+   281→            elements.append(Paragraph(f"{num.strip()} {title}", styles['TOCEntry2']))
+   282→        else:
+   283→            elements.append(Paragraph(f"<b>{num}.</b>  {title}", styles['TOCEntry']))
+   284→    elements.append(PageBreak())
+   285→    return elements
+   286→
+   287→# ── Main Content ──
+   288→def build_content():
+   289→    e = []  # elements
+   290→
+   291→    # ══════════════════════════════════════════════════
+   292→    # CHAPTER 1: EXECUTIVE SUMMARY
+   293→    # ══════════════════════════════════════════════════
+   294→    e.append(h1("1. Executive Summary: Why Systematic, Not Guessing"))
+   295→    e.append(body(
+   296→        "The VirtuaLab Digital ecosystem has reached a critical inflection point. The current operational model relies on "
+   297→        "manual execution of strategic blueprints spread across 75 Google Doc tabs, multiple AI platform conversations, "
+   298→        "and tribal knowledge held by individual operators. This approach produces outputs that are, by definition, "
+   299→        "non-repeatable and non-scalable. Each new client engagement requires starting from scratch, re-analyzing the same "
+   300→        "competitor landscapes, re-mapping the same keyword universes, and re-creating the same content briefs. "
+   301→        "The result is what the principal correctly identified as 'guessing' rather than systematic operations."
+   302→    ))
+   303→    e.append(body(
+   304→        "This document establishes the <b>SYSTEMATIC APPROACH</b> foundation. It transforms the 75-tab AISEO Framework, "
+   305→        "the Eli-OS agent delivery package, and all strategic research into a single, unified, machine-executable operating system. "
+   306→        "Every strategic decision, every keyword cluster, every content brief, and every client deliverable traces back to "
+   307→        "structured data in Baserow, automated workflows in n8n, and CRM tracking in GoHighLevel. The system eliminates "
+   308→        "ad-hoc reasoning by replacing it with data pipelines that produce consistent, auditable, and improvable outputs."
+   309→    ))
+   310→    e.append(body(
+   311→        "The architecture described herein comprises four interlocking layers. First, the <b>Eli-OS Agent Fleet</b> provides "
+   312→        "12 specialized AI agents governed by a Rust-based control plane with SKILL.md manifests that define exact "
+   313→        "permissions, escalation triggers, and resource limits for each agent. Second, a <b>Baserow Database Schema</b> of "
+   314→        "40+ tables serves as the single source of truth for all client data, keyword research, content operations, competitor "
+   315→        "intelligence, and performance metrics. Third, <b>n8n Workflow Automation</b> connects these data stores into "
+   316→        "repeatable pipelines that execute the content production, parasite SEO distribution, GEO monitoring, and client "
+   317→        "reporting cycles without manual intervention. Fourth, <b>GHL CRM Integration</b> closes the loop between "
+   318→        "search visibility work and actual business outcomes by attributing leads, tracking pipeline stages, and automating "
+   319→        "client communications."
+   320→    ))
+   321→    e.append(spacer(8))
+   322→    e.append(bold_body("The Core Problem This Solves:"))
+   323→    e.append(body(
+   324→        "Without this systematic foundation, every strategy document is a one-time artifact based on assumptions. "
+   325→        "With this foundation, every strategy document is an output of a data pipeline that incorporates real competitor "
+   326→        "data, verified search volumes, tracked citation rates, and measured business outcomes. The difference is "
+   327→        "the difference between guessing and knowing."
+   328→    ))
+   329→    e.append(PageBreak())
+   330→
+   331→    # ══════════════════════════════════════════════════
+   332→    # CHAPTER 2: CURRENT STATE ASSESSMENT
+   333→    # ══════════════════════════════════════════════════
+   334→    e.append(h1("2. Current State Assessment: The 75-Tab Blueprint Dissection"))
+   335→    e.append(body(
+   336→        "The AISEO-VirtuaLab Digital Framework Google Doc contains 75 tabs organized into 11 top-level sections. "
+   337→        "Each tab represents a strategic component, but the connections between them are implicit and undocumented. "
+   338→        "The following dissection maps every tab to its functional category, identifies the data dependencies, and "
+   339→        "specifies the exact Baserow table and n8n workflow that will systematize it. This mapping ensures zero knowledge "
+   340→        "loss during the transition from document-based to system-based operations."
+   341→    ))
+   342→    e.append(spacer(4))
+   343→    e.append(h2("2.1 Complete Tab-to-System Mapping"))
+   344→    
+   345→    tab_data = [
+   346→        ("VirtuaLab Digital the SEO AI Scientist", "Brand Identity", "brand_settings", "Static config", "Defines core positioning, 6 AI agent roles, tech stack"),
+   347→        ("Proposed Home Page", "Website Architecture", "page_templates", "Content Pipeline", "14-section semantic knowledge hub blueprint"),
+   348→        ("Tools to Offer As Free", "Lead Generation", "free_tools_registry", "n8n: Tool Deploy", "ROI Calculator, Proximity Visualizer, Lead Matrix"),
+   349→        ("Case Study Narrative", "Social Proof", "case_studies", "Content Pipeline", "Photo recommendations, narrative templates per niche"),
+   350→        ("VirtuaLab Tools Repository", "Product Suite", "tool_configs", "Static config", "7 tools: All-in-One SEO, Semantic Writing, Technical SEO, etc."),
+   351→        ("Off Page Foundation", "Off-Page SEO", "off_page_strategies", "Parasite Pipeline", "YouTube SEO, platform strategies, asset management"),
+   352→        ("Growth Campaign", "Campaign Mgmt", "campaigns", "Campaign Pipeline", "GHL integration, AI Citation, Month 2-3 content calendars"),
+   353→        ("White Label Parasite SEO", "Parasite SEO", "parasite_campaigns", "Parasite Pipeline", "Soc Med Strat, Google Discover, Platform Optimizer"),
+   354→        ("Data Ingestion for Citation", "GEO", "geo_data_ingestion", "GEO Pipeline", "Global Footer JS, citation data collection"),
+   355→        ("Core Industry Pages Optimization", "On-Page", "industry_pages", "Content Pipeline", "Programmatic Hub Pages, page templates"),
+   356→        ("Core Service Pages Configuration", "Services", "service_pages", "Content Pipeline", "Automation Pages, service configurations"),
+   357→        ("Final Home Configuration", "Website", "page_templates", "Content Pipeline", "Final homepage layout specifications"),
+   358→        ("Technical Integration", "Tech Stack", "tech_integrations", "n8n: Tech Audit", "API connections, webhook configs"),
+   359→        ("Internal Link Structure", "Site Architecture", "internal_links", "n8n: Link Audit", "Slug patterns, link hierarchy"),
+   360→        ("Visibility Page Architecture", "Architecture", "visibility_pages", "Content Pipeline", "Programmatic hub page design"),
+   361→        ("Conversion Page", "CRO", "conversion_pages", "Content Pipeline", "Conversion optimization templates"),
+   362→    ]
+   363→    
+   364→    e.append(make_table(
+   365→        ["Tab Name", "Category", "Baserow Table", "n8n Workflow", "Key Content"],
+   366→        tab_data,
+   367→        [95, 65, 75, 65, 160]
+   368→    ))
+   369→    e.append(caption("Table 2.1: Primary Tab-to-System Mapping (16 of 75 tabs shown; remaining tabs are sub-tabs)"))
+   370→    
+   371→    e.append(h2("2.2 Identified Gaps in the Current Blueprint"))
+   372→    e.append(body(
+   373→        "The current 75-tab framework, while comprehensive in strategic vision, contains several critical gaps that "
+   374→        "prevent systematic execution. These gaps are not oversights in strategy but rather the natural result of "
+   375→        "a document-based approach that relies on human operators to bridge between intent and execution. "
+   376→        "The systematic architecture addresses each gap explicitly."
+   377→    ))
+   378→    e.append(bullet("<b>No centralized client database:</b> Client ICPs, buyer personas, and market research live in isolated "
+   379→                     "doc tabs rather than a queryable relational database. The system introduces a Baserow-based "
+   380→                     "client management layer with structured ICP fields."))
+   381→    e.append(bullet("<b>No keyword data persistence:</b> Keyword research is conducted per-engagement using Claude/Gemini "
+   382→                     "skills but results are not stored for cross-client pattern analysis. The system introduces "
+   383→                     "persistent keyword tables with search volume tracking over time."))
+   384→    e.append(bullet("<b>No workflow automation:</b> The 9-step execution process (Buyer Persona, Keyword Research, SEMrush "
+   385→                     "import, Clustering, ICP Research, SERP Research, Market Research, SEO Brief, Content Optimization) "
+   386→                     "is entirely manual. The system introduces n8n workflows that automate 7 of these 9 steps."))
+   387→    e.append(bullet("<b>No citation tracking:</b> AI citation monitoring is described conceptually (7-platform testing suite) "
+   388→                     "but has no persistent data store. The system introduces structured citation logging in Baserow "
+   389→                     "with automated n8n monitoring workflows."))
+   390→    e.append(bullet("<b>No lead attribution:</b> GHL CRM integration is mentioned as a service offering but has no defined "
+   391→                     "technical integration architecture. The system specifies exact webhook, API, and pipeline stage "
+   392→                     "configurations for end-to-end lead attribution."))
+   393→    e.append(PageBreak())
+   394→
+   395→    # ══════════════════════════════════════════════════
+   396→    # CHAPTER 3: ELI-OS AGENT OPERATING SYSTEM
+   397→    # ══════════════════════════════════════════════════
+   398→    e.append(h1("3. The Eli-OS Agent Operating System"))
+   399→    e.append(body(
+   400→        "Eli-OS is VirtuaLab Digital's proprietary multi-agent orchestration system. It decomposes high-level SEO tasks "
+   401→        "into directed acyclic graphs (DAGs) of sub-tasks, routes each sub-task to a specialized agent from a 12-agent "
+   402→        "fleet, executes them in dependency-respecting order, and synthesizes the results into unified outputs. The "
+   403→        "system is governed by a Rust-based control plane that enforces a three-tier policy model (Green/Amber/Red) "
+   404→        "at the inter-process communication level, ensuring that no agent can exceed its defined boundaries."
+   405→    ))
+   406→    e.append(body(
+   407→        "The orchestration layer uses Kimi K2.7 Code (Moonshot AI, 1T parameters, INT4 quantized) served via vLLM or "
+   408→        "SGLang on a dedicated GPU node (1x NVIDIA A100 80GB or 2x NVIDIA L40S). The model handles four core functions: "
+   409→        "task decomposition into DAGs, agent routing, result synthesis, and escalation decision-making. Each function "
+   410→        "has a dedicated system prompt that constrains the model's output to structured JSON formats."
+   411→    ))
+   412→    
+   413→    e.append(h2("3.1 The 12-Agent Fleet Architecture"))
+   414→    e.append(body(
+   415→        "Each agent in the fleet is defined by a SKILL.md manifest that specifies its identity, purpose, knowledge base "
+   416→        "scope, 8 capabilities (tools), forbidden actions, input/output schemas, constraints, IPC policy (allowed tables "
+   417→        "and endpoints), resource limits, and escalation triggers. The following table catalogs the complete fleet."
+   418→    ))
+   419→    
+   420→    agent_data = [
+   421→        ("keyword_agent", "Keyword Research", "8", "640MB", "Seed expansion, intent classification, clustering, volume estimation, gap analysis"),
+   422→        ("technical_seo", "Technical SEO Specialist", "8", "512MB", "HTTP diagnostics, robots/sitemap audit, CWV scanning, schema validation"),
+   423→        ("on_page_seo", "On-Page & Content SEO", "8", "512MB", "Meta analysis, heading structure, content quality, internal links, duplicate check"),
+   424→        ("entity_agent", "Entity & Topic Graph", "8", "768MB", "Entity extraction, relationship mapping, knowledge graph, salience scoring"),
+   425→        ("competitor_agent", "Competitor Intelligence", "8", "512MB", "Keyword gaps, content gaps, visibility benchmarking, SERP overlap"),
+   426→        ("local_seo", "Local SEO Specialist", "8", "512MB", "NAP audit, GBP signals, local pack ranking, review monitoring"),
+   427→        ("parasite_seo", "Off-Page & Parasite SEO", "8", "512MB", "TOS analysis, backlink velocity, anchor analysis, opportunity scoring"),
+   428→        ("geo_agent", "GEO Specialist", "8", "512MB", "SGE probing, Perplexity tracking, entity salience, citation gap analysis"),
+   429→        ("ai_citation", "AI Citation Monitoring", "8", "768MB", "Citation probing across 5 LLMs, trend analysis, competitor comparison"),
+   430→        ("indexing_agent", "Indexing & Discovery", "8", "512MB", "Sitemap generation, IndexNow pushing, GSC coverage, noindex audit"),
+   431→        ("qa_agent", "QA & Validation", "8", "384MB", "Schema conformance, hallucination detection, cross-agent consistency"),
+   432→        ("report_agent", "Report Generation", "8", "512MB", "Template selection, data aggregation, narrative generation, chart specs"),
+   433→    ]
+   434→    
+   435→    e.append(make_table(
+   436→        ["Agent Name", "Role", "Tools", "Memory", "Key Capabilities"],
+   437→        agent_data,
+   438→        [70, 80, 35, 45, 230]
+   439→    ))
+   440→    e.append(caption("Table 3.1: Complete 12-Agent Fleet Specification"))
+   441→    
+   442→    e.append(h2("3.2 Rust Control Plane: Policy Engine & IPC"))
+   443→    e.append(body(
+   444→        "The control plane is implemented in three Rust crates that enforce agent governance at the operating system "
+   445→        "level, not at the application level. This architectural decision means that agent policy violations are "
+   446→        "caught before they reach the data layer, eliminating entire classes of security and data integrity risks "
+   447→        "that application-level checks would miss."
+   448→    ))
+   449→    e.append(bold_body("Three-Tier Enforcement Model:"))
+   450→    e.append(bullet("<b>GREEN (Auto-Approve):</b> Low-risk read operations within the agent's declared IPC policy. "
+   451→                     "These execute immediately with no human review. Examples: keyword_agent reading from "
+   452→                     "keyword_expansions table."))
+   453→    e.append(bullet("<b>AMBER (Conditional):</b> Write operations within policy, or reads approaching resource limits. "
+   454→                     "Approved but logged for audit; may trigger soft throttling. Examples: competitor_agent "
+   455→                     "writing new keyword_gap_results."))
+   456→    e.append(bullet("<b>RED (Block & Escalate):</b> Forbidden actions, cross-domain writes, deletes, external paid API "
+   457→                     "calls, or resource limit violations. Blocked immediately and escalated to the human operator. "
+   458→                     "Examples: keyword_agent attempting to modify on_page_audits tables."))
+   459→    e.append(spacer(4))
+   460→    e.append(body(
+   461→        "The IPC handler exposes four gRPC methods: EvaluateRequest (pre-flight policy check), ReportResult (post-execution "
+   462→        "auditing), Escalate (out-of-band escalation events), and Heartbeat (liveness telemetry with resource "
+   463→        "monitoring). Agents communicate with the control plane over gRPC via Unix Domain Sockets, with each agent "
+   464→        "running as an independent Python process that sends heartbeat telemetry every 30 seconds."
+   465→    ))
+   466→    
+   467→    e.append(h2("3.3 SKILL.md Governance Paradigm"))
+   468→    e.append(body(
+   469→        "The SKILL.md paradigm replaces implicit knowledge with explicit, parseable declarations. Each of the 12 agents "
+   470→        "ships with a SKILL.md file that the Rust control plane parses into a CapabilityManifest. This manifest defines "
+   471→        "exactly what the agent can and cannot do, which database tables it can access, which API endpoints it can call, "
+   472→        "and under what conditions it must escalate to the orchestrator or human operator."
+   473→    ))
+   474→    e.append(body(
+   475→        "The SKILL.md parser extracts seven structured sections: Identity (name, role, domain, version), Purpose, "
+   476→        "Knowledge Base Scope (sources, exclusions, refresh policy), Capabilities (8 tools each), Forbidden Actions, "
+   477→        "Input/Output JSON Schemas, Constraints (temperature, max tokens, system prompt invariant), IPC Policy "
+   478→        "(allowed tables with R/W granularity, allowed endpoints, resource limits), and Escalation Triggers. This "
+   479→        "declarative approach enables pre-flight validation instead of post-hoc sandboxing, and tiered enforcement "
+   480→        "instead of all-or-nothing blocking."
+   481→    ))
+   482→    e.append(PageBreak())
+   483→
+   484→    # ══════════════════════════════════════════════════
+   485→    # CHAPTER 4: BASEROW DATABASE SCHEMA
+   486→    # ══════════════════════════════════════════════════
+   487→    e.append(h1("4. Baserow Database Schema: Single Source of Truth"))
+   488→    e.append(body(
+   489→        "Baserow serves as the operational database layer for the VirtuaLab Digital ecosystem. While Eli-OS agents "
+   490→        "use PostgreSQL tables for their internal IPC operations, Baserow provides the human-readable, team-accessible "
+   491→        "data layer that bridges strategic planning with operational execution. Every client engagement, keyword "
+   492→        "research cycle, content production run, and performance report traces back to structured records in Baserow. "
+   493→        "The following schema defines 40+ tables organized into 7 functional domains."
+   494→    ))
+   495→    
+   496→    e.append(h2("4.1 Master Data Tables"))
+   497→    master_tables = [
+   498→        ("brand_settings", "Singleton", "Brand name, tagline, positioning, target markets, service taxonomy, brand voice rules, claims allowed/avoided"),
+   499→        ("competitor_registry", "Growing", "Competitor name, domain, type (national/niche/boutique), pricing model, key differentiators, notes"),
+   500→        ("team_members", "Growing", "Name, role, specializations, agent assignments, capacity allocation"),
+   501→        ("tech_stack", "Static", "Tool name, category (SEO/CMS/CRM/Automation), API keys reference, integration status"),
+   502→        ("icp_templates", "Growing", "ICP name, vertical, business size range, revenue range, digital maturity, pain points, messaging angles"),
+   503→    ]
+   504→    e.append(make_table(
+   505→        ["Table Name", "Growth", "Key Fields"],
+   506→        master_tables,
+   507→        [90, 55, 315]
+   508→    ))
+   509→    e.append(caption("Table 4.1: Master Data Tables"))
+   510→    
+   511→    e.append(h2("4.2 Client & Campaign Management"))
+   512→    client_tables = [
+   513→        ("clients", "Name, company, email, phone, industry vertical, service area, contract start/end, GHL contact ID"),
+   514→        ("client_icp_profiles", "Linked client, ICP archetype (A/B/C), verified pain points, digital maturity score, ad dependency level"),
+   515→        ("campaigns", "Linked client, campaign name, type (SEO/Local/GEO/Parasite), start date, status, budget allocation"),
+   516→        ("campaign_goals", "Linked campaign, metric (calls/bookings/revenue/visibility), target value, current value, deadline"),
+   517→        ("gbp_profiles", "Linked client, GBP ID, primary category, NAP data, review count, rating, last audit date"),
+   518→        ("service_area_targets", "Linked client, city, state, zip codes, priority tier, assigned content cluster"),
+   519→    ]
+   520→    e.append(make_table(
+   521→        ["Table Name", "Key Fields"],
+   522→        client_tables,
+   523→        [100, 360]
+   524→    ))
+   525→    e.append(caption("Table 4.2: Client & Campaign Management Tables"))
+   526→    
+   527→    e.append(h2("4.3 Content Operations Tables"))
+   528→    content_tables = [
+   529→        ("keyword_research_jobs", "Client, seed keywords, analysis type, status, created date, completed date"),
+   530→        ("keywords", "Keyword, search volume (monthly), difficulty (0-100), intent (info/nav/commercial/transactional), cluster ID"),
+   531→        ("keyword_clusters", "Cluster label, keyword count, total volume, target page URL, content status, priority"),
+   532→        ("content_briefs", "Linked cluster, target keyword, word count target, H-tag structure, schema requirements, assigned writer"),
+   533→        ("content_pieces", "Linked brief, title, URL, word count, publish date, status (draft/review/published), AI review scores"),
+   534→        ("ai_review_log", "Linked content piece, platform (ChatGPT/Claude/Perplexity/etc.), review date, score, recommendations"),
+   535→        ("page_templates", "Template name, type (visibility/conversion/hub/service-area), H-tag blueprint, schema template"),
+   536→    ]
+   537→    e.append(make_table(
+   538→        ["Table Name", "Key Fields"],
+   539→        content_tables,
+   540→        [100, 360]
+   541→    ))
+   542→    e.append(caption("Table 4.3: Content Operations Tables"))
+   543→    
+   544→    e.append(h2("4.4 Off-Page & Parasite SEO Tables"))
+   545→    offpage_tables = [
+   546→        ("parasite_platforms", "Platform name, DA score, TOS risk level, topical relevance, indexing speed, editorial barrier, status"),
+   547→        ("parasite_campaigns", "Client, platform, content title, publish URL, publish date, backlink obtained, index status"),
+   548→        ("backlink_profile", "Client, source URL, DA, anchor text (type), follow status, acquired date, loss date"),
+   549→        ("anchor_text_log", "Client, anchor text, type (exact/partial/branded/naked/generic), occurrence count, risk flag"),
+   550→        ("youtube_videos", "Client, title, URL, publish date, views, transcript status, embedded on site, schema markup"),
+   551→        ("social_media_assets", "Platform, profile URL, follower count, posting frequency, content type mix, linked client"),
+   552→    ]
+   553→    e.append(make_table(
+   554→        ["Table Name", "Key Fields"],
+   555→        offpage_tables,
+   556→        [100, 360]
+   557→    ))
+   558→    e.append(caption("Table 4.4: Off-Page & Parasite SEO Tables"))
+   559→    
+   560→    e.append(h2("4.5 Technical SEO & Indexing Tables"))
+   561→    tech_tables = [
+   562→        ("tech_seo_audits", "Client, URL, audit date, HTTP status codes, CWV scores (LCP/FID/CLS), robots issues, canonical issues"),
+   563→        ("schema_deployments", "Client, URL, schema type (FAQPage/HowTo/LocalBusiness/Service), deployment date, validation status"),
+   564→        ("indexing_log", "Client, URL, submission method (IndexNow/GSC/Sitemap), submission date, indexed date, status"),
+   565→        ("crawl_issues", "Client, URL, issue type (noindex/redirect/soft404/canonical), discovered date, resolved date, severity"),
+   566→        ("internal_link_map", "Client, source URL, target URL, anchor text, link type (navigational/contextual), created date"),
+   567→    ]
+   568→    e.append(make_table(
+   569→        ["Table Name", "Key Fields"],
+   570→        tech_tables,
+   571→        [100, 360]
+   572→    ))
+   573→    e.append(caption("Table 4.5: Technical SEO & Indexing Tables"))
+   574→    
+   575→    e.append(h2("4.6 GEO & AI Citation Tracking Tables"))
+   576→    geo_tables = [
+   577→        ("geo_citation_probes", "Client, query, platform (ChatGPT/Perplexity/Claude/Copilot/SGE), probe date, brand cited (Y/N)"),
+   578→        ("geo_citation_logs", "Linked probe, citation URL, citation text excerpt, competitor cited, salience score"),
+   579→        ("geo_citation_trends", "Client, platform, monthly citation rate, trend direction, competitor benchmark rate"),
+   580→        ("geo_recommendations", "Client, priority, action, rationale, target queries, status (open/in_progress/resolved)"),
+   581→        ("llms_txt_config", "Client, version, content, deployment URL, last updated"),
+   582→    ]
+   583→    e.append(make_table(
+   584→        ["Table Name", "Key Fields"],
+   585→        geo_tables,
+   586→        [100, 360]
+   587→    ))
+   588→    e.append(caption("Table 4.6: GEO & AI Citation Tracking Tables"))
+   589→    
+   590→    e.append(h2("4.7 Reporting & Analytics Tables"))
+   591→    report_tables = [
+   592→        ("report_registry", "Client, report type, generation date, period, format (PDF/HTML), file path"),
+   593→        ("kpi_snapshots", "Client, date, organic sessions, map pack impressions, calls tracked, leads generated, revenue"),
+   594→        ("competitor_visibility_benchmarks", "Client, competitor, metric (visibility/keyword gap/content gap), value, date"),
+   595→        ("quality_audit_log", "Agent name, check type, result (pass/fail/warn), details, timestamp"),
+   596→    ]
+   597→    e.append(make_table(
+   598→        ["Table Name", "Key Fields"],
+   599→        report_tables,
+   600→        [115, 345]
+   601→    ))
+   602→    e.append(caption("Table 4.7: Reporting & Analytics Tables"))
+   603→    e.append(PageBreak())
+   604→
+   605→    # ══════════════════════════════════════════════════
+   606→    # CHAPTER 5: N8N WORKFLOW AUTOMATION
+   607→    # ══════════════════════════════════════════════════
+   608→    e.append(h1("5. n8n Workflow Automation: The Nervous System"))
+   609→    e.append(body(
+   610→        "n8n serves as the workflow automation layer that connects Baserow data stores, external APIs (SEMrush, Ahrefs, "
+   611→        "Google Search Console, AI platforms), GHL CRM, and the Eli-OS agent fleet into repeatable pipelines. "
+   612→        "Each workflow is triggered either manually, on a schedule, or by a webhook event, and executes a "
+   613→        "deterministic sequence of operations that eliminates manual handoffs between strategic phases. "
+   614→        "The following six workflows form the core operational backbone of the systematic approach."
+   615→    ))
+   616→    
+   617→    e.append(h2("5.1 Client Onboarding Pipeline"))
+   618→    e.append(body(
+   619→        "This workflow executes automatically when a new client record is created in Baserow. It orchestrates the "
+   620→        "initial diagnostic phase that previously required 3-5 days of manual work across multiple platforms. "
+   621→        "The pipeline runs 14 sequential and parallel steps, producing a complete client intelligence dossier "
+   622→        "that feeds all subsequent strategy and content workflows."
+   623→    ))
+   624→    e.append(bold_body("Trigger: Baserow webhook on client record creation"))
+   625→    e.append(bullet("<b>Step 1:</b> Pull client URL, industry, and service area from Baserow clients table."))
+   626→    e.append(bullet("<b>Step 2:</b> Run HTTP status check and robots.txt parse via Eli-OS technical_seo agent."))
+   627→    e.append(bullet("<b>Step 3:</b> Fetch GBP data from Google Business Profile API (if available) and log to gbp_profiles table."))
+   628→    e.append(bullet("<b>Step 4:</b> Generate buyer persona using Claude /local-seo-market-icp-research skill, store in client_icp_profiles."))
+   629→    e.append(bullet("<b>Step 5:</b> Run keyword_agent seed expansion from ICP-derived pain points, store in keyword_research_jobs."))
+   630→    e.append(bullet("<b>Step 6:</b> Query SEMrush API for verified search volumes on expanded keywords, update keywords table."))
+   631→    e.append(bullet("<b>Step 7:</b> Cluster keywords via keyword_agent, write clusters to keyword_clusters table."))
+   632→    e.append(bullet("<b>Step 8:</b> Run competitor_agent visibility benchmarking against 3 nearest competitors."))
+   633→    e.append(bullet("<b>Step 9:</b> Run geo_agent citation probe set across 5 AI platforms for 10 seed queries."))
+   634→    e.append(bullet("<b>Step 10:</b> Generate initial technical SEO audit report via report_agent, save to Baserow."))
+   635→    e.append(bullet("<b>Step 11:</b> Create GHL contact and pipeline stage via GHL API integration."))
+   636→    e.append(bullet("<b>Step 12:</b> Send onboarding summary email to team via GHL or SMTP node."))
+   637→    e.append(bullet("<b>Step 13:</b> Schedule 30-day review follow-up in n8n cron trigger."))
+   638→    e.append(bullet("<b>Step 14:</b> Update campaign_goals with initial KPI baselines from audit data."))
+   639→    
+   640→    e.append(h2("5.2 Keyword Research & Clustering Pipeline"))
+   641→    e.append(body(
+   642→        "This pipeline runs on demand (manual trigger) or on a weekly schedule for active campaigns. It takes "
+   643→        "seed keywords from Baserow, expands them through multiple data sources (Autocomplete, PAA, SEMrush, Ahrefs), "
+   644→        "classifies intent, clusters semantically, and writes all results back to Baserow. This replaces the "
+   645→        "manual 4-step process described in the execution doc (Claude skill, SEMrush import, Claude clustering, "
+   646→        "manual analysis) with a single automated pipeline that produces richer, more consistent output."
+   647→    ))
+   648→    e.append(bullet("<b>Input:</b> Read seed keywords from keyword_research_jobs table (status = pending)."))
+   649→    e.append(bullet("<b>Expand:</b> Run keyword_agent.seed_expander for each seed (100 variants per seed max)."))
+   650→    e.append(bullet("<b>Enrich:</b> Query SEMrush API for search volume, difficulty, CPC for each expanded keyword."))
+   651→    e.append(bullet("<b>Classify:</b> Run keyword_agent.intent_classifier to assign informational/navigational/commercial/transactional labels."))
+   652→    e.append(bullet("<b>Cluster:</b> Run keyword_agent.keyword_clusterer using embedding-based similarity."))
+   653→    e.append(bullet("<b>Gap:</b> Run keyword_agent.keyword_gap_finder against competitor_domains from competitor_registry."))
+   654→    e.append(bullet("<b>Output:</b> Write all results to keywords, keyword_clusters, keyword_gap_results tables. Update job status."))
+   655→    
+   656→    e.append(h2("5.3 Content Production & Publishing Pipeline"))
+   657→    e.append(body(
+   658→        "This pipeline bridges the gap between keyword clusters and published content. It generates SEO briefs from "
+   659→        "cluster data, routes them through the 7-platform AI review workflow, and publishes optimized content. "
+   660→        "This systematizes the 9-step content creation process documented in the execution doc, reducing "
+   661→        "human involvement to final editorial approval only."
+   662→    ))
+   663→    e.append(bullet("<b>Brief Generation:</b> Read keyword cluster from Baserow, generate content brief via Claude /seo-brief-architect skill. "
+   664→                     "Brief includes: target keyword, secondary keywords, H-tag structure, word count target, schema requirements, "
+   665→                     "internal link targets, and BLUF answer capsule."))
+   666→    e.append(bullet("<b>Content Drafting:</b> Route brief to content writer (human or AI). Writer produces draft following semantic "
+   667→                     "writing standards (answer-first structure, 8th-10th grade readability, GEO-optimized formatting)."))
+   668→    e.append(bullet("<b>7-Platform AI Review:</b> Submit draft to Gemini (structure/entities), ChatGPT (clarity/AI readability), "
+   669→                     "Perplexity (citation opportunities), Google AIO (manual query test), Bing/Copilot (citation patterns), "
+   670→                     "Claude (final merge). Each platform's recommendations are logged in ai_review_log table."))
+   671→    e.append(bullet("<b>Final Optimization:</b> Merge all AI recommendations, apply to draft, validate schema markup, check internal links."))
+   672→    e.append(bullet("<b>Publishing:</b> Publish to CMS via API, deploy schema markup, submit to IndexNow, log in content_pieces table."))
+   673→    
+   674→    e.append(h2("5.4 Parasite SEO Distribution Pipeline"))
+   675→    e.append(body(
+   676→        "This pipeline automates the creation and distribution of parasitic content across high-DA platforms. "
+   677→        "It reads from the parasite_platforms table to select appropriate targets based on TOS compliance, "
+   678→        "topical relevance, and DA score, then orchestrates content adaptation and publication."
+   679→    ))
+   680→    e.append(bullet("<b>Platform Selection:</b> Query parasite_platforms for active platforms with TOS risk = low/medium, "
+   681→                     "DA greater than 50, and topical relevance score above 0.6 for the client's vertical."))
+   682→    e.append(bullet("<b>Content Adaptation:</b> Take published content_pieces marked for parasite distribution, adapt for platform "
+   683→                     "requirements (word count, formatting, link placement rules)."))
+   684→    e.append(bullet("<b>Publication:</b> Publish via platform API or manual queue (for platforms requiring human accounts)."))
+   685→    e.append(bullet("<b>Backlink Tracking:</b> Log publication in parasite_campaigns, monitor for backlink acquisition, "
+   686→                     "update backlink_profile table."))
+   687→    e.append(bullet("<b>TOS Compliance Monitor:</b> Weekly check of parasite_platforms for TOS changes via parasite_seo agent."))
+   688→    
+   689→    e.append(h2("5.5 GEO Citation Monitoring Pipeline"))
+   690→    e.append(body(
+   691→        "This pipeline implements the 7-platform AI testing suite described in the strategic blueprint as an "
+   692→        "automated, recurring workflow. It probes ChatGPT, Claude, Perplexity, Bing Copilot, and Google AI Overview "
+   693→        "with standardized query sets and logs all findings for trend analysis and competitor comparison."
+   694→    ))
+   695→    e.append(bullet("<b>Trigger:</b> Cron schedule (high-priority brands: every 6 hours; standard: every 24 hours)."))
+   696→    e.append(bullet("<b>Query Set:</b> For each active client, load 10-20 target queries from keyword_clusters (priority = high)."))
+   697→    e.append(bullet("<b>Probing:</b> Run geo_agent.sge_response_analyzer, geo_agent.perplexity_citation_tracker, and ai_citation agents."))
+   698→    e.append(bullet("<b>Logging:</b> Write citation results to geo_citation_probes and geo_citation_logs tables."))
+   699→    e.append(bullet("<b>Trend Analysis:</b> Calculate citation rates, compare against competitor_citation_rates, update geo_citation_trends."))
+   700→    e.append(bullet("<b>Alerting:</b> If citation rate drops below 5% or competitor exceeds 60% where brand is absent, trigger escalation."))
+   701→    
+   702→    e.append(h2("5.6 Client Reporting Pipeline"))
+   703→    e.append(body(
+   704→        "This pipeline generates monthly client reports by aggregating data from all other tables. It replaces "
+   705→        "manual report compilation with an automated process that produces consistent, data-rich deliverables. "
+   706→        "Reports are generated as PDF via the report_agent and stored in the report_registry table."
+   707→    ))
+   708→    e.append(bullet("<b>Trigger:</b> Monthly cron (1st of each month) or manual trigger."))
+   709→    e.append(bullet("<b>Data Aggregation:</b> Pull KPI snapshots, keyword ranking changes, citation trends, backlink velocity, "
+   710→                     "and technical audit summaries from respective Baserow tables."))
+   711→    e.append(bullet("<b>Report Generation:</b> Route aggregated data to report_agent, which selects template, generates "
+   712→                     "narrative, prioritizes recommendations, and formats output."))
+   713→    e.append(bullet("<b>Delivery:</b> Upload PDF to Baserow, send notification to client via GHL, log in report_registry."))
+   714→    e.append(PageBreak())
+   715→
+   716→    # ══════════════════════════════════════════════════
+   717→    # CHAPTER 6: GHL INTEGRATION
+   718→    # ══════════════════════════════════════════════════
+   719→    e.append(h1("6. GHL / GoHighLevel CRM Integration"))
+   720→    e.append(body(
+   721→        "GoHighLevel serves as the client-facing CRM and lead management layer that connects VirtuaLab Digital's "
+   722→        "SEO operations to actual business outcomes for clients. The integration architecture ensures that every "
+   723→        "phone call, form submission, and booking can be attributed back to the specific search query, content piece, "
+   724→        "or parasite SEO placement that generated it. This closes the loop between visibility work and revenue."
+   725→    ))
+   726→    
+   727→    e.append(h2("6.1 Lead Attribution Architecture"))
+   728→    e.append(body(
+   729→        "The lead attribution system tracks the complete journey from search query to booked job. When a user "
+   730→        "clicks a search result or AI citation link, lands on a client's site, and submits a contact form or calls "
+   731→        "a tracking number, the system records the full chain: search query, landing page, content piece, "
+   732→        "keyword cluster, and conversion event. This data flows into GHL via webhooks and API calls."
+   733→    ))
+   734→    e.append(bullet("<b>UTM Parameter Capture:</b> All internal links from content pieces to conversion pages include UTM parameters "
+   735→                     "(utm_source, utm_medium, utm_campaign, utm_content, utm_term) that identify the source keyword cluster."))
+   736→    e.append(bullet("<b>GHL Form Webhook:</b> Client website contact forms trigger GHL webhooks that create/update contacts "
+   737→                     "with UTM data attached as custom fields."))
+   738→    e.append(bullet("<b>Call Tracking:</b> GHL's call tracking numbers are assigned per campaign, enabling attribution of phone "
+   739→                     "calls to specific service area pages or content pieces."))
+   740→    e.append(bullet("<b>Pipeline Stage Mapping:</b> GHL pipeline stages map to the buyer journey phases defined in the ICP: "
+   741→                     "Problem Awareness, Agency Comparison, Solution Evaluation, Trust Validation, Commitment."))
+   742→    
+   743→    e.append(h2("6.2 Automated Follow-Up Sequences"))
+   744→    e.append(body(
+   745→        "GHL workflows automate client communication sequences that nurture leads from initial contact through "
+   746→        "to booked appointment. These sequences are triggered by pipeline stage changes and use templates that "
+   747→        "reflect the brand voice rules defined in Baserow's brand_settings table. The sequences incorporate "
+   748→        "educational content (linking to published guides from the content pipeline) rather than aggressive "
+   749→        "sales pitches, aligning with the 'education-first' approach defined in the strategic blueprint."
+   750→    ))
+   751→    
+   752→    e.append(h2("6.3 Pipeline Stage Tracking"))
+   753→    e.append(body(
+   754→        "GHL pipeline stages are synchronized with Baserow's campaign_goals table via n8n webhooks. When a deal "
+   755→        "moves to a new stage in GHL, the webhook updates the corresponding campaign goal record with the stage "
+   756→        "transition date and value. This enables the reporting pipeline to produce reports that show not just "
+   757→        "SEO metrics (rankings, traffic, citations) but also business outcomes (leads generated, appointments "
+   758→        "booked, jobs closed, revenue attributed) in a single, unified view."
+   759→    ))
+   760→    e.append(PageBreak())
+   761→
+   762→    # ══════════════════════════════════════════════════
+   763→    # CHAPTER 7: ASYMMETRIC SEO
+   764→    # ══════════════════════════════════════════════════
+   765→    e.append(h1("7. Asymmetric SEO Systematic Methodology"))
+   766→    e.append(body(
+   767→        "Asymmetric SEO is the practice of identifying and exploiting structural deficiencies in competitor "
+   768→        "strategies to achieve disproportionate visibility gains with less resource expenditure. Rather than "
+   769→        "competing head-to-head on the same metrics (backlink volume, content depth, ad spend), asymmetric "
+   770→        "strategies target the specific vulnerabilities that competitors cannot easily fix due to business model "
+   771→        "constraints, technical debt, or strategic blind spots. The systematic approach transforms this from "
+   772→        "an intuitive art into a data-driven, repeatable process."
+   773→    ))
+   774→    
+   775→    e.append(h2("7.1 Structural Gap Exploitation Framework"))
+   776→    e.append(body(
+   777→        "The framework operates through a four-phase cycle that runs continuously for each active campaign. "
+   778→        "Each phase produces structured data that feeds the next, creating a self-reinforcing intelligence loop. "
+   779→        "The competitor_agent and keyword_agent work together to identify gaps, while the on_page_seo and "
+   780→        "content pipelines exploit them."
+   781→    ))
+   782→    e.append(bullet("<b>Phase 1 - Detect:</b> Run competitor_agent.keyword_gap_analyzer against competitor_registry entries. "
+   783→                     "Cross-reference with keyword_clusters to find high-volume, low-competition gaps. "
+   784→                     "Store results in keyword_gap_results table with opportunity score."))
+   785→    e.append(bullet("<b>Phase 2 - Classify:</b> Classify each gap by exploitation type: (a) Content gap (competitor has no page), "
+   786→                     "(b) Depth gap (competitor's page is thin), (c) Format gap (competitor lacks schema/video/FAQ), "
+   787→                     "(d) Local gap (competitor has no service area page for target suburb)."))
+   788→    e.append(bullet("<b>Phase 3 - Exploit:</b> Route classified gaps to appropriate pipeline: content gaps to Content Production, "
+   789→                     "format gaps to Technical SEO, local gaps to Programmatic Hub Page generator. Set priority based on "
+   790→                     "opportunity score multiplied by estimated effort."))
+   791→    e.append(bullet("<b>Phase 4 - Measure:</b> Track ranking changes for exploited keywords in kpi_snapshots. Compare against "
+   792→                     "pre-exploitation baseline. Feed results back into Phase 1 to refine gap detection."))
+   793→    
+   794→    e.append(h2("7.2 Non-Linear Competitive Advantage Model"))
+   795→    e.append(body(
+   796→        "The non-linear model recognizes that certain SEO investments produce exponentially greater returns than "
+   797→        "others. The systematic approach quantifies this by tracking the cost-per-visibility-unit for each strategy "
+   798→        "type and prioritizing investments that produce the highest asymmetric returns. For example, the strategic "
+   799→        "blueprint identifies that adding a single FAQPage schema to a service page can increase AI citation "
+   800→        "probability by 30-115.1% (Princeton KDD 2024 data), while building 10 new backlinks might only increase "
+   801→        "organic ranking by 2-5 positions. The system tracks these multipliers in the Baserow strategy_multipliers "
+   802→        "table and uses them to automatically rank recommended actions in client reports."
+   803→    ))
+   804→    e.append(PageBreak())
+   805→
+   806→    # ══════════════════════════════════════════════════
+   807→    # CHAPTER 8: PARASITE SEO
+   808→    # ══════════════════════════════════════════════════
+   809→    e.append(h1("8. Parasite SEO Systematic Methodology"))
+   810→    e.append(body(
+   811→        "Parasite SEO leverages high-domain-authority third-party platforms to rank content that drives traffic "
+   812→        "and backlinks to client properties. The systematic approach transforms this from ad-hoc content placement "
+   813→        "into a structured program with platform scoring, TOS compliance monitoring, and performance tracking. "
+   814→        "The parasite_seo agent's 8 tools provide the analytical backbone, while n8n workflows handle distribution."
+   815→    ))
+   816→    
+   817→    e.append(h2("8.1 Platform Scoring and TOS Compliance"))
+   818→    e.append(body(
+   819→        "Each potential parasitic platform is scored on five dimensions, with automated TOS monitoring to ensure "
+   820→        "compliance boundaries are never violated. The parasite_seo agent's platform_tos_analyzer parses platform "
+   821→        "terms of service documents and flags restrictive clauses related to link policies, self-promotion rules, "
+   822→        "and monetization restrictions. Scores are stored in the parasite_platforms table and refreshed weekly."
+   823→    ))
+   824→    e.append(make_table(
+   825→        ["Dimension", "Weight", "Data Source", "Update Frequency"],
+   826→        [
+   827→            ("Domain Authority", "30%", "Moz API / Cached index", "Monthly"),
+   828→            ("Topical Relevance", "25%", "NLP topic similarity to client vertical", "On-demand"),
+   829→            ("TOS Risk Level", "20%", "parasite_seo agent TOS parser", "Weekly"),
+   830→            ("Indexing Speed", "15%", "Historical publish-to-index measurements", "Monthly"),
+   831→            ("Editorial Barrier", "10%", "Manual assessment (low/medium/high)", "Quarterly"),
+   832→        ],
+   833→        [100, 50, 180, 130]
+   834→    ))
+   835→    e.append(caption("Table 8.1: Parasite Platform Scoring Dimensions"))
+   836→    
+   837→    e.append(h2("8.2 Content Distribution Orchestration"))
+   838→    e.append(body(
+   839→        "The parasite distribution pipeline reads published content_pieces marked for distribution, selects "
+   840→        "optimal platforms based on scoring, adapts content for each platform's requirements, and tracks "
+   841→        "publication outcomes. The orchestration layer ensures that content is distributed across a diverse "
+   842→        "platform mix (not concentrated on a single platform), anchor text distribution remains natural "
+   843→        "(exact match below 30%), and backlink velocity stays within safe thresholds (below 300% of "
+   844→        "trailing 90-day average). When any threshold is breached, the parasite_seo agent automatically "
+   845→        "escalates to the orchestrator for strategy review."
+   846→    ))
+   847→    e.append(PageBreak())
+   848→
+   849→    # ══════════════════════════════════════════════════
+   850→    # CHAPTER 9: GEO SYSTEM
+   851→    # ══════════════════════════════════════════════════
+   852→    e.append(h1("9. GEO (Generative Engine Optimization) System"))
+   853→    e.append(body(
+   854→        "Generative Engine Optimization is the practice of structuring content so that large language models "
+   855→        "can retrieve, synthesize, and cite it within conversational search interfaces. The systematic approach "
+   856→        "implements the theoretical frameworks documented in the strategic blueprint (Princeton KDD 2024 GEO paper, "
+   857→        "Zyppy 2025 citation analysis, Sadasivan et al. 2025 AI retrieval bias study) as measurable, trackable, "
+   858→        "and improvable system components. The geo_agent and ai_citation agents provide the analytical "
+   859→        "infrastructure, while content operations implement the recommendations."
+   860→    ))
+   861→    
+   862→    e.append(h2("9.1 Citation Probability Model"))
+   863→    e.append(body(
+   864→        "The strategic blueprint defines the AI visibility model as V(ai) = a * S(density) + b * Q(addition) + "
+   865→        "g * C(sources) + d * F(fluency). The systematic approach operationalizes each variable as a measurable "
+   866→        "content score stored in Baserow and tracked over time. Content pieces receive a GEO score on each of these "
+   867→        "four dimensions, calculated by the geo_agent's content_quoteability_scorer tool, and stored in a "
+   868→        "geo_content_scores table. The qa_agent validates that published content meets minimum threshold "
+   869→        "scores before approval."
+   870→    ))
+   871→    e.append(make_table(
+   872→        ["Variable", "Full Name", "Measurement Method", "Target Threshold"],
+   873→        [
+   874→            ("S(density)", "Statistics Density", "Count of verifiable numeric data points per 1000 words", "Greater than 5"),
+   875→            ("Q(addition)", "Quotation Addition", "Count of attributed expert quotes per article", "Greater than 2"),
+   876→            ("C(sources)", "Citation Sources", "Count of hyperlinked authoritative external references", "Greater than 3"),
+   877→            ("F(fluency)", "Fluency Optimization", "Flesch-Kincaid readability grade level", "8-10 grade"),
+   878→        ],
+   879→        [60, 80, 200, 120]
+   880→    ))
+   881→    e.append(caption("Table 9.1: GEO Citation Probability Variables (Operationalized)"))
+   882→    
+   883→    e.append(h2("9.2 BLUF Content Formatting Standard"))
+   884→    e.append(body(
+   885→        "BLUF (Bottom Line Up Front) formatting places a 40-60 word concise, fact-dense answer capsule directly "
+   886→        "beneath each major H2 and H3 heading. The Zyppy 2025 analysis found that 44.2% of all AI citations are "
+   887→        "extracted from the first 30% of a page's content, making the answer-first structure the single "
+   888→        "highest-impact GEO tactic. The systematic approach enforces BLUF formatting through the content "
+   889→        "brief template: every brief generated by the Content Production Pipeline includes a mandatory BLUF "
+   890→        "capsule field that the writer must complete before the rest of the content. The qa_agent validates "
+   891→        "BLUF presence and word count during quality review."
+   892→    ))
+   893→    
+   894→    e.append(h2("9.3 llms.txt Implementation"))
+   895→    e.append(body(
+   896→        "llms.txt is a machine-readable file placed at the root of each client's domain that provides LLM crawlers "
+   897→        "with structured information about the site's content, authority, and preferred citation format. The systematic "
+   898→        "approach generates llms.txt files from Baserow data (brand_settings, keyword_clusters, content_pieces) "
+   899→        "and deploys them via n8n workflow. The file follows the emerging llms.txt specification and includes: "
+   900→        "site name and description, authority signals, key topic areas with links, and preferred citation format. "
+   901→        "The geo_agent monitors LLM crawler access to llms.txt via server log analysis and tracks whether "
+   902→        "citation rates improve after deployment."
+   903→    ))
+   904→    e.append(PageBreak())
+   905→
+   906→    # ══════════════════════════════════════════════════
+   907→    # CHAPTER 10: CONTENT OPERATIONS
+   908→    # ══════════════════════════════════════════════════
+   909→    e.append(h1("10. Content Operations System"))
+   910→    
+   911→    e.append(h2("10.1 7-Platform AI Review Workflow"))
+   912→    e.append(body(
+   913→        "The strategic blueprint defines a 7-step content review process that routes content through multiple AI "
+   914→        "platforms to maximize quality and citation-readiness. The systematic approach automates the logistics "
+   915→        "of this process while preserving the human editorial approval gate. The workflow executes as follows: "
+   916→        "content draft is submitted to Gemini (Flash 3.5, Extended Mode, Deep Research) for structure, entity, and "
+   917→        "topic coverage review; then to ChatGPT for clarity and AI readability analysis; then to Perplexity for "
+   918→        "source-backed citation opportunities; then to Google AI Overview for manual query testing; then to "
+   919→        "Bing/Copilot for Microsoft-style answer pattern review; and finally back to Claude for merging all "
+   920→        "recommendations into a final publishing plan. Each platform's review is logged in the ai_review_log "
+   921→        "table with scores and specific recommendations."
+   922→    ))
+   923→    
+   924→    e.append(h2("10.2 Semantic Writing Standards"))
+   925→    e.append(body(
+   926→        "All content produced through the system must comply with the semantic writing standards derived from "
+   927→        "the strategic blueprint and the VirtuaLab Tools Repository. These standards are codified in Baserow's "
+   928→        "brand_settings table as enforceable rules that the qa_agent checks during quality review. Key standards "
+   929→        "include: answer-first structure with BLUF capsules beneath every H2/H3 heading; 8th-to-10th grade "
+   930→        "reading level as measured by Flesch-Kincaid; minimum 3 verifiable statistics per 1000 words; "
+   931→        "minimum 2 attributed expert quotes per article; minimum 3 hyperlinked authoritative external "
+   932→        "citations per article; FAQPage schema for any page containing 3 or more questions; and LocalBusiness "
+   933→        "schema with nested Service and Offer objects for all service area pages."
+   934→    ))
+   935→    e.append(PageBreak())
+   936→
+   937→    # ══════════════════════════════════════════════════
+   938→    # CHAPTER 11: FREE TOOLS
+   939→    # ══════════════════════════════════════════════════
+   940→    e.append(h1("11. Free Tools Ecosystem"))
+   941→    e.append(body(
+   942→        "The strategic blueprint specifies three free tools to be offered on the VirtuaLab Digital website as "
+   943→        "lead generation mechanisms. Each tool is registered in the Baserow free_tools_registry table with "
+   944→        "its configuration, embedding code, and lead capture settings. The tools serve dual purposes: they provide "
+   945→        "genuine value to prospects (building trust per the education-first philosophy) and they capture "
+   946→        "contact information for GHL follow-up sequences."
+   947→    ))
+   948→    e.append(make_table(
+   949→        ["Tool", "Purpose", "Lead Capture", "Baserow Table"],
+   950→        [
+   951→            ("Local Marketing ROI Calculator", "Compare paid lead costs vs. organic asset building ROI", "Email required to see results", "tool_configs"),
+   952→            ("Local Proximity Visualizer", "Show service area radius maps and centroid optimization", "Email for full report", "tool_configs"),
+   953→            ("Lead Prioritization Matrix", "Score and rank leads by service type, urgency, and value", "GHL contact creation", "tool_configs"),
+   954→        ],
+   955→        [110, 170, 100, 80]
+   956→    ))
+   957→    e.append(caption("Table 11.1: Free Lead Generation Tools"))
+   958→    
+   959→    e.append(body(
+   960→        "Additionally, the VirtuaLab Tools Repository specifies seven internal tools used in client delivery: "
+   961→        "All-in-One SEO Tools, Semantic Writing Assistant, Technical SEO Auditor, Sitemap Generator, "
+   962→        "Conversion Rate Optimizer, Zero-Code Jasper AI Integration, and the Autonomous Agent (Eli-OS) itself. "
+   963→        "These tools are configured in Baserow's tool_configs table and accessible to team members through "
+   964→        "the internal operations dashboard. Each tool's output feeds back into the relevant Baserow tables, "
+   965→        "ensuring that tool usage data is captured and actionable."
+   966→    ))
+   967→    e.append(PageBreak())
+   968→
+   969→    # ══════════════════════════════════════════════════
+   970→    # CHAPTER 12: IMPLEMENTATION ROADMAP
+   971→    # ══════════════════════════════════════════════════
+   972→    e.append(h1("12. Implementation Roadmap: 6-Week Deployment"))
+   973→    e.append(body(
+   974→        "The following roadmap is derived from the Eli-OS integration notes (OPENCLAW_KIMI_INTEGRATION.md) "
+   975→        "and adapted for the VirtuaLab Digital context. It prioritizes establishing the data foundation (Baserow) "
+   976→        "before building automation (n8n) and finally connecting intelligence (Eli-OS agents). Each week has "
+   977→        "explicit deliverables, dependencies, and validation criteria."
+   978→    ))
+   979→    e.append(make_table(
+   980→        ["Week", "Focus", "Deliverables", "Dependencies", "Validation"],
+   981→        [
+   982→            ("Week 1", "Data Foundation", "Create all 40+ Baserow tables with fields, views, and filters. Import existing client data. Populate brand_settings and competitor_registry from Google Docs.", "None (starting point)", "All tables created. Sample data queryable. Views accessible to team."),
+   983→            ("Week 2", "Client Onboarding", "Build n8n Client Onboarding Pipeline (14 steps). Configure GHL webhook integration. Test with one existing client.", "Week 1 tables", "End-to-end test: new client record triggers full pipeline, produces dossier."),
+   984→            ("Week 3", "Keyword & Content", "Build n8n Keyword Research Pipeline. Build Content Production Pipeline (brief generation + 7-platform AI review). Configure Claude/Gemini API nodes.", "Week 1 tables, Week 2 GHL", "Pipeline produces keyword clusters and content briefs from seed keywords."),
+   985→            ("Week 4", "Off-Page & GEO", "Build Parasite SEO Distribution Pipeline. Build GEO Citation Monitoring Pipeline. Deploy parasite_platforms and geo_citation_probes tables.", "Week 1 tables, Week 3 content", "Parasite content published to 2+ platforms. Citation probes logging data."),
+   986→            ("Week 5", "Eli-OS Integration", "Deploy Eli-OS SKILL.md files. Start Kimi K2.7 Code inference server. Connect Eli-OS agents to Baserow via IPC. Test agent policy enforcement.", "Week 1-4 pipelines", "Agent completes task with policy check. Escalation triggers work correctly."),
+   987→            ("Week 6", "Reporting & QA", "Build Client Reporting Pipeline. Run qa_agent cross-agent consistency checks. Performance benchmarking. Documentation.", "Week 1-5 complete", "Monthly report generates automatically. QA passes all checks. System runs unattended for 48h."),
+   988→        ],
+   989→        [40, 60, 150, 70, 140]
+   990→    ))
+   991→    e.append(caption("Table 12.1: 6-Week Implementation Roadmap"))
+   992→    e.append(PageBreak())
+   993→
+   994→    # ══════════════════════════════════════════════════
+   995→    # CHAPTER 13: DATA FLOW
+   996→    # ══════════════════════════════════════════════════
+   997→    e.append(h1("13. Data Flow Architecture"))
+   998→    e.append(body(
+   999→        "The following describes the complete data flow through the VirtuaLab Digital ecosystem, from initial "
+  1000→        "client contact to monthly reporting. Every data touchpoint maps to a specific Baserow table, n8n workflow, "
+  1001→        "or Eli-OS agent, ensuring complete traceability and eliminating any step that relies on tribal knowledge "
+  1002→        "or undocumented processes."
+  1003→    ))
+  1004→    e.append(bold_body("Primary Data Flow (Client Lifecycle):"))
+  1005→    e.append(bullet("<b>1. Client Contact:</b> Website form or referral creates GHL contact via webhook. n8n triggers Client "
+  1006→                     "Onboarding Pipeline. Baserow clients table record created."))
+  1007→    e.append(bullet("<b>2. Intelligence Gathering:</b> technical_seo agent audits site. keyword_agent expands seeds. "
+  1008→                     "competitor_agent benchmarks visibility. geo_agent probes AI citations. All results to Baserow."))
+  1009→    e.append(bullet("<b>3. Strategy Formation:</b> Keyword clusters, content briefs, and campaign goals created in Baserow. "
+  1010→                     "Prioritized execution roadmap generated from keyword gap analysis."))
+  1011→    e.append(bullet("<b>4. Content Production:</b> Content Pipeline generates briefs, routes through 7-platform AI review, "
+  1012→                     "publishes optimized content. Schema deployed. IndexNow submitted."))
+  1013→    e.append(bullet("<b>5. Off-Page Distribution:</b> Parasite Pipeline distributes content to scored platforms. "
+  1014→                     "Backlink profile updated. YouTube videos published. Social assets managed."))
+  1015→    e.append(bullet("<b>6. GEO Monitoring:</b> Citation probes run on schedule. Trends tracked. Recommendations generated. "
+  1016→                     "llms.txt deployed and monitored."))
+  1017→    e.append(bullet("<b>7. Lead Attribution:</b> GHL captures conversions with UTM data. Pipeline stages tracked. "
+  1018→                     "Revenue attributed to SEO activities."))
+  1019→    e.append(bullet("<b>8. Reporting:</b> Monthly pipeline aggregates all data. PDF report generated. Delivered to client. "
+  1020→                     "KPI trends analyzed. Strategy adjusted for next cycle."))
+  1021→    e.append(spacer(8))
+  1022→    e.append(bold_body("Secondary Data Flow (Internal Operations):"))
+  1023→    e.append(bullet("<b>Quality Assurance:</b> qa_agent runs cross-agent consistency checks after every multi-agent task. "
+  1024→                     "Results logged in quality_audit_log."))
+  1025→    e.append(bullet("<b>Escalation Handling:</b> Eli-OS policy engine routes violations to orchestrator. Kimi K2.7 decides "
+  1026→                     "escalation action (retry/reroute/compose/escalate_to_human). Human review queue in Baserow."))
+  1027→    e.append(bullet("<b>System Monitoring:</b> Agent heartbeats monitored every 30 seconds. Resource usage tracked. "
+  1028→                     "n8n workflow execution logs captured. System health dashboard updated."))
+  1029→    e.append(PageBreak())
+  1030→
+  1031→    # ══════════════════════════════════════════════════
+  1032→    # CHAPTER 14: GOVERNANCE
+  1033→    # ══════════════════════════════════════════════════
+  1034→    e.append(h1("14. Governance, Escalation & Quality Assurance"))
+  1035→    e.append(body(
+  1036→        "The governance layer ensures that the systematic approach maintains quality over time and adapts to "
+  1037→        "changing conditions without manual intervention. It operates at three levels: agent-level governance "
+  1038→        "enforced by the Rust control plane, workflow-level governance enforced by n8n error handling and "
+  1039→        "retry logic, and strategic-level governance enforced by human review of escalation events and "
+  1040→        "monthly performance reviews."
+  1041→    ))
+  1042→    
+  1043→    e.append(h2("14.1 Agent-Level Governance"))
+  1044→    e.append(body(
+  1045→        "Each Eli-OS agent operates within strict boundaries defined by its SKILL.md manifest. The Rust "
+  1046→        "control plane enforces these boundaries at the IPC level, before any data operation reaches the "
+  1047→        "database layer. The three-tier enforcement model (Green/Amber/Red) ensures that routine operations "
+  1048→        "execute without friction while risky operations are logged or blocked. Key governance rules include: "
+  1049→        "no cross-domain table access (each agent can only read/write its designated tables), no hallucination "
+  1050→        "(system prompt invariant requires answers to come only from retrieved context), resource limits "
+  1051→        "enforced per agent (memory, CPU, duration), and defined escalation triggers that route "
+  1052→        "anomalies to the orchestrator for decision-making."
+  1053→    ))
+  1054→    
+  1055→    e.append(h2("14.2 Workflow-Level Governance"))
+  1056→    e.append(body(
+  1057→        "n8n workflows implement error handling at every node. External API calls include retry logic "
+  1058→        "with exponential backoff. Failed workflow executions are logged with full context for debugging. "
+  1059→        "Workflow executions that exceed defined timeout thresholds trigger alerts. Data validation nodes "
+  1060→        "check that Baserow writes succeed and that data formats match expected schemas before proceeding "
+  1061→        "to the next step. This ensures that partial failures do not corrupt downstream data."
+  1062→    ))
+  1063→    
+  1064→    e.append(h2("14.3 Strategic-Level Governance"))
+  1065→    e.append(body(
+  1066→        "Human operators review escalation events daily. The Baserow quality_audit_log table surfaces "
+  1067→        "all QA failures, policy violations, and escalation decisions for review. Monthly performance "
+  1068→        "reviews compare KPI trends across clients and identify systemic issues (e.g., citation rates "
+  1069→        "declining across all clients may indicate a platform algorithm change requiring strategy adjustment). "
+  1070→        "The competitor_registry is reviewed quarterly to add new competitors and update scoring. Brand settings, "
+  1071→        "ICP templates, and content standards are reviewed and updated based on accumulated performance data."
+  1072→    ))
+  1073→    
+  1074→    return e
+  1075→
+  1076→# ── Build PDF ──
+  1077→OUTPUT_PATH = '/home/z/my-project/download/VirtuaLab_Digital_Ecosystem_Systematic_Architecture.pdf'
+  1078→
+  1079→doc = SimpleDocTemplate(
+  1080→    OUTPUT_PATH,
+  1081→    pagesize=A4,
+  1082→    leftMargin=40*mm,
+  1083→    rightMargin=40*mm,
+  1084→    topMargin=30*mm,
+  1085→    bottomMargin=25*mm,
+  1086→    title="VirtuaLab Digital Ecosystem Systematic Architecture",
+  1087→    author="VirtuaLab Digital",
+  1088→    subject="AISEO Framework Systematic Approach Foundation",
+  1089→)
+  1090→
+  1091→elements = build_cover()
+  1092→elements.extend(build_toc())
+  1093→elements.extend(build_content())
+  1094→
+  1095→doc.build(elements, onFirstPage=page_footer, onLaterPages=page_footer)
+  1096→print(f"PDF generated: {OUTPUT_PATH}")
+  1097→
+  1098→# Get page count
+  1099→import subprocess, os
+  1100→result = subprocess.run(['python3', '-c', 'import fitz, os\ndoc = fitz.open("' + OUTPUT_PATH + '")\nprint(f"Pages: {doc.page_count}")\nprint(f"Size: {os.path.getsize("' + OUTPUT_PATH + '") / 1024:.1f} KB")\ndoc.close()'], capture_output=True, text=True)
+  1101→print(result.stdout)
+  1102→if result.stderr:
+  1103→    print(f"Warning: {result.stderr}")
+  1104→

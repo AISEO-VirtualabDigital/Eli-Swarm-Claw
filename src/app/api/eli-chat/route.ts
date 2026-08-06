@@ -21,10 +21,10 @@ Communication style:
 - Use markdown formatting for structure: **bold**, *italic*, - bullet lists, 1. numbered lists, \`code\`, and code blocks`;
 
 // Singleton ZAI client — initialized once, reused across requests
-let zaiInstance: InstanceType<typeof ZAI> | null = null;
-let zaiInitPromise: Promise<InstanceType<typeof ZAI>> | null = null;
+let zaiInstance: any = null;
+let zaiInitPromise: any = null;
 
-async function getZAI(): Promise<InstanceType<typeof ZAI>> {
+async function getZAI(): Promise<any> {
   if (zaiInstance) return zaiInstance;
   if (zaiInitPromise) return zaiInitPromise;
 

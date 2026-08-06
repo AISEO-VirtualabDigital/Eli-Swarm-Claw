@@ -4,28 +4,21 @@ VirtuaLab Digital - Asymmetrical SEO & Parasite SEO Master Strategy PDF
 Comprehensive strategy document with keyword mapping, topic clustering, and implementation plan.
 """
 
-import os
-import sys
-
-# PDF Skill Directory
-PDF_SKILL_DIR = '/home/z/my-project/skills/pdf'
-FONT_DIR = '/usr/share/fonts'
-
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import mm, inch
+from reportlab.lib.units import mm
 from reportlab.lib.colors import HexColor
+
+FONT_DIR = '/usr/share/fonts'
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY, TA_RIGHT
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, KeepTogether, HRFlowable, ListFlowable, ListItem,
-    Image
+    PageBreak, KeepTogether, HRFlowable
 )
 from reportlab.platypus.tableofcontents import TableOfContents
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase.pdfmetrics import registerFontFamily
-from reportlab.lib.colors import Color
 
 # ========================
 # FONT REGISTRATION
@@ -37,24 +30,16 @@ registerFontFamily('Inter', normal='Inter', bold='Inter-Bold')
 # ========================
 # PALETTE (from cascade)
 # ========================
-PAGE_BG       = HexColor('#f5f6f6')
-SECTION_BG    = HexColor('#f1f2f2')
-CARD_BG       = HexColor('#eeeff0')
 TABLE_STRIPE  = HexColor('#ecedee')
 HEADER_FILL   = HexColor('#36505d')
 COVER_BLOCK   = HexColor('#3c5461')
 BORDER_COLOR  = HexColor('#bacbd3')
 ICON_COLOR    = HexColor('#376a84')
 ACCENT        = HexColor('#2e7fa7')
-ACCENT2       = HexColor('#cb7458')
 TEXT_PRIMARY   = HexColor('#222526')
 TEXT_MUTED     = HexColor('#71787b')
-SUCCESS       = HexColor('#488b5e')
-WARNING       = HexColor('#b08d47')
-ERROR         = HexColor('#8a4d48')
 INFO          = HexColor('#527291')
 WHITE         = HexColor('#ffffff')
-BLACK         = HexColor('#000000')
 
 # ========================
 # PAGE DIMENSIONS
@@ -75,13 +60,9 @@ s_h1 = ParagraphStyle('H1', parent=styles['Heading1'], fontName='Inter-Bold', fo
 s_h2 = ParagraphStyle('H2', parent=styles['Heading2'], fontName='Inter-Bold', fontSize=16, leading=22, textColor=ACCENT, spaceAfter=8, spaceBefore=16)
 s_h3 = ParagraphStyle('H3', parent=styles['Heading3'], fontName='Inter-Bold', fontSize=13, leading=18, textColor=HEADER_FILL, spaceAfter=6, spaceBefore=12)
 s_body = ParagraphStyle('Body', parent=styles['Normal'], fontName='Inter', fontSize=10, leading=15, textColor=TEXT_PRIMARY, alignment=TA_JUSTIFY, spaceAfter=6)
-s_body_sm = ParagraphStyle('BodySm', parent=s_body, fontSize=9, leading=13, textColor=TEXT_MUTED)
-s_bullet = ParagraphStyle('Bullet', parent=s_body, leftIndent=18, bulletIndent=6, spaceBefore=2, spaceAfter=2)
 s_table_header = ParagraphStyle('TH', fontName='Inter-Bold', fontSize=8.5, leading=11, textColor=WHITE, alignment=TA_CENTER)
 s_table_cell = ParagraphStyle('TC', fontName='Inter', fontSize=8, leading=11, textColor=TEXT_PRIMARY, alignment=TA_LEFT)
-s_table_cell_c = ParagraphStyle('TCC', parent=s_table_cell, alignment=TA_CENTER)
-s_caption = ParagraphStyle('Caption', parent=s_body_sm, alignment=TA_CENTER, textColor=TEXT_MUTED, fontName='Inter', fontSize=8.5, leading=12)
-s_quote = ParagraphStyle('Quote', parent=s_body, leftIndent=20, rightIndent=20, textColor=ICON_COLOR, fontSize=9.5, leading=14, borderColor=ACCENT, borderWidth=0, borderPadding=0)
+s_bullet = ParagraphStyle('Bullet', parent=s_body, leftIndent=18, bulletIndent=6, spaceBefore=2, spaceAfter=2)
 
 # ========================
 # HELPER FUNCTIONS
