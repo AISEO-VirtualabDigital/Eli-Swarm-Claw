@@ -23,8 +23,12 @@ from paramiko import SSHClient, AutoAddPolicy
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 STANDALONE_DIR = PROJECT_DIR / ".next" / "standalone"
 KNOWLEDGE_DIR = PROJECT_DIR / "data" / "uploads" / "knowledge-sources"
+KEYWORD_DIR = PROJECT_DIR / "data" / "keyword-research"
+SKILLS_DIR = PROJECT_DIR / "data" / "eli-os-delivery" / "skill-templates"
+KEYWORD_DIR = PROJECT_DIR / "data" / "keyword-research"
+SKILLS_DIR = PROJECT_DIR / "data" / "eli-os-delivery" / "skill-templates"
 DB_FILE = PROJECT_DIR / "db" / "custom.db"
-DOMAIN = "eli.virtuabaldigital.com"
+DOMAIN = "eli.virtualabdigital.com"
 REMOTE_BASE = "/opt/eli"
 
 GREEN = "\033[0;32m"
@@ -109,7 +113,7 @@ def main():
 
     # ─── Step 2: Prepare server ─────────────────────────
     log("Step 1/5: Preparing server...")
-    run_ssh(ssh, f"mkdir -p {REMOTE_BASE}/{{data/uploads/knowledge-sources,data/uploads/docs,data/uploads/design,data/uploads/zips,db,logs,app}}")
+    run_ssh(ssh, f"mkdir -p {REMOTE_BASE}/{{data/uploads/knowledge-sources,data/uploads/docs,data/uploads/design,data/uploads/zips,data/keyword-research,data/eli-os-delivery/skill-templates,db,logs,app}}")
 
     # Check/install bun
     bun_check = run_ssh(ssh, "which bun 2>/dev/null && bun --version || echo 'NOT_FOUND'")
@@ -128,6 +132,20 @@ def main():
     count_kb = sftp_upload_dir(sftp, KNOWLEDGE_DIR, f"{REMOTE_BASE}/data/uploads/knowledge-sources")
     log(f"  Uploaded {count_kb} knowledge files.")
 
+    log("Step 3b/5: Uploading keyword research data...")
+    if KEYWORD_DIR.exists():
+        count_kw = sftp_upload_dir(sftp, KEYWORD_DIR, f"{REMOTE_BASE}/data/keyword-research")
+        log(f"  Uploaded {count_kw} keyword files.")
+    else:
+        log("  No keyword directory found, skipping.")
+
+    log("Step 3c/5: Uploading skill templates...")
+    if SKILLS_DIR.exists():
+        count_sk = sftp_upload_dir(sftp, SKILLS_DIR, f"{REMOTE_BASE}/data/eli-os-delivery/skill-templates")
+        log(f"  Uploaded {count_sk} skill files.")
+    else:
+        log("  No skill templates found, skipping.")
+
     log("Uploading database...")
     sftp.put(str(DB_FILE), f"{REMOTE_BASE}/db/custom.db")
     log("  Database uploaded.")
@@ -145,6 +163,7 @@ WorkingDirectory={REMOTE_BASE}/app
 Environment=NODE_ENV=production
 Environment=DATABASE_URL=file:{REMOTE_BASE}/data/custom.db
 Environment=KNOWLEDGE_DIR={REMOTE_BASE}/data/uploads/knowledge-sources
+Environment=KEYWORD_DIR={REMOTE_BASE}/data/keyword-research
 Environment=PORT=3000
 ExecStart=/root/.bun/bin/bun server.js
 Restart=always
@@ -179,7 +198,7 @@ WantedBy=multi-user.target
         log(f"  Caddy already installed: {caddy_check.strip()}")
 
     caddyfile_content = f"""{{
-\temail admin@virtuabaldigital.com
+\temail aiseo.virtualabdigital.com
 }}
 
 {DOMAIN} {{
