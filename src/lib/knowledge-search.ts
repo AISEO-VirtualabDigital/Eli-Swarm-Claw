@@ -7,7 +7,7 @@
 import { readdir, readFile, stat } from 'fs/promises';
 import { join } from 'path';
 
-const UPLOAD_DIR = '/home/z/my-project/upload';
+const UPLOAD_DIR = '/home/z/my-project/data/uploads/knowledge-sources';
 
 export interface KnowledgeChunk {
   source: string;
@@ -33,7 +33,7 @@ const CACHE_TTL = 5 * 60 * 1000;
 // Synonym expansion for broader search coverage
 const SYNONYMS: Record<string, string[]> = {
   'scraping': ['crawl', 'extract', 'harvest', 'parse', 'spider'],
-  'seo': ['search engine', 'ranking', 'serp', 'organic', 'backlink', 'keyword'],
+  'seo': ['search engine', 'ranking', 'serp', 'organic', 'backlink', 'keyword', 'perplexity', 'search volume', 'cpc', 'difficulty'],
   'design': ['ui', 'ux', 'layout', 'style', 'css', 'component', 'frontend'],
   'ai': ['artificial intelligence', 'llm', 'machine learning', 'gpt', 'claude', 'gemini', 'agent', 'automation'],
   'saas': ['software as a service', 'subscription', 'multi-tenant', 'b2b'],
@@ -131,6 +131,10 @@ function extractCategory(content: string, filename: string): string {
   if (lower.includes('eli-obsidian') || lower.includes('obsidian-importer') || lower.includes('skill-harness-manager')) return 'obsidian';
   // --- Agent Eli v1 specific ---
   if (lower.includes('agent-eli-v1')) return 'agent-eli';
+  // --- Tool references (Keywords Everywhere, SurferSEO, workflow) ---
+  if (lower.includes('tool_keywordseverywhere') || lower.includes('tool_tool_ke_')) return 'seo-tools';
+  if (lower.includes('tool_surferseo') || lower.includes('tool_tool_surfer')) return 'seo-tools';
+  if (lower.includes('tool_optimized-keyword')) return 'seo-tools';
   return 'strategy';
 }
 
@@ -153,7 +157,7 @@ async function buildIndex(): Promise<KnowledgeChunk[]> {
   const skipDirs = ['node_modules', '.git', '.next'];
 
   async function scanDir(dir: string, depth: number = 0) {
-    if (depth > 2) return;
+    if (depth > 3) return;
     try {
       const entries = await readdir(dir, { withFileTypes: true });
       for (const entry of entries) {
@@ -225,7 +229,7 @@ export async function buildKnowledgeMap(): Promise<string> {
     byCategory[c.category].push({ title: c.title, source: c.source, url: c.url });
   }
 
-  const lines: string[] = ['ELI\'S KNOWLEDGE MAP (156+ sources across 32 categories):', ''];
+  const lines: string[] = [`ELI'S KNOWLEDGE MAP (${chunks.length} sources across ${Object.keys(byCategory).length} categories):`, ''];
   const categoryLabels: Record<string, string> = {
     'seo': '🔍 SEO & Marketing',
     'codebase': '💻 Code & Scraping',
@@ -260,6 +264,7 @@ export async function buildKnowledgeMap(): Promise<string> {
     'social-media': '📱 Social Media Mgmt',
     'shopify-ecommerce': '🛒 Shopify & E-Commerce',
     'github-batch4': '📂 GitHub Batch 4 Directory',
+    'seo-tools': '🔧 SEO Tools & Keyword Research',
   };
 
   for (const [cat, items] of Object.entries(byCategory)) {
