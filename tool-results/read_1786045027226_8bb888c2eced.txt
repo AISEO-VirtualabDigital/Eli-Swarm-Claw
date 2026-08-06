@@ -1,0 +1,883 @@
+     1→Skip to content
+     2→msitarzewski
+     3→agency-agents
+     4→Repository navigation
+     5→Code
+     6→Issues
+     7→51
+     8→ (51)
+     9→Pull requests
+    10→51
+    11→ (51)
+    12→Agents
+    13→Discussions
+    14→Actions
+    15→Projects
+    16→Security and quality
+    17→Insights
+    18→msitarzewski
+    19→agency-agents
+    20→Public
+    21→Go to file
+    22→t
+    23→T
+    24→Name            
+    25→blockersiontko
+    26→blockersiontko
+    27→Move Economy Designer to proper section (#749)
+    28→ebe9c99
+    29→ · 
+    30→5 hours ago
+    31→.github
+    32→fix(hermes): expose Agency tool parameters (#717)
+    33→3 weeks ago
+    34→academic
+    35→Add 10 engineering/academic specialists (Hotragn batch #690–#699) (#701)
+    36→last month
+    37→design
+    38→feat: add 4 gated single agents (Rust Refactor, LLM Post-Training, UI…
+    39→2 weeks ago
+    40→engineering
+    41→feat: add 4 gated single agents (Rust Refactor, LLM Post-Training, UI…
+    42→2 weeks ago
+    43→examples
+    44→Move book co-author into marketing category structure
+    45→5 months ago
+    46→finance
+    47→fix: align 5 finance agents with CONTRIBUTING.md template (#436)
+    48→4 months ago
+    49→game-development
+    50→feat: add Economy Designer + improve Reality Checker & SEO Specialist (…
+    51→last week
+    52→gis
+    53→feat: add GIS division with 13 specialized agents across 4 tiers (#572)
+    54→2 months ago
+    55→healthcare
+    56→Add Healthcare Innovation Strategist to healthcare/ division (#687)
+    57→last month
+    58→integrations
+    59→feat: add Economy Designer + improve Reality Checker & SEO Specialist (…
+    60→last week
+    61→marketing
+    62→feat: add Economy Designer + improve Reality Checker & SEO Specialist (…
+    63→last week
+    64→paid-media
+    65→fix: normalize section headers so OpenClaw SOUL.md isn't empty (15 ag…
+    66→last month
+    67→product
+    68→fix: normalize section headers so OpenClaw SOUL.md isn't empty (15 ag…
+    69→last month
+    70→project-management
+    71→Add Meeting Notes Specialist - project-management (#521)
+    72→2 months ago
+    73→sales
+    74→Add Offer and Lead Gen Strategist (#510)
+    75→2 months ago
+    76→scripts
+    77→fix(hermes): expose Agency tool parameters (#717)
+    78→3 weeks ago
+    79→security
+    80→Add 6 specialists: security ×2, engineering ×3, specialized ×1 (#720)
+    81→3 weeks ago
+    82→spatial-computing
+    83→fix: normalize section headers so OpenClaw SOUL.md isn't empty (15 ag…
+    84→last month
+    85→specialized
+    86→feat: add Privacy Engineer + Aging Parent Care Companion agents (#738)
+    87→2 weeks ago
+    88→strategy
+    89→docs: add tool-integration checklist + stop hardcoding roster counts (#…
+    90→last month
+    91→support
+    92→Add OpenClaw integration, emoji/vibe frontmatter, services field, and…
+    93→5 months ago
+    94→testing
+    95→feat: add Economy Designer + improve Reality Checker & SEO Specialist (…
+    96→last week
+    97→.gitattributes
+    98→Add .gitattributes to enforce LF line endings
+    99→5 months ago
+   100→.gitignore
+   101→feat(tools): add ZCode (Z.ai GLM agent harness) (#700)
+   102→last month
+   103→CONTRIBUTING.md
+   104→docs: add tool-integration checklist + stop hardcoding roster counts (#…
+   105→last month
+   106→CONTRIBUTING_zh-CN.md
+   107→Update CONTRIBUTING_zh-CN.md
+   108→5 months ago
+   109→LICENSE
+   110→Initial commit: The Agency - 51 AI Specialist Agents
+   111→10 months ago
+   112→README.md
+   113→Move Economy Designer to proper section (#749)
+   114→5 hours ago
+   115→SECURITY.md
+   116→fix: remove stray EOFcat heredoc artifact from SECURITY.md (#531)
+   117→2 months ago
+   118→divisions.json
+   119→Add healthcare/ division: Clinical Evidence Agent and Sovereign Healt…
+   120→last month
+   121→tools.json
+   122→feat(tools): add ZCode (Z.ai GLM agent harness) (#700)
+   123→last month
+   124→Repository files navigation
+   125→README
+   126→Contributing
+   127→MIT license
+   128→Security
+   129→🎭 The Agency: AI Specialists Ready to Transform Your Workflow
+   130→A complete AI agency at your fingertips - From frontend wizards to Reddit community ninjas, from whimsy injectors to reality checkers. Each agent is a specialized expert with personality, processes, and proven deliverables.
+   131→
+   132→GitHub stars License: MIT PRs Welcome Sponsor Download the app
+   133→
+   134→🆕 There's an app now
+   135→Agency Agents is a native app for macOS, Linux & Windows that browses the entire roster and installs it into Claude Code, Cursor, Codex, Gemini, Osaurus, and more — with a click. No clone, no scripts, and it auto-updates.
+   136→
+   137→→ Download the latest release · agencyagents.app
+   138→
+   139→🚀 What Is This?
+   140→Born from a Reddit thread and months of iteration, The Agency is a growing collection of meticulously crafted AI agent personalities. Each agent is:
+   141→
+   142→🎯 Specialized: Deep expertise in their domain (not generic prompt templates)
+   143→🧠 Personality-Driven: Unique voice, communication style, and approach
+   144→📋 Deliverable-Focused: Real code, processes, and measurable outcomes
+   145→✅ Production-Ready: Battle-tested workflows and success metrics
+   146→Think of it as: Assembling your dream team, except they're AI specialists who never sleep, never complain, and always deliver.
+   147→
+   148→⚡ Quick Start
+   149→Option 1: Install the app (Recommended)
+   150→The fastest way in — no clone, no terminal. Agency Agents is a native desktop app (macOS · Linux · Windows) that browses the whole roster and installs agents into Claude Code, Cursor, Codex, Gemini CLI, OpenCode, Qwen, and Osaurus for you, then keeps them up to date.
+   151→
+   152→⬇ Download the latest release — or on a Mac:
+   153→
+   154→brew install --cask msitarzewski/agency-agents/agency-agents
+   155→Prefer the command line? The script-based options below install the same agents.
+   156→
+   157→Option 2: Use with Claude Code
+   158→# Install all agents to your Claude Code directory
+   159→./scripts/install.sh --tool claude-code
+   160→
+   161→# Or manually copy a category if you only want one division
+   162→cp engineering/*.md ~/.claude/agents/
+   163→
+   164→# Then activate any agent in your Claude Code sessions:
+   165→# "Hey Claude, activate Frontend Developer mode and help me build a React component"
+   166→Option 3: Use as Reference
+   167→Each agent file contains:
+   168→
+   169→Identity & personality traits
+   170→Core mission & workflows
+   171→Technical deliverables with code examples
+   172→Success metrics & communication style
+   173→Browse the agents below and copy/adapt the ones you need!
+   174→
+   175→Option 4: Use with Other Tools (GitHub Copilot, Antigravity, Gemini CLI, OpenCode, OpenClaw, Cursor, Aider, Windsurf, Kimi Code, Codex, Osaurus, Hermes, Mistral Vibe)
+   176→# Step 1 -- generate integration files for all supported tools
+   177→./scripts/convert.sh
+   178→
+   179→# Step 2 -- install interactively (auto-detects what you have installed)
+   180→./scripts/install.sh
+   181→
+   182→# Or target a specific tool directly
+   183→./scripts/install.sh --tool antigravity
+   184→./scripts/install.sh --tool gemini-cli
+   185→./scripts/install.sh --tool opencode
+   186→./scripts/install.sh --tool copilot
+   187→./scripts/install.sh --tool openclaw
+   188→./scripts/install.sh --tool cursor
+   189→./scripts/install.sh --tool aider
+   190→./scripts/install.sh --tool windsurf
+   191→./scripts/install.sh --tool kimi
+   192→./scripts/install.sh --tool codex
+   193→./scripts/install.sh --tool osaurus
+   194→./scripts/install.sh --tool hermes
+   195→./scripts/install.sh --tool vibe
+   196→Install only the teams you need (not everyone wants every division):
+   197→
+   198→./scripts/install.sh                                    # interactive wizard: pick tools + teams
+   199→./scripts/install.sh --tool claude-code --division engineering,security
+   200→./scripts/install.sh --tool cursor --agent frontend-developer,ui-designer
+   201→./scripts/install.sh --list teams                       # see every team + agent count
+   202→./scripts/install.sh --tool opencode --division engineering --dry-run
+   203→OpenCode note: OpenCode's runtime currently registers only ~119 agents and silently drops the rest (upstream bug). Installing a subset with --division keeps you under that limit. The installer warns you when a selection would exceed it.
+   204→
+   205→See the Multi-Tool Integrations section below for full details.
+   206→
+   207→🎨 The Agency Roster
+   208→💻 Engineering Division
+   209→Building the future, one commit at a time.
+   210→
+   211→Agent   Specialty       When to Use
+   212→🎨 Frontend Developer    React/Vue/Angular, UI implementation, performance       Modern web apps, pixel-perfect UIs, Core Web Vitals optimization
+   213→🏗️ Backend Architect    API design, database architecture, scalability  Server-side systems, microservices, cloud infrastructure
+   214→📱 Mobile App Builder    iOS/Android, React Native, Flutter      Native and cross-platform mobile applications
+   215→🤖 AI Engineer   ML models, deployment, AI integration   Machine learning features, data pipelines, AI-powered apps
+   216→🚀 DevOps Automator      CI/CD, infrastructure automation, cloud ops     Pipeline development, deployment automation, monitoring
+   217→🌐 Network Engineer      Cisco IOS/IOS-XE, Juniper Junos, Palo Alto PAN-OS       Router/switch/firewall configuration, BGP/OSPF, ACLs, show-output troubleshooting
+   218→⚡ Rapid Prototyper      Fast POC development, MVPs      Quick proof-of-concepts, hackathon projects, fast iteration
+   219→💎 Senior Developer      Laravel/Livewire, advanced patterns     Complex implementations, architecture decisions
+   220→🔧 Filament Optimization Specialist      Filament PHP admin UX, structural form redesign, resource optimization  Restructuring Filament resources/forms/tables for faster, cleaner admin workflows
+   221→⚡ Autonomous Optimization Architect     LLM routing, cost optimization, shadow testing  Autonomous systems needing intelligent API selection and cost guardrails
+   222→🔩 Embedded Firmware Engineer    Bare-metal, RTOS, ESP32/STM32/Nordic firmware   Production-grade embedded systems and IoT devices
+   223→🚨 Incident Response Commander   Incident management, post-mortems, on-call      Managing production incidents and building incident readiness
+   224→⛓️ Solidity Smart Contract Engineer     EVM contracts, gas optimization, DeFi   Secure, gas-optimized smart contracts and DeFi protocols
+   225→🧭 Codebase Onboarding Engineer  Fast developer onboarding, read-only codebase exploration, factual explanation  Helping new developers understand unfamiliar repos quickly by reading the code, tracing code paths, and stating facts about structure and behavior
+   226→📚 Technical Writer      Developer docs, API reference, tutorials        Clear, accurate technical documentation
+   227→💬 WeChat Mini Program Developer WeChat ecosystem, Mini Programs, payment integration    Building performant apps for the WeChat ecosystem
+   228→👁️ Code Reviewer        Constructive code review, security, maintainability     PR reviews, code quality gates, mentoring through review
+   229→🗄️ Database Optimizer   Schema design, query optimization, indexing strategies  PostgreSQL/MySQL tuning, slow query debugging, migration planning
+   230→🌿 Git Workflow Master   Branching strategies, conventional commits, advanced Git        Git workflow design, history cleanup, CI-friendly branch management
+   231→🏛️ Software Architect   System design, DDD, architectural patterns, trade-off analysis  Architecture decisions, domain modeling, system evolution strategy
+   232→🛡️ SRE  SLOs, error budgets, observability, chaos engineering   Production reliability, toil reduction, capacity planning
+   233→🧬 AI Data Remediation Engineer  Self-healing pipelines, air-gapped SLMs, semantic clustering    Fixing broken data at scale with zero data loss
+   234→🔧 Data Engineer Data pipelines, lakehouse architecture, ETL/ELT Building reliable data infrastructure and warehousing
+   235→🔗 Feishu Integration Developer  Feishu/Lark Open Platform, bots, workflows      Building integrations for the Feishu ecosystem
+   236→🧱 CMS Developer WordPress & Drupal themes, plugins/modules, content architecture        Code-first CMS implementation and customization
+   237→📧 Email Intelligence Engineer   Email parsing, MIME extraction, structured data for AI agents   Turning raw email threads into reasoning-ready context
+   238→🎙️ Voice AI Integration Engineer        Speech-to-text pipelines, Whisper, ASR, speaker diarization     End-to-end transcription pipelines, audio preprocessing, structured transcript delivery
+   239→🖧 IT Service Manager    ITIL 4 service management       Incident/problem/change management, SLAs, CMDB
+   240→🪡 Minimal Change Engineer       Minimum-viable diffs    Fixing only what's asked, no scope creep
+   241→📜 OrgScript Engineer    OrgScript grammar & AST validation      Designing/parsing OrgScript business-logic definitions
+   242→🧬 Prompt Engineer       LLM prompt design & optimization        Turning vague instructions into reliable AI behaviors
+   243→🕸️ Multi-Agent Systems Architect        Multi-agent pipeline design & governance        Topology, context, trust, failure recovery for agent systems
+   244→🛒 Drupal Shopping Cart Engineer Drupal Commerce storefronts     Catalog, payments, checkout, orders on Drupal 10/11
+   245→🛍️ WordPress Shopping Cart Engineer     WooCommerce storefronts Catalog, payments, checkout, conversion on WordPress
+   246→💳 Payments & Billing Engineer   PSP integration, idempotent payment flows, subscription billing Stripe/Adyen/Braintree integrations, webhook processing, dunning, reconciliation
+   247→🌍 Internationalization Engineer ICU MessageFormat, RTL/bidi layouts, CLDR formatting, pseudo-localization       Making apps translation-ready, locale-aware formatting, RTL support, i18n audits
+   248→⚡ Drupal Performance Engineer   Drupal performance & Core Web Vitals    Caching, DB/query tuning, render pipeline, profiling high-traffic Drupal
+   249→⚡ WordPress Performance Engineer        WordPress performance & Core Web Vitals Caching, query/asset optimization, plugin tuning, profiling high-traffic WP
+   250→♿ Section 508 Accessibility Specialist  US federal 508 / WCAG accessibility     ARIA, screen-reader testing, VPAT/ACR authoring, remediation
+   251→🏛️ USWDS Developer      US Web Design System (federal)  Accessible gov UI components & design-system patterns
+   252→🔎 Search Relevance Engineer     Search ranking & relevance      Query understanding, embeddings, ranking/eval, relevance tuning
+   253→🔐 Identity & Access Engineer    AuthN/AuthZ & IAM       OAuth/OIDC/SAML, SSO, RBAC/ABAC, token & session security
+   254→🤝 Realtime Collaboration Engineer       Realtime sync & presence        CRDTs/OT, conflict resolution, live cursors, offline sync
+   255→💻 Desktop App Engineer  Cross-platform desktop apps     Electron/Tauri, native integration, packaging, auto-update
+   256→🚀 Mobile Release Engineer       Mobile release & CI/CD  App Store/Play submission, signing, staged rollout, crash triage
+   257→🎬 Video Streaming Engineer      Video streaming & transcoding   HLS/DASH, ABR, codecs, CDN delivery, low-latency streaming
+   258→💰 FinOps Engineer       Cloud cost engineering  Cost allocation, rightsizing, unit economics, budget & anomaly control
+   259→🧩 WebAssembly Engineer  WebAssembly & WASI      Rust/C++→WASM, sandboxing, host bindings, performance
+   260→🔌 API Platform Engineer API gateways & platforms        Gateway design, versioning, rate limiting, developer portals
+   261→🛟 Database Reliability Engineer Database reliability (DBRE)     HA/replication, automated failover, PITR backups, zero-downtime ops
+   262→🛠️ Developer Tooling Engineer   CLI & developer tooling Command-line tools, internal DX, build/dev workflows
+   263→📡 IoT Fleet Engineer    IoT & edge fleet        Device provisioning/identity, MQTT telemetry, OTA updates
+   264→🔍 RAG Pipeline Engineer Production RAG pipelines        Chunking, retrieval quality, hybrid search, re-ranking, eval-driven iteration
+   265→🗄️ GaussDB Expert Engineer      Huawei GaussDB OLTP     Enterprise OLTP performance, HA, and migration on Huawei's GaussDB
+   266→🕵️ Privacy Engineer     PII discovery, data minimization, consent enforcement, DSAR/deletion pipelines  Implementing privacy in code, right-to-be-forgotten across services, retention automation
+   267→🦀 Rust Refactoring Specialist   Behavior-aware Rust refactoring Reforming crates/traits/modules with evidence-based, behavior-preserving changes
+   268→🧪 LLM Post-Training Engineer    Post-training stack (SFT/DPO/GRPO/RLVR) Evidence-based experiment gating, checkpoint integrity, failure classification
+   269→📈 Data Visualization Engineer   Perceptually honest data viz    Chart-type selection, colorblind-safe palettes, performant D3/Vega rendering
+   270→🎨 Design Division
+   271→Making it beautiful, usable, and delightful.
+   272→
+   273→Agent   Specialty       When to Use
+   274→🎯 UI Designer   Visual design, component libraries, design systems      Interface creation, brand consistency, component design
+   275→🔍 UX Researcher User testing, behavior analysis, research       Understanding users, usability testing, design insights
+   276→🏛️ UX Architect Technical architecture, CSS systems, implementation     Developer-friendly foundations, implementation guidance
+   277→🎭 Brand Guardian        Brand identity, consistency, positioning        Brand strategy, identity development, guidelines
+   278→📖 Visual Storyteller    Visual narratives, multimedia content   Compelling visual stories, brand storytelling
+   279→✨ Whimsy Injector       Personality, delight, playful interactions      Adding joy, micro-interactions, Easter eggs, brand personality
+   280→📷 Image Prompt Engineer AI image generation prompts, photography        Photography prompts for Midjourney, DALL-E, Stable Diffusion
+   281→🌈 Inclusive Visuals Specialist  Representation, bias mitigation, authentic imagery      Generating culturally accurate AI images and video
+   282→🎭 Persona Walkthrough Specialist        Persona-driven cognitive walkthroughs   Simulating user reactions and friction at each scroll position
+   283→🧱 UI Finish-Gate Reviewer       Anti-generic UI finish gate     Catching interchangeable UI before ship via evidence + a written design contract
+   284→💰 Paid Media Division
+   285→Turning ad spend into measurable business outcomes.
+   286→
+   287→Agent   Specialty       When to Use
+   288→💰 PPC Campaign Strategist       Google/Microsoft/Amazon Ads, account architecture, bidding      Account buildouts, budget allocation, scaling, performance diagnosis
+   289→🔍 Search Query Analyst  Search term analysis, negative keywords, intent mapping Query audits, wasted spend elimination, keyword discovery
+   290→📋 Paid Media Auditor    200+ point account audits, competitive analysis Account takeovers, quarterly reviews, competitive pitches
+   291→📡 Tracking & Measurement Specialist     GTM, GA4, conversion tracking, CAPI     New implementations, tracking audits, platform migrations
+   292→✍️ Ad Creative Strategist       RSA copy, Meta creative, Performance Max assets Creative launches, testing programs, ad fatigue refreshes
+   293→📺 Programmatic & Display Buyer  GDN, DSPs, partner media, ABM display   Display planning, partner outreach, ABM programs
+   294→📱 Paid Social Strategist        Meta, LinkedIn, TikTok, cross-platform social   Social ad programs, platform selection, audience strategy
+   295→💼 Sales Division
+   296→Turning pipeline into revenue through craft, not CRM busywork.
+   297→
+   298→Agent   Specialty       When to Use
+   299→🎯 Outbound Strategist   Signal-based prospecting, multi-channel sequences, ICP targeting        Building pipeline through research-driven outreach, not volume
+   300→🔍 Discovery Coach       SPIN, Gap Selling, Sandler — question design and call structure Preparing for discovery calls, qualifying opportunities, coaching reps
+   301→♟️ Deal Strategist      MEDDPICC qualification, competitive positioning, win planning   Scoring deals, exposing pipeline risk, building win strategies
+   302→🛠️ Sales Engineer       Technical demos, POC scoping, competitive battlecards   Pre-sales technical wins, demo prep, competitive positioning
+   303→🏹 Proposal Strategist   RFP response, win themes, narrative structure   Writing proposals that persuade, not just comply
+   304→📊 Pipeline Analyst      Forecasting, pipeline health, deal velocity, RevOps     Pipeline reviews, forecast accuracy, revenue operations
+   305→🗺️ Account Strategist   Land-and-expand, QBRs, stakeholder mapping      Post-sale expansion, account planning, NRR growth
+   306→🏋️ Sales Coach  Rep development, call coaching, pipeline review facilitation    Making every rep and every deal better through structured coaching
+   307→🎯 Sales Outreach        Cold prospecting, multi-touch cadences, objection handling, proposals   Top-of-funnel B2B outreach — from cold email to booked discovery call
+   308→🧲 Offer & Lead Gen Strategist   Offers & lead magnets   Top-of-funnel offer construction and lead gen
+   309→📢 Marketing Division
+   310→Growing your audience, one authentic interaction at a time.
+   311→
+   312→Agent   Specialty       When to Use
+   313→🚀 Growth Hacker Rapid user acquisition, viral loops, experiments        Explosive growth, user acquisition, conversion optimization
+   314→📝 Content Creator       Multi-platform content, editorial calendars     Content strategy, copywriting, brand storytelling
+   315→🐦 Twitter Engager       Real-time engagement, thought leadership        Twitter strategy, LinkedIn campaigns, professional social
+   316→🛰️ X/Twitter Intelligence Analyst       Social listening, trend detection, account monitoring   Brand risk, competitor, and audience intelligence on X/Twitter
+   317→📱 TikTok Strategist     Viral content, algorithm optimization   TikTok growth, viral content, Gen Z/Millennial audience
+   318→📸 Instagram Curator     Visual storytelling, community building Instagram strategy, aesthetic development, visual content
+   319→🤝 Reddit Community Builder      Authentic engagement, value-driven content      Reddit strategy, community trust, authentic marketing
+   320→📱 App Store Optimizer   ASO, conversion optimization, discoverability   App marketing, store optimization, app growth
+   321→🌐 Social Media Strategist       Cross-platform strategy, campaigns      Overall social strategy, multi-platform campaigns
+   322→📕 Xiaohongshu Specialist        Lifestyle content, trend-driven strategy        Xiaohongshu growth, aesthetic storytelling, Gen Z audience
+   323→💬 WeChat Official Account Manager       Subscriber engagement, content marketing        WeChat OA strategy, community building, conversion optimization
+   324→🧠 Zhihu Strategist      Thought leadership, knowledge-driven engagement Zhihu authority building, Q&A strategy, lead generation
+   325→🇨🇳 Baidu SEO Specialist Baidu optimization, China SEO, ICP compliance   Ranking in Baidu and reaching China's search market
+   326→🎬 Bilibili Content Strategist   B站 algorithm, danmaku culture, UP主 growth       Building audiences on Bilibili with community-first content
+   327→🎠 Carousel Growth Engine        TikTok/Instagram carousels, autonomous publishing       Generating and publishing viral carousel content
+   328→💼 LinkedIn Content Creator      Personal branding, thought leadership, professional content     LinkedIn growth, professional audience building, B2B content
+   329→🛒 China E-Commerce Operator     Taobao, Tmall, Pinduoduo, live commerce Running multi-platform e-commerce in China
+   330→🎥 Kuaishou Strategist   Kuaishou, 老铁 community, grassroots growth       Building authentic audiences in lower-tier markets
+   331→🔍 SEO Specialist        Technical SEO, content strategy, link building  Driving sustainable organic search growth
+   332→📘 Book Co-Author        Thought-leadership books, ghostwriting, publishing      Strategic book collaboration for founders and experts
+   333→🌏 Cross-Border E-Commerce Specialist    Amazon, Shopee, Lazada, cross-border fulfillment        Full-funnel cross-border e-commerce strategy
+   334→🎵 Douyin Strategist     Douyin platform, short-video marketing, algorithm       Growing audiences on China's leading short-video platform
+   335→🎙️ Livestream Commerce Coach    Host training, live room optimization, conversion       Building high-performing livestream e-commerce operations
+   336→🎧 Podcast Strategist    Podcast content strategy, platform optimization Chinese podcast market strategy and operations
+   337→🔒 Private Domain Operator       WeCom, private traffic, community operations    Building enterprise WeChat private domain ecosystems
+   338→🎬 Short-Video Editing Coach     Post-production, editing workflows, platform specs      Hands-on short-video editing training and optimization
+   339→🔥 Weibo Strategist      Sina Weibo, trending topics, fan engagement     Full-spectrum Weibo operations and growth
+   340→🎙️ Global Podcast Strategist    Show positioning, audience growth, monetisation Podcast launch, platform algorithms, sponsorship, community building
+   341→🔮 AI Citation Strategist        AEO/GEO, AI recommendation visibility, citation auditing        Improving brand visibility across ChatGPT, Claude, Gemini, Perplexity
+   342→🇨🇳 China Market Localization Strategist Full-stack China market localization, Douyin/Xiaohongshu/WeChat GTM     Turning trend signals into executable China go-to-market strategies
+   343→🎬 Video Optimization Specialist YouTube algorithm strategy, chaptering, thumbnail concepts      YouTube channel growth, video SEO, audience retention optimization
+   344→🏗️ AEO Foundations Architect    AI Engine Optimization infrastructure   llms.txt, AI-aware robots.txt, agent discovery files
+   345→🤖 Agentic Search Optimizer      WebMCP & agentic task completion        Making sites usable by AI browsing agents
+   346→📧 Email Marketing Strategist    Lifecycle email & deliverability        CRM campaigns, automation, segmentation
+   347→📡 Multi-Platform Publisher      One-click Chinese multi-platform publishing     Routing one article to 知乎/小红书/CSDN/B站/公众号/掘金
+   348→📣 PR & Communications Manager   PR, media relations & crisis comms      Press releases, thought leadership, reputation
+   349→📊 Product Division
+   350→Building the right thing at the right time.
+   351→
+   352→Agent   Specialty       When to Use
+   353→🎯 Sprint Prioritizer    Agile planning, feature prioritization  Sprint planning, resource allocation, backlog management
+   354→🔍 Trend Researcher      Market intelligence, competitive analysis       Market research, opportunity assessment, trend identification
+   355→💬 Feedback Synthesizer  User feedback analysis, insights extraction     Feedback analysis, user insights, product priorities
+   356→🧠 Behavioral Nudge Engine       Behavioral psychology, nudge design, engagement Maximizing user motivation through behavioral science
+   357→🧭 Product Manager       Full lifecycle product ownership        Discovery, PRDs, roadmap planning, GTM, outcome measurement
+   358→🎬 Project Management Division
+   359→Keeping the trains running on time (and under budget).
+   360→
+   361→Agent   Specialty       When to Use
+   362→🎬 Studio Producer       High-level orchestration, portfolio management  Multi-project oversight, strategic alignment, resource allocation
+   363→🐑 Project Shepherd      Cross-functional coordination, timeline management      End-to-end project coordination, stakeholder management
+   364→⚙️ Studio Operations    Day-to-day efficiency, process optimization     Operational excellence, team support, productivity
+   365→🧪 Experiment Tracker    A/B tests, hypothesis validation        Experiment management, data-driven decisions, testing
+   366→👔 Senior Project Manager        Realistic scoping, task conversion      Converting specs to tasks, scope management
+   367→📋 Jira Workflow Steward Git workflow, branch strategy, traceability     Enforcing Jira-linked Git discipline and delivery
+   368→📋 Meeting Notes Specialist      Structured meeting summaries    Extracting decisions, action items, open questions
+   369→🧪 Testing Division
+   370→Breaking things so users don't have to.
+   371→
+   372→Agent   Specialty       When to Use
+   373→📸 Evidence Collector    Screenshot-based QA, visual proof       UI testing, visual verification, bug documentation
+   374→🔍 Reality Checker       Evidence-based certification, quality gates     Production readiness, quality approval, release certification
+   375→📊 Test Results Analyzer Test evaluation, metrics analysis       Test output analysis, quality insights, coverage reporting
+   376→⚡ Performance Benchmarker       Performance testing, optimization       Speed testing, load testing, performance tuning
+   377→🔌 API Tester    API validation, integration testing     API testing, endpoint verification, integration QA
+   378→🛠️ Tool Evaluator       Technology assessment, tool selection   Evaluating tools, software recommendations, tech decisions
+   379→🔄 Workflow Optimizer    Process analysis, workflow improvement  Process optimization, efficiency gains, automation opportunities
+   380→♿ Accessibility Auditor WCAG auditing, assistive technology testing     Accessibility compliance, screen reader testing, inclusive design verification
+   381→🎭 Test Automation Engineer      Playwright/Cypress E2E, flake elimination, CI parallelization   Browser test suites, deterministic pipelines, trace-driven failure debugging
+   382→🔒 Security Division
+   383→Defending the stack — from secure-by-design architecture to breach response.
+   384→
+   385→Agent   Specialty       When to Use
+   386→🛡️ Security Architect   Threat modeling, secure-by-design, trust boundaries     System security models, architecture reviews, defense-in-depth
+   387→🔐 Application Security Engineer SDLC security, SAST/DAST, secure code review    Securing the dev lifecycle, code-level vulnerabilities
+   388→🗡️ Penetration Tester   Authorized pentests, red team ops, exploitation Finding exploitable weaknesses before attackers do
+   389→☁️ Cloud Security Architect     Zero trust, cloud-native defense-in-depth       Securing cloud infrastructure and architectures
+   390→🚨 Incident Responder    DFIR, breach investigation, threat containment  Active breaches, forensics, crisis response
+   391→🔍 Threat Intelligence Analyst   Adversary tracking, campaign mapping, ATT&CK    Understanding who's attacking and how
+   392→🎯 Threat Detection Engineer     SIEM rules, threat hunting, ATT&CK mapping      Building detection layers and threat hunting
+   393→🛡️ Senior SecOps Engineer       Secrets scanning, secure-by-default submissions Defensive code-level security on every change
+   394→📋 Compliance Auditor    SOC 2, ISO 27001, HIPAA, PCI-DSS        Guiding organizations through compliance certification
+   395→🛡️ Blockchain Security Auditor  Smart contract audits, exploit analysis Finding vulnerabilities in contracts before deployment
+   396→🔎 AI-Generated Code Security Auditor    Security review of AI/vibe-coded apps   Hardcoded secrets, broken RLS, prompt-injection sinks
+   397→🔑 Secrets & Credential Hygiene Engineer Secrets & credential lifecycle  Detection, vaulting, rotation, leak response
+   398→🛟 Support Division
+   399→The backbone of the operation.
+   400→
+   401→Agent   Specialty       When to Use
+   402→💬 Support Responder     Customer service, issue resolution      Customer support, user experience, support operations
+   403→📊 Analytics Reporter    Data analysis, dashboards, insights     Business intelligence, KPI tracking, data visualization
+   404→💰 Finance Tracker       Financial planning, budget management   Financial analysis, cash flow, business performance
+   405→🏗️ Infrastructure Maintainer    System reliability, performance optimization    Infrastructure management, system operations, monitoring
+   406→⚖️ Legal Compliance Checker     Compliance, regulations, legal review   Legal compliance, regulatory requirements, risk management
+   407→📑 Executive Summary Generator   C-suite communication, strategic summaries      Executive reporting, strategic communication, decision support
+   408→🥽 Spatial Computing Division
+   409→Building the immersive future.
+   410→
+   411→Agent   Specialty       When to Use
+   412→🏗️ XR Interface Architect       Spatial interaction design, immersive UX        AR/VR/XR interface design, spatial computing UX
+   413→💻 macOS Spatial/Metal Engineer  Swift, Metal, high-performance 3D       macOS spatial computing, Vision Pro native apps
+   414→🌐 XR Immersive Developer        WebXR, browser-based AR/VR      Browser-based immersive experiences, WebXR apps
+   415→🎮 XR Cockpit Interaction Specialist     Cockpit-based controls, immersive systems       Cockpit control systems, immersive control interfaces
+   416→🍎 visionOS Spatial Engineer     Apple Vision Pro development    Vision Pro apps, spatial computing experiences
+   417→🔌 Terminal Integration Specialist       Terminal integration, command-line tools        CLI tools, terminal workflows, developer tools
+   418→🎯 Specialized Division
+   419→The unique specialists who don't fit in a box.
+   420→
+   421→Agent   Specialty       When to Use
+   422→🎭 Agents Orchestrator   Multi-agent coordination, workflow management   Complex projects requiring multiple agent coordination
+   423→🔍 LSP/Index Engineer    Language Server Protocol, code intelligence     Code intelligence systems, LSP implementation, semantic indexing
+   424→📥 Sales Data Extraction Agent   Excel monitoring, sales metric extraction       Sales data ingestion, MTD/YTD/Year End metrics
+   425→📈 Data Consolidation Agent      Sales data aggregation, dashboard reports       Territory summaries, rep performance, pipeline snapshots
+   426→📬 Report Distribution Agent     Automated report delivery       Territory-based report distribution, scheduled sends
+   427→🔐 Agentic Identity & Trust Architect    Agent identity, authentication, trust verification      Multi-agent identity systems, agent authorization, audit trails
+   428→🔗 Identity Graph Operator       Shared identity resolution for multi-agent systems      Entity deduplication, merge proposals, cross-agent identity consistency
+   429→💸 Accounts Payable Agent        Payment processing, vendor management, audit    Autonomous payment execution across crypto, fiat, stablecoins
+   430→🌍 Cultural Intelligence Strategist      Global UX, representation, cultural exclusion   Ensuring software resonates across cultures
+   431→🗣️ Developer Advocate   Community building, DX, developer content       Bridging product and developer community
+   432→🔬 Model QA Specialist   ML audits, feature analysis, interpretability   End-to-end QA for machine learning models
+   433→🗃️ ZK Steward   Knowledge management, Zettelkasten, notes       Building connected, validated knowledge bases
+   434→🔌 MCP Builder   Model Context Protocol servers, AI agent tooling        Building MCP servers that extend AI agent capabilities
+   435→📄 Document Generator    PDF, PPTX, DOCX, XLSX generation from code      Professional document creation, reports, data visualization
+   436→⚙️ Automation Governance Architect      Automation governance, n8n, workflow auditing   Evaluating and governing business automations at scale
+   437→📚 Corporate Training Designer   Enterprise training, curriculum development     Designing training systems and learning programs
+   438→🌱 Personal Growth Mentor        Goal clarity, habit systems, accountability, life strategy      Cross-domain personal development without motivational fluff
+   439→🏛️ Government Digital Presales Consultant       China ToG presales, digital transformation      Government digital transformation proposals and bids
+   440→⚕️ Healthcare Marketing Compliance      China healthcare advertising compliance Healthcare marketing regulatory compliance
+   441→🎯 Recruitment Specialist        Talent acquisition, recruiting operations       Recruitment strategy, sourcing, and hiring processes
+   442→🎓 Study Abroad Advisor  International education, application planning   Study abroad planning across US, UK, Canada, Australia
+   443→🔗 Supply Chain Strategist       Supply chain management, procurement strategy   Supply chain optimization and procurement planning
+   444→🗺️ Workflow Architect   Workflow discovery, mapping, and specification  Mapping every path through a system before code is written
+   445→☁️ Salesforce Architect Multi-cloud Salesforce design, governor limits, integrations    Enterprise Salesforce architecture, org strategy, deployment pipelines
+   446→🇫🇷 French Consulting Market Navigator   ESN/SI ecosystem, portage salarial, rate positioning    Freelance consulting in the French IT market
+   447→🇰🇷 Korean Business Navigator    Korean business culture, 품의 process, relationship mechanics     Foreign professionals navigating Korean business relationships
+   448→🏗️ Civil Engineer       Structural analysis, geotechnical design, global building codes Multi-standard structural engineering across Eurocode, ACI, AISC, and more
+   449→🎧 Customer Service      Omnichannel support, complaint handling, retention, escalation  Any industry customer support — retail, SaaS, hospitality, finance, logistics
+   450→🏥 Healthcare Customer Service   HIPAA-aware patient support, billing, insurance, emergency routing      Healthcare organizations needing compliant, empathetic patient support
+   451→🏨 Hospitality Guest Services    Reservations, concierge, complaint recovery, loyalty, events    Hotels, resorts, restaurants, and event venues
+   452→🤝 HR Onboarding Pre-boarding, compliance, benefits enrollment, 30-60-90 day plans       Any company onboarding new hires — from startups to enterprise
+   453→🌐 Language Translator   Spanish ↔ English translation, dialect awareness, cultural context      Travel, business, medical, and legal translation needs
+   454→⏱️ Legal Billing & Time Tracking        Time capture, billing narratives, IOLTA compliance, collections Law firms maximizing revenue recovery and billing accuracy
+   455→📋 Legal Client Intake   Prospect qualification, conflict screening, consultation scheduling     Law firms converting inquiries into retained clients
+   456→⚖️ Legal Document Review        Contract review, risk flagging, version comparison, compliance  Attorney-ready first-pass review across any practice area
+   457→🏦 Loan Officer Assistant        Borrower intake, TRID compliance, pipeline tracking, closing coordination       Mortgage and consumer lending teams
+   458→🏠 Real Estate Buyer & Seller    Buyer/seller representation, offers, transaction coordination   Residential and investment real estate transactions
+   459→🛒 Retail Customer Returns       Return processing, fraud prevention, exchanges, vendor returns  Brick-and-mortar, e-commerce, and omnichannel retail
+   460→♟️ Business Strategist  Management-consulting strategy  Competitive analysis, market entry, growth planning
+   461→🔄 Change Management Consultant  ADKAR/Kotter/Prosci change      Guiding orgs through transformation & adoption
+   462→🧭 Chief of Staff        Executive coordination  Filtering noise, owning processes, routing decisions
+   463→🌟 Customer Success Manager      Onboarding, health & retention  QBRs, churn prevention, renewals & expansion
+   464→📝 Grant Writer  Grant proposals & funding       LOIs, proposals, budgets for nonprofits/research
+   465→🏥 Medical Billing & Coding Specialist   ICD-10/CPT/HCPCS & revenue cycle        Claims, denial management, RCM optimization
+   466→💰 Pricing Analyst       Pricing models & margin optimization    Competitor/cost analysis, value-based pricing
+   467→💼 Chief Financial Officer       Capital allocation & financial strategy Treasury, FP&A, M&A finance, investor & board reporting
+   468→🌱 ESG & Sustainability Officer  ESG programs & disclosure       Sustainability strategy, decarbonization, reporting
+   469→🔐 Data Privacy Officer  GDPR/CCPA privacy compliance    Data mapping, DPIAs, consent, breach response
+   470→⚙️ Operations Manager   Lean/Six Sigma operations       Process mapping, capacity planning, KPI governance
+   471→🤝 M&A Integration Manager       Post-merger integration Day 1/100-day plans, synergy tracking, TSA management
+   472→🧠 Organizational Psychologist   Team dynamics & culture health  Psychological safety, burnout risk, high-performing teams
+   473→⚔️ Strategy Duel Agent  Game theory & the 36 stratagems Turn-based strategy duels, adversarial scenario simulation
+   474→🛡️ FedRAMP & RMF Compliance Engineer    Federal cloud authorization (ATO)       NIST 800-53, FedRAMP Rev5/20x, SSP/POA&M, ConMon, OSCAL
+   475→🏺 Codebase Archaeologist        Multi-tool codebase drift audits        Detecting silent drift across Claude/Cursor/Copilot/Windsurf edits
+   476→🧾 Resume Tailor Candidate-side resume optimization      JD mapping, ATS keyword alignment, experience-to-requirement matching
+   477→🧡 Aging Parent Care Companion   Family caregiver decision-support       Appointment/medication coordination, care-team comms, caregiver wellbeing (HIPAA-aligned)
+   478→💵 Finance Division
+   479→Accounting, financial analysis, tax strategy, and investment research specialists.
+   480→
+   481→Agent   Specialty       When to Use
+   482→📒 Bookkeeper & Controller       Month-end close, reconciliation, GAAP compliance, internal controls     Day-to-day accounting operations, audit readiness, financial record-keeping
+   483→📊 Financial Analyst     Financial modeling, forecasting, scenario analysis, decision support    Three-statement models, variance analysis, data-driven business intelligence
+   484→📈 FP&A Analyst  Budgeting, rolling forecasts, variance analysis, business reviews       Annual operating plans, monthly business reviews, strategic resource allocation
+   485→🔍 Investment Researcher Due diligence, portfolio analysis, asset valuation, equity research     Investment thesis development, risk assessment, market research
+   486→🏛️ Tax Strategist       Tax optimization, multi-jurisdictional compliance, transfer pricing     Entity structuring, ETR analysis, audit defense, strategic tax planning
+   487→🎮 Game Development Division
+   488→Building worlds, systems, and experiences across every major engine.
+   489→
+   490→Cross-Engine Agents (Engine-Agnostic)
+   491→Agent   Specialty       When to Use
+   492→🎯 Game Designer Systems design, GDD authorship, economy balancing, gameplay loops       Designing game mechanics, progression systems, writing design documents
+   493→🗺️ Level Designer       Layout theory, pacing, encounter design, environmental storytelling     Building levels, designing encounter flow, spatial narrative
+   494→🎨 Technical Artist      Shaders, VFX, LOD pipeline, art-to-engine optimization  Bridging art and engineering, shader authoring, performance-safe asset pipelines
+   495→🔊 Game Audio Engineer   FMOD/Wwise, adaptive music, spatial audio, audio budgets        Interactive audio systems, dynamic music, audio performance
+   496→📖 Narrative Designer    Story systems, branching dialogue, lore architecture    Writing branching narratives, implementing dialogue systems, world lore
+   497→💰 Economy Designer      Virtual currencies, sources/sinks, monetization modeling, inflation control     Designing in-game economies, balancing F2P monetization, live economy tuning
+   498→Unity
+   499→Agent   Specialty       When to Use
+   500→🏗️ Unity Architect      ScriptableObjects, data-driven modularity, DOTS/ECS     Large-scale Unity projects, data-driven system design, ECS performance work
+   501→✨ Unity Shader Graph Artist     Shader Graph, HLSL, URP/HDRP, Renderer Features Custom Unity materials, VFX shaders, post-processing passes
+   502→🌐 Unity Multiplayer Engineer    Netcode for GameObjects, Unity Relay/Lobby, server authority, prediction        Online Unity games, client prediction, Unity Gaming Services integration
+   503→🛠️ Unity Editor Tool Developer  EditorWindows, AssetPostprocessors, PropertyDrawers, build validation   Custom Unity Editor tooling, pipeline automation, content validation
+   504→Unreal Engine
+   505→Agent   Specialty       When to Use
+   506→⚙️ Unreal Systems Engineer      C++/Blueprint hybrid, GAS, Nanite constraints, memory management        Complex Unreal gameplay systems, Gameplay Ability System, engine-level C++
+   507→🎨 Unreal Technical Artist       Material Editor, Niagara, PCG, Substrate        Unreal materials, Niagara VFX, procedural content generation
+   508→🌐 Unreal Multiplayer Architect  Actor replication, GameMode/GameState hierarchy, dedicated server       Unreal online games, replication graphs, server authoritative Unreal
+   509→🗺️ Unreal World Builder World Partition, Landscape, HLOD, LWC   Large open-world Unreal levels, streaming systems, terrain at scale
+   510→Godot
+   511→Agent   Specialty       When to Use
+   512→📜 Godot Gameplay Scripter       GDScript 2.0, signals, composition, static typing       Godot gameplay systems, scene composition, performance-conscious GDScript
+   513→🌐 Godot Multiplayer Engineer    MultiplayerAPI, ENet/WebRTC, RPCs, authority model      Online Godot games, scene replication, server-authoritative Godot
+   514→✨ Godot Shader Developer        Godot shading language, VisualShader, RenderingDevice   Custom Godot materials, 2D/3D effects, post-processing, compute shaders
+   515→Blender
+   516→Agent   Specialty       When to Use
+   517→🧩 Blender Addon Engineer        Blender Python (bpy), custom operators/panels, asset validators, exporters, pipeline automation Building Blender add-ons, asset prep tools, export workflows, and DCC pipeline automation
+   518→Roblox Studio
+   519→Agent   Specialty       When to Use
+   520→⚙️ Roblox Systems Scripter      Luau, RemoteEvents/Functions, DataStore, server-authoritative module architecture       Building secure Roblox game systems, client-server communication, data persistence
+   521→🎯 Roblox Experience Designer    Engagement loops, monetization, D1/D7 retention, onboarding flow        Designing Roblox game loops, Game Passes, daily rewards, player retention
+   522→👗 Roblox Avatar Creator UGC pipeline, accessory rigging, Creator Marketplace submission Roblox UGC items, HumanoidDescription customization, in-experience avatar shops
+   523→📚 Academic Division
+   524→Scholarly rigor for world-building, storytelling, and narrative design.
+   525→
+   526→Agent   Specialty       When to Use
+   527→🌍 Anthropologist        Cultural systems, kinship, rituals, belief systems      Designing culturally coherent societies with internal logic
+   528→🌐 Geographer    Physical/human geography, climate, cartography  Building geographically coherent worlds with realistic terrain and settlements
+   529→📚 Historian     Historical analysis, periodization, material culture    Validating historical coherence, enriching settings with authentic period detail
+   530→📜 Narratologist Narrative theory, story structure, character arcs       Analyzing and improving story structure with established theoretical frameworks
+   531→🧠 Psychologist  Personality theory, motivation, cognitive patterns      Building psychologically credible characters grounded in research
+   532→📊 Statistician  Statistical inference & experiment design       Hypothesis testing, causal inference, sampling, rigorous analysis
+   533→🌍 GIS Division
+   534→Mapping the Earth, analyzing the built world, and extracting intelligence from geospatial data.
+   535→
+   536→Agent   Specialty       When to Use
+   537→🧠 Technical Consultant  GIS strategy, gap analysis, technology roadmaps, digital transformation Understanding business needs, selecting the right geospatial stack, planning multi-phase GIS programs
+   538→🔧 Solution Engineer     Esri + FOSS4G prototype building, PoC delivery, technical feasibility   Building working demos, validating technical approaches, pre-sales support
+   539→🖥️ GIS Analyst  Map production, data QC, symbology, layouts, spatial queries    Day-to-day GIS operations, creating publication-ready maps, maintaining data integrity
+   540→📦 Spatial Data Engineer Geospatial ETL, format conversion, CRS reprojection, automated pipelines        Ingesting messy data from any source, building repeatable data transformation pipelines
+   541→⚙️ Geoprocessing Specialist     ArcPy, Python Toolbox (.pyt), Model Builder, batch automation   Automating repetitive GIS workflows, building custom geoprocessing tools
+   542→✅ GIS QA Engineer       Topology validation, metadata audit, CRS consistency, accuracy assessment       Quality gates before data publication, compliance verification, data integrity audits
+   543→🤖 GeoAI/ML Engineer     Feature extraction, object detection, semantic segmentation, land cover classification  Extracting buildings/roads/vehicles from imagery, change detection, environmental monitoring
+   544→🏗️ BIM/GIS Specialist   Revit/IFC to GIS, indoor mapping, digital twin architecture, facility management        Smart campus, airport digital twins, indoor navigation, building operations
+   545→🏔️ 3D & Scene Developer Cesium, ArcGIS Scene Viewer, 3D Tiles, point clouds, terrain visualization      3D city scenes, terrain flyovers, point cloud web viewers, OAuth-gated scene sharing
+   546→📊 Spatial Data Scientist        Spatial statistics, clustering, regression, interpolation, point pattern analysis       Hotspot detection, spatial modeling, predictive analytics, research-grade analysis
+   547→🛸 Drone/Reality Mapping Photogrammetry, orthomosaic, DTM/DSM, point cloud classification, 3D mesh       Drone survey processing, reality capture, construction monitoring, environmental mapping
+   548→🌐 Web GIS Developer     MapLibre GL JS, ArcGIS JS API, Leaflet, real-time dashboards, REST APIs Building interactive web maps, operational dashboards, real-time data visualization
+   549→🎨 Cartography Designer  Color theory, typography, basemap design, visual hierarchy, print and web aesthetics    Making maps beautiful and readable, colorblind-safe palettes, professional map layouts
+   550→🏥 Healthcare Division
+   551→Building AI agents for regulated clinical and sovereign health contexts.
+   552→
+   553→Agent   Specialty       When to Use
+   554→🩺 Clinical Evidence Agent       Evidence standards, validated vs unvalidated claims, diagnostic authority boundaries    Making clinical claims credibly without overstepping into diagnostic authority
+   555→🌍 Sovereign Health Systems Agent        Government health mandates, UHC policy, emerging market deployment      Health tech teams operating at the intersection of national health infrastructure and sovereign health policy
+   556→🧭 Healthcare Innovation Strategist      Narrative architecture for healthcare founders across investor, regulatory, sovereign, and clinical audiences   Healthcare founders who need to translate clinical and financial complexity into language that moves capital and builds trust
+   557→🎯 Real-World Use Cases
+   558→Scenario 1: Building a Startup MVP
+   559→Your Team:
+   560→
+   561→🎨 Frontend Developer - Build the React app
+   562→🏗️ Backend Architect - Design the API and database
+   563→🚀 Growth Hacker - Plan user acquisition
+   564→⚡ Rapid Prototyper - Fast iteration cycles
+   565→🔍 Reality Checker - Ensure quality before launch
+   566→Result: Ship faster with specialized expertise at every stage.
+   567→
+   568→Scenario 2: Marketing Campaign Launch
+   569→Your Team:
+   570→
+   571→📝 Content Creator - Develop campaign content
+   572→🐦 Twitter Engager - Twitter strategy and execution
+   573→📸 Instagram Curator - Visual content and stories
+   574→🤝 Reddit Community Builder - Authentic community engagement
+   575→📊 Analytics Reporter - Track and optimize performance
+   576→Result: Multi-channel coordinated campaign with platform-specific expertise.
+   577→
+   578→Scenario 3: Enterprise Feature Development
+   579→Your Team:
+   580→
+   581→👔 Senior Project Manager - Scope and task planning
+   582→💎 Senior Developer - Complex implementation
+   583→🎨 UI Designer - Design system and components
+   584→🧪 Experiment Tracker - A/B test planning
+   585→📸 Evidence Collector - Quality verification
+   586→🔍 Reality Checker - Production readiness
+   587→Result: Enterprise-grade delivery with quality gates and documentation.
+   588→
+   589→Scenario 4: Paid Media Account Takeover
+   590→Your Team:
+   591→
+   592→📋 Paid Media Auditor - Comprehensive account assessment
+   593→📡 Tracking & Measurement Specialist - Verify conversion tracking accuracy
+   594→💰 PPC Campaign Strategist - Redesign account architecture
+   595→🔍 Search Query Analyst - Clean up wasted spend from search terms
+   596→✍️ Ad Creative Strategist - Refresh all ad copy and extensions
+   597→📊 Analytics Reporter (Support Division) - Build reporting dashboards
+   598→Result: Systematic account takeover with tracking verified, waste eliminated, structure optimized, and creative refreshed — all within the first 30 days.
+   599→
+   600→Scenario 5: Full Agency Product Discovery
+   601→Your Team: All 8 divisions working in parallel on a single mission.
+   602→
+   603→See the Nexus Spatial Discovery Exercise -- a complete example where 8 agents (Product Trend Researcher, Backend Architect, Brand Guardian, Growth Hacker, Support Responder, UX Researcher, Project Shepherd, and XR Interface Architect) were deployed simultaneously to evaluate a software opportunity and produce a unified product plan covering market validation, technical architecture, brand strategy, go-to-market, support systems, UX research, project execution, and spatial UI design.
+   604→
+   605→Result: Comprehensive, cross-functional product blueprint produced in a single session. More examples.
+   606→
+   607→Scenario 6: Smart Campus Digital Twin
+   608→Your Team:
+   609→
+   610→🧠 Technical Consultant - Define the digital twin strategy: BIM for buildings, GIS for campus, IoT for real-time
+   611→🏗️ BIM/GIS Specialist - Convert Revit building models to GIS scene layers, design indoor floor plans
+   612→🛸 Drone/Reality Mapping - Fly the campus, generate orthomosaic and 3D mesh for context
+   613→🌐 Web GIS Developer - Build the campus dashboard with MapLibre, building layer, and room finder
+   614→🏔️ 3D & Scene Developer - Create immersive 3D scene with terrain, buildings, and flyover tour
+   615→🤖 GeoAI/ML Engineer - Extract building footprints and tree canopy from drone imagery
+   616→✅ GIS QA Engineer - Validate data accuracy, check topology, verify CRS consistency
+   617→Result: A campus digital twin that combines BIM detail, drone reality capture, 3D visualization, and web accessibility — delivered by coordinated specialists in a single pipeline.
+   618→
+   619→🤝 Contributing
+   620→We welcome contributions! Here's how you can help:
+   621→
+   622→Add a New Agent
+   623→Fork the repository
+   624→Create a new agent file in the appropriate category
+   625→Follow the agent template structure:
+   626→Frontmatter with name, description, color
+   627→Identity & Memory section
+   628→Core Mission
+   629→Critical Rules (domain-specific)
+   630→Technical Deliverables with examples
+   631→Workflow Process
+   632→Success Metrics
+   633→Submit a PR with your agent
+   634→Improve Existing Agents
+   635→Add real-world examples
+   636→Enhance code samples
+   637→Update success metrics
+   638→Improve workflows
+   639→Share Your Success Stories
+   640→Have you used these agents successfully? Share your story in the Discussions!
+   641→
+   642→📖 Agent Design Philosophy
+   643→Each agent is designed with:
+   644→
+   645→🎭 Strong Personality: Not generic templates - real character and voice
+   646→📋 Clear Deliverables: Concrete outputs, not vague guidance
+   647→✅ Success Metrics: Measurable outcomes and quality standards
+   648→🔄 Proven Workflows: Step-by-step processes that work
+   649→💡 Learning Memory: Pattern recognition and continuous improvement
+   650→🎁 What Makes This Special?
+   651→Unlike Generic AI Prompts:
+   652→❌ Generic "Act as a developer" prompts
+   653→✅ Deep specialization with personality and process
+   654→Unlike Prompt Libraries:
+   655→❌ One-off prompt collections
+   656→✅ Comprehensive agent systems with workflows and deliverables
+   657→Unlike AI Tools:
+   658→❌ Black box tools you can't customize
+   659→✅ Transparent, forkable, adaptable agent personalities
+   660→🎨 Agent Personality Highlights
+   661→"I don't just test your code - I default to finding 3-5 issues and require visual proof for everything."
+   662→
+   663→-- Evidence Collector (Testing Division)
+   664→
+   665→"You're not marketing on Reddit - you're becoming a valued community member who happens to represent a brand."
+   666→
+   667→-- Reddit Community Builder (Marketing Division)
+   668→
+   669→"Every playful element must serve a functional or emotional purpose. Design delight that enhances rather than distracts."
+   670→
+   671→-- Whimsy Injector (Design Division)
+   672→
+   673→"Let me add a celebration animation that reduces task completion anxiety by 40%"
+   674→
+   675→-- Whimsy Injector (during a UX review)
+   676→
+   677→📊 Stats
+   678→🎭 230+ Specialized Agents across every division
+   679→📝 10,000+ lines of personality, process, and code examples
+   680→⏱️ Months of iteration from real-world usage
+   681→🌟 Battle-tested in production environments
+   682→💬 50+ requests in first 12 hours on Reddit
+   683→🔌 Multi-Tool Integrations
+   684→The Agency works natively with Claude Code, and ships conversion + install scripts so you can use the same agents across every major agentic coding tool.
+   685→
+   686→Supported Tools
+   687→Claude Code — native .md agents, no conversion needed → ~/.claude/agents/
+   688→GitHub Copilot — native .md agents, no conversion needed → ~/.github/agents/ + ~/.copilot/agents/
+   689→Antigravity — SKILL.md per agent → ~/.gemini/config/skills/
+   690→Gemini CLI -- .md agent files -> ~/.gemini/agents/
+   691→OpenCode — .md agent files → .opencode/agents/
+   692→Cursor — .mdc rule files → .cursor/rules/
+   693→Aider — single CONVENTIONS.md → ./CONVENTIONS.md
+   694→Windsurf — single .windsurfrules → ./.windsurfrules
+   695→OpenClaw — SOUL.md + AGENTS.md + IDENTITY.md per agent
+   696→Qwen Code — .md SubAgent files → ~/.qwen/agents/
+   697→Kimi Code — YAML agent specs → ~/.config/kimi/agents/
+   698→Codex — TOML custom agents → ~/.codex/agents/
+   699→Osaurus -- SKILL.md skills -> ~/.osaurus/skills/
+   700→Hermes -- lazy-router plugin -> ~/.hermes/plugins/
+   701→⚡ Quick Install
+   702→Step 1 -- Generate integration files:
+   703→
+   704→./scripts/convert.sh
+   705→# Faster (parallel, output order may vary): ./scripts/convert.sh --parallel
+   706→Step 2 -- Install (interactive, auto-detects your tools):
+   707→
+   708→./scripts/install.sh
+   709→# Faster (parallel, output order may vary): ./scripts/install.sh --no-interactive --parallel
+   710→The installer scans your system for installed tools, shows a checkbox UI, and lets you pick exactly what to install:
+   711→
+   712→  +------------------------------------------------+
+   713→  |   The Agency -- Tool Installer                 |
+   714→  +------------------------------------------------+
+   715→
+   716→  System scan: [*] = detected on this machine
+   717→
+   718→  [x]  1)  [*]  Claude Code     (claude.ai/code)
+   719→  [x]  2)  [*]  Copilot         (~/.github + ~/.copilot)
+   720→  [x]  3)  [*]  Antigravity     (~/.gemini/antigravity)
+   721→  [ ]  4)  [ ]  Gemini CLI      (~/.gemini/agents)
+   722→  [ ]  5)  [ ]  OpenCode        (opencode.ai)
+   723→  [ ]  6)  [ ]  OpenClaw        (~/.openclaw/agency-agents)
+   724→  [x]  7)  [*]  Cursor          (.cursor/rules)
+   725→  [ ]  8)  [ ]  Aider           (CONVENTIONS.md)
+   726→  [ ]  9)  [ ]  Windsurf        (.windsurfrules)
+   727→  [ ] 10)  [ ]  Qwen Code       (~/.qwen/agents)
+   728→  [ ] 11)  [ ]  Kimi Code       (~/.config/kimi/agents)
+   729→  [ ] 12)  [ ]  Codex           (~/.codex/agents)
+   730→  [ ] 13)  [ ]  Osaurus         (~/.osaurus/skills)
+   731→  [ ] 14)  [ ]  Hermes          (~/.hermes/plugins)
+   732→
+   733→  [1-14] toggle   [a] all   [n] none   [d] detected
+   734→  [Enter] install   [q] quit
+   735→Or install a specific tool directly:
+   736→
+   737→./scripts/install.sh --tool cursor
+   738→./scripts/install.sh --tool opencode
+   739→./scripts/install.sh --tool openclaw
+   740→./scripts/install.sh --tool antigravity
+   741→./scripts/install.sh --tool codex
+   742→./scripts/install.sh --tool osaurus
+   743→./scripts/install.sh --tool hermes
+   744→Non-interactive (CI/scripts):
+   745→
+   746→./scripts/install.sh --no-interactive --tool all
+   747→Faster runs (parallel) — On multi-core machines, use --parallel so each tool is processed in parallel. Output order across tools is non-deterministic. Works with both interactive and non-interactive install: e.g. ./scripts/install.sh --interactive --parallel (pick tools, then install in parallel) or ./scripts/install.sh --no-interactive --parallel. Job count defaults to nproc (Linux), sysctl -n hw.ncpu (macOS), or 4; override with --jobs N.
+   748→
+   749→./scripts/convert.sh --parallel                    # convert all tools in parallel
+   750→./scripts/convert.sh --parallel --jobs 8           # cap parallel jobs
+   751→./scripts/install.sh --no-interactive --parallel   # install all detected tools in parallel
+   752→./scripts/install.sh --interactive --parallel      # pick tools, then install in parallel
+   753→./scripts/install.sh --no-interactive --parallel --jobs 4
+   754→Tool-Specific Instructions
+   755→Claude Code
+   756→GitHub Copilot
+   757→Antigravity (Gemini)
+   758→Gemini CLI
+   759→OpenCode
+   760→Cursor
+   761→Aider
+   762→Windsurf
+   763→OpenClaw
+   764→Qwen Code
+   765→Kimi Code
+   766→Codex
+   767→Regenerating After Changes
+   768→When you add new agents or edit existing ones, regenerate all integration files:
+   769→
+   770→./scripts/convert.sh                    # regenerate all (serial)
+   771→./scripts/convert.sh --parallel         # regenerate all in parallel (faster)
+   772→./scripts/convert.sh --tool codex       # regenerate just one tool
+   773→./scripts/convert.sh --tool cursor      # regenerate just one tool
+   774→🗺️ Roadmap
+   775→ Interactive agent selector web tool
+   776→ Multi-agent workflow examples -- see examples/
+   777→ Multi-tool integration scripts (Claude Code, GitHub Copilot, Antigravity, Gemini CLI, OpenCode, OpenClaw, Cursor, Aider, Windsurf, Qwen Code, Kimi Code, Codex, Osaurus, Hermes)
+   778→ Video tutorials on agent design
+   779→ Community agent marketplace
+   780→ Agent "personality quiz" for project matching
+   781→ "Agent of the Week" showcase series
+   782→🌐 Community Translations & Localizations
+   783→Community-maintained translations and regional adaptations. These are independently maintained -- see each repo for coverage and version compatibility.
+   784→
+   785→Language        Maintainer      Link    Notes
+   786→🇨🇳 简体中文 (zh-CN) @jnMetaCode     agency-agents-zh        141 translated agents + 46 China-market originals
+   787→🇨🇳 简体中文 (zh-CN) @dsclca12       agent-teams     Independent translation with Bilibili, WeChat, Xiaohongshu localization
+   788→🇧🇷 Português brasileiro (pt-BR) @jnMetaCode     agency-agents-pt-BR     184 upstream agents translated; Brazil-market PRs welcome
+   789→🇷🇺 Русский (ru) @jnMetaCode     agency-agents-ru        184 upstream agents translated; Russia-market PRs welcome
+   790→🇮🇩 Bahasa Indonesia (id)        @jnMetaCode     agency-agents-id        184 upstream agents translated; Indonesia-market PRs welcome
+   791→🇸🇦 العربية (ar) @jnMetaCode     agency-agents-ar        184 upstream agents translated; Arabic-market PRs welcome
+   792→🇰🇷 한국어 (ko)     @jnMetaCode     agency-agents-ko        184 upstream agents fully translated; Korea-specific PRs welcome
+   793→🇯🇵 日本語 (ja-JP)  @sscodeai       agency-agents-ja        281 Japan-localized agents + 97 Japan-market originals + 27 workflows
+   794→🇻🇳 Tiếng Việt (vi-VN)   @rodonguyen     agency-agents   Starter Vietnamese localization focused on README, quick start, and high-use docs
+   795→Want to add a translation? Open an issue and we'll link it here.
+   796→
+   797→🔗 Related Resources
+   798→awesome-openclaw-agents — Community-maintained OpenClaw agent collection (derived from this repo)
+   799→📜 License
+   800→MIT License - Use freely, commercially or personally. Attribution appreciated but not required.
+   801→
+   802→🙏 Acknowledgments
+   803→What started as a Reddit thread about AI agent specialization has grown into something remarkable — 230+ agents across every division, supported by a community of contributors from around the world. Every agent in this repo exists because someone cared enough to write it, test it, and share it.
+   804→
+   805→To everyone who has opened a PR, filed an issue, started a Discussion, or simply tried an agent and told us what worked — thank you. You're the reason The Agency keeps getting better.
+   806→
+   807→💬 Community
+   808→GitHub Discussions: Share your success stories
+   809→Issues: Report bugs or request features
+   810→Reddit: Join the conversation on r/ClaudeAI
+   811→Twitter/X: Share with #TheAgency
+   812→🚀 Get Started
+   813→Browse the agents above and find specialists for your needs
+   814→Copy the agents to ~/.claude/agents/ for Claude Code integration
+   815→Activate agents by referencing them in your Claude conversations
+   816→Customize agent personalities and workflows for your specific needs
+   817→Share your results and contribute back to the community
+   818→🎭 The Agency: Your AI Dream Team Awaits 🎭
+   819→
+   820→⭐ Star this repo • 🍴 Fork it • 🐛 Report an issue • ❤️ Sponsor
+   821→
+   822→Made with ❤️ by the community, for the community
+   823→
+   824→About
+   825→A complete AI agency at your fingertips - From frontend wizards to Reddit community ninjas, from whimsy injectors to reality checkers. Each agent is a specialized expert with personality, processes, and proven deliverables.
+   826→
+   827→Resources
+   828→Readme
+   829→MIT license
+   830→Contributing
+   831→Contributing
+   832→Security policy
+   833→Security policy
+   834→Activity
+   835→Stars
+   836→138.9k stars
+   837→Watchers
+   838→1.0k watching
+   839→Forks
+   840→22.7k forks
+   841→Report repository
+   842→Releases
+   843→No releases published
+   844→Packages
+   845→No packages published
+   846→Contributors
+   847→111
+   848→ (111)
+   849→@msitarzewski
+   850→@claude
+   851→@epowelljr
+   852→@4shil
+   853→@Hotragn
+   854→@hedonnn
+   855→@DKFuH
+   856→@CagesThrottleUs
+   857→@DawnnnHuang
+   858→@CelsoDeSa
+   859→@victorkzam
+   860→@Gujiassh
+   861→@Shiven0504
+   862→@aryanvr961
+   863→+ 97 contributors
+   864→Languages
+   865→Shell
+   866→82.3%
+   867→Python
+   868→16.5%
+   869→PowerShell
+   870→1.2%
+   871→Footer
+   872→© 2026 GitHub, Inc.
+   873→Footer navigation
+   874→Terms
+   875→Privacy
+   876→Security
+   877→Status
+   878→Community
+   879→Docs
+   880→Contact
+   881→Manage cookies
+   882→Do not share my personal information
+   883→ 
