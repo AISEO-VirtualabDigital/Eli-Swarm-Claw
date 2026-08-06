@@ -17,7 +17,6 @@ What it does:
 import sys, os, stat, time
 from pathlib import Path
 from paramiko import SSHClient, AutoAddPolicy
-from paramiko.sftp import SFTPClient
 
 
 # ─── Config ─────────────────────────────────────────────
@@ -57,7 +56,7 @@ def run_ssh(ssh: SSHClient, cmd: str, timeout: int = 120) -> str:
     return out + err_out
 
 
-def sftp_upload_dir(sftp: SFTPClient, local_dir: Path, remote_dir: str):
+def sftp_upload_dir(sftp, local_dir: Path, remote_dir: str):
     """Recursively upload a directory via SFTP."""
     try:
         sftp.stat(remote_dir)
