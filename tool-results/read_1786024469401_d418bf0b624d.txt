@@ -1,0 +1,878 @@
+     1→//! # eli-skill-parser
+     2→//!
+     3→//! SKILL.md parser for the Eli-OS control plane.
+     4→//!
+     5→//! This crate implements the **SKILL.md paradigm** that replaces the old
+     6→//! implicit-knowledge, blocking approach to agent governance. Each agent
+     7→//! ships with a declarative `SKILL.md` manifest that the control plane
+     8→//! parses into a [`CapabilityManifest`], giving us:
+     9→//!
+    10→//! - **Explicit permissions** instead of inferred intent
+    11→//! - **Pre-flight validation** instead of post-hoc sandboxing
+    12→//! - **Tiered enforcement** (Green / Amber / Red) driven by manifest data
+    13→//!
+    14→//! ## Required dependencies
+    15→//!
+    16→//! ```toml
+    17→//! [dependencies]
+    18→//! serde = { version = "1", features = ["derive"] }
+    19→//! regex = "1"
+    20→//! thiserror = "1"
+    21→//!
+    22→//! [dev-dependencies]
+    23→//! serde_json = "1"
+    24→//! ```
+    25→
+    26→use regex::Regex;
+    27→use serde::{Deserialize, Serialize};
+    28→use std::collections::HashMap;
+    29→use std::path::Path;
+    30→use thiserror::Error;
+    31→
+    32→// ---------------------------------------------------------------------------
+    33→// Domain types
+    34→// ---------------------------------------------------------------------------
+    35→
+    36→/// Identifying metadata for an agent described in a SKILL.md file.
+    37→///
+    38→/// Every agent must declare its `name`, `role`, `domain`, and `version`
+    39→/// so the control plane can route policies correctly.
+    40→#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+    41→pub struct AgentIdentity {
+    42→    /// Human-readable agent name, e.g. `invoice-processor`.
+    43→    pub name: String,
+    44→    /// Functional role, e.g. `financial-analyst`.
+    45→    pub role: String,
+    46→    /// Business domain, e.g. `finance`.
+    47→    pub domain: String,
+    48→    /// Semantic version of this agent's specification.
+    49→    pub version: String,
+    50→}
+    51→
+    52→/// Declares which knowledge-base sources the agent may consult and which
+    53→/// are explicitly excluded.
+    54→#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+    55→pub struct KnowledgeBaseScope {
+    56→    /// Allowed knowledge-base source identifiers or URIs.
+    57→    pub sources: Vec<String>,
+    58→    /// Explicitly excluded sources (blacklist overrides).
+    59→    pub exclusions: Vec<String>,
+    60→    /// Policy keyword controlling how often the KB is refreshed,
+    61→    /// e.g. `on-demand` or `per-session`.
+    62→    pub refresh_policy: String,
+    63→}
+    64→
+    65→/// A single tool / capability that the agent is permitted to invoke.
+    66→#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+    67→pub struct ToolCapability {
+    68→    /// Tool identifier, e.g. `sql_query` or `http_get`.
+    69→    pub name: String,
+    70→    /// Human-readable description of what the tool does.
+    71→    pub description: String,
+    72→}
+    73→
+    74→/// Runtime constraints placed on the agent by the control plane.
+    75→#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    76→pub struct AgentConstraints {
+    77→    /// An invariant system-prompt fragment that must always be present.
+    78→    pub system_prompt_invariant: String,
+    79→    /// Maximum number of tokens the agent may produce per turn.
+    80→    pub max_output_tokens: u32,
+    81→    /// Sampling temperature clamp (0.0 = deterministic, 2.0 = creative).
+    82→    pub temperature: f32,
+    83→}
+    84→
+    85→impl Default for AgentConstraints {
+    86→    fn default() -> Self {
+    87→        Self {
+    88→            system_prompt_invariant: String::new(),
+    89→            max_output_tokens: 4096,
+    90→            temperature: 0.7,
+    91→        }
+    92→    }
+    93→}
+    94→
+    95→/// Per-resource limits that the IPC handler enforces at runtime.
+    96→#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+    97→pub struct ResourceLimits {
+    98→    /// Maximum resident memory in megabytes.
+    99→    pub memory_mb: u32,
+   100→    /// Maximum CPU utilisation percentage (0–100).
+   101→    pub cpu_percent: u32,
+   102→    /// Maximum wall-clock duration for a single request, in seconds.
+   103→    pub max_duration_seconds: u32,
+   104→}
+   105→
+   106→impl Default for ResourceLimits {
+   107→    fn default() -> Self {
+   108→        Self {
+   109→            memory_mb: 512,
+   110→            cpu_percent: 80,
+   111→            max_duration_seconds: 60,
+   112→        }
+   113→    }
+   114→}
+   115→
+   116→/// Declares the inter-process communication boundaries for this agent.
+   117→///
+   118→/// The control plane consults this section for every [`IpcRequest`](eli_ipc_handler::IpcRequest)
+   119→/// to determine whether the operation is within scope.
+   120→#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+   121→pub struct IpcPolicy {
+   122→    /// Database / table names the agent may read from.
+   123→    pub allowed_tables_read: Vec<String>,
+   124→    /// Database / table names the agent may write to.
+   125→    pub allowed_tables_write: Vec<String>,
+   126→    /// HTTP endpoint prefixes the agent may call.
+   127→    pub allowed_endpoints: Vec<String>,
+   128→    /// Runtime resource caps enforced per-request.
+   129→    pub resource_limits: ResourceLimits,
+   130→}
+   131→
+   132→/// The top-level manifest produced by parsing a single SKILL.md file.
+   133→///
+   134→/// This is the **single source of truth** that the policy engine consumes
+   135→/// to make allow/deny/escalate decisions.
+   136→#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+   137→pub struct CapabilityManifest {
+   138→    /// Who this agent is.
+   139→    pub identity: AgentIdentity,
+   140→    /// One-sentence purpose statement.
+   141→    pub purpose: String,
+   142→    /// Declared knowledge-base boundaries.
+   143→    pub knowledge_base_scope: KnowledgeBaseScope,
+   144→    /// Tools the agent is allowed to invoke.
+   145→    pub capabilities: Vec<ToolCapability>,
+   146→    /// Actions that are explicitly forbidden (deny-list).
+   147→    pub forbidden_actions: Vec<String>,
+   148→    /// JSON Schema string describing expected input format.
+   149→    pub input_schema: String,
+   150→    /// JSON Schema string describing expected output format.
+   151→    pub output_schema: String,
+   152→    /// Runtime behavioural constraints.
+   153→    pub constraints: AgentConstraints,
+   154→    /// IPC boundary declarations.
+   155→    pub ipc_policy: IpcPolicy,
+   156→    /// Free-text triggers that should cause an escalation to Red tier.
+   157→    pub escalation_triggers: Vec<String>,
+   158→}
+   159→
+   160→// ---------------------------------------------------------------------------
+   161→// Error types
+   162→// ---------------------------------------------------------------------------
+   163→
+   164→/// Errors that can occur during SKILL.md parsing.
+   165→#[derive(Debug, Error)]
+   166→pub enum ParseError {
+   167→    /// The specified file or directory does not exist.
+   168→    #[error("file not found: {0}")]
+   169→    FileNotFound(String),
+   170→
+   171→    /// The file content does not match the expected SKILL.md structure.
+   172→    #[error("invalid SKILL.md format: {0}")]
+   173→    InvalidFormat(String),
+   174→
+   175→    /// A required section header is missing from the document.
+   176→    #[error("missing required section: {0}")]
+   177→    MissingSection(String),
+   178→
+   179→    /// An I/O error occurred while reading a file.
+   180→    #[error("I/O error: {0}")]
+   181→    IoError(#[from] std::io::Error),
+   182→}
+   183→
+   184→// ---------------------------------------------------------------------------
+   185→// SkillParser
+   186→// ---------------------------------------------------------------------------
+   187→
+   188→/// Parses SKILL.md files into [`CapabilityManifest`] structures.
+   189→///
+   190→/// The parser uses regex-based section extraction: it scans for `## Section Name`
+   191→/// headings and collects the bullet-list content that follows each heading.
+   192→/// This keeps parsing fast, dependency-light, and easy to audit.
+   193→///
+   194→/// # Example
+   195→///
+   196→/// ```ignore
+   197→/// use eli_skill_parser::SkillParser;
+   198→/// use std::path::Path;
+   199→///
+   200→/// let manifests = SkillParser::parse_directory(Path::new("./agents/"))
+   201→///     .expect("failed to parse agent directory");
+   202→///
+   203→/// for (name, manifest) in &manifests {
+   204→///     println!("{}: {}", name, manifest.purpose);
+   205→/// }
+   206→/// ```
+   207→pub struct SkillParser;
+   208→
+   209→impl SkillParser {
+   210→    /// Reads every `*.md` file in `path`, parses each as a SKILL.md document,
+   211→    /// and returns a map keyed by the agent's `identity.name`.
+   212→    ///
+   213→    /// # Errors
+   214→    ///
+   215→    /// Returns [`ParseError::FileNotFound`] if the directory does not exist,
+   216→    /// [`ParseError::IoError`] on filesystem failures, or
+   217→    /// [`ParseError::InvalidFormat`] / [`ParseError::MissingSection`] for
+   218→    /// malformed files. A single bad file does **not** abort the entire
+   219→    /// scan—instead its error is logged and the remaining files are
+   220→    /// still processed. (The first error encountered is returned, but all
+   221→    /// valid manifests are included in the output.)
+   222→    pub fn parse_directory(
+   223→        path: &Path,
+   224→    ) -> Result<HashMap<String, CapabilityManifest>, ParseError> {
+   225→        if !path.is_dir() {
+   226→            return Err(ParseError::FileNotFound(path.to_string_lossy().to_string()));
+   227→        }
+   228→
+   229→        let mut manifests = HashMap::new();
+   230→        let mut first_error: Option<ParseError> = None;
+   231→
+   232→        // Collect .md entries so we can sort them for deterministic ordering.
+   233→        let mut entries: Vec<_> = std::fs::read_dir(path)?.collect::<Result<Vec<_>, _>>()?;
+   234→        entries.sort_by_key(|e| e.file_name());
+   235→
+   236→        for entry in entries {
+   237→            let path = entry.path();
+   238→            if path.extension().and_then(|e| e.to_str()) == Some("md") {
+   239→                match Self::parse_file(&path) {
+   240→                    Ok(manifest) => {
+   241→                        let key = manifest.identity.name.clone();
+   242→                        manifests.insert(key, manifest);
+   243→                    }
+   244→                    Err(e) => {
+   245→                        // Record the first error but keep going so one bad
+   246→                        // file doesn't take down the whole fleet.
+   247→                        if first_error.is_none() {
+   248→                            first_error = Some(e);
+   249→                        }
+   250→                    }
+   251→                }
+   252→            }
+   253→        }
+   254→
+   255→        // If we collected at least one manifest, return them even if there
+   256→        // was a non-fatal parse failure elsewhere.
+   257→        if !manifests.is_empty() {
+   258→            Ok(manifests)
+   259→        } else if let Some(e) = first_error {
+   260→            Err(e)
+   261→        } else {
+   262→            Ok(manifests)
+   263→        }
+   264→    }
+   265→
+   266→    /// Parses a single SKILL.md file from disk.
+   267→    ///
+   268→    /// # Errors
+   269→    ///
+   270→    /// Returns [`ParseError::FileNotFound`] if the file does not exist,
+   271→    /// or any parsing error from [`parse_md`](SkillParser::parse_md).
+   272→    pub fn parse_file(path: &Path) -> Result<CapabilityManifest, ParseError> {
+   273→        if !path.exists() {
+   274→            return Err(ParseError::FileNotFound(path.to_string_lossy().to_string()));
+   275→        }
+   276→        let content = std::fs::read_to_string(path)?;
+   277→        Self::parse_md(&content)
+   278→    }
+   279→
+   280→    /// Parses a SKILL.md content string into a [`CapabilityManifest`].
+   281→    ///
+   282→    /// The parser is tolerant of minor formatting variations but requires
+   283→    /// the `## Identity` section (at minimum) to be present.
+   284→    ///
+   285→    /// # Section extraction algorithm
+   286→    ///
+   287→    /// 1. Split the document on `## ` headings.
+   288→    /// 2. For each recognised section name, extract the body text until
+   289→    ///    the next `## ` heading or end-of-file.
+   290→    /// 3. Within each section body, parse key-value pairs and bullet lists.
+   291→    pub fn parse_md(content: &str) -> Result<CapabilityManifest, ParseError> {
+   292→        let sections = extract_sections(content);
+   293→
+   294→        // Identity is required—without it we cannot key the manifest.
+   295→        let identity_body = sections.get("identity").ok_or_else(|| {
+   296→            ParseError::MissingSection("Identity".to_string())
+   297→        })?;
+   298→        let identity = parse_identity(identity_body)?;
+   299→
+   300→        let purpose = sections
+   301→            .get("purpose")
+   302→            .cloned()
+   303→            .unwrap_or_default()
+   304→            .trim()
+   305→            .to_string();
+   306→
+   307→        let knowledge_base_scope = sections
+   308→            .get("knowledge base scope")
+   309→            .map(|b| parse_knowledge_base_scope(b))
+   310→            .transpose()?
+   311→            .unwrap_or_default();
+   312→
+   313→        let capabilities = sections
+   314→            .get("capabilities")
+   315→            .map(parse_capabilities)
+   316→            .unwrap_or_default();
+   317→
+   318→        let forbidden_actions = sections
+   319→            .get("forbidden actions")
+   320→            .map(parse_bullet_list)
+   321→            .unwrap_or_default();
+   322→
+   323→        let input_schema = sections
+   324→            .get("input schema")
+   325→            .cloned()
+   326→            .unwrap_or_default()
+   327→            .trim()
+   328→            .to_string();
+   329→
+   330→        let output_schema = sections
+   331→            .get("output schema")
+   332→            .cloned()
+   333→            .unwrap_or_default()
+   334→            .trim()
+   335→            .to_string();
+   336→
+   337→        let constraints = sections
+   338→            .get("constraints")
+   339→            .map(|b| parse_constraints(b))
+   340→            .transpose()?
+   341→            .unwrap_or_default();
+   342→
+   343→        let ipc_policy = sections
+   344→            .get("ipc policy")
+   345→            .map(|b| parse_ipc_policy(b))
+   346→            .transpose()?
+   347→            .unwrap_or_default();
+   348→
+   349→        let escalation_triggers = sections
+   350→            .get("escalation triggers")
+   351→            .map(parse_bullet_list)
+   352→            .unwrap_or_default();
+   353→
+   354→        Ok(CapabilityManifest {
+   355→            identity,
+   356→            purpose,
+   357→            knowledge_base_scope,
+   358→            capabilities,
+   359→            forbidden_actions,
+   360→            input_schema,
+   361→            output_schema,
+   362→            constraints,
+   363→            ipc_policy,
+   364→            escalation_triggers,
+   365→        })
+   366→    }
+   367→}
+   368→
+   369→// ---------------------------------------------------------------------------
+   370→// Internal parsing helpers
+   371→// ---------------------------------------------------------------------------
+   372→
+   373→/// Splits a SKILL.md document into a map of lowercased section names to
+   374→/// their body text (everything between the heading and the next heading).
+   375→fn extract_sections(content: &str) -> HashMap<String, String> {
+   376→    let mut sections: HashMap<String, String> = HashMap::new();
+   377→    let mut current_name: Option<String> = None;
+   378→    let mut current_body = String::new();
+   379→
+   380→    for line in content.lines() {
+   381→        if let Some(name) = line.strip_prefix("## ") {
+   382→            // Flush the previous section.
+   383→            if let Some(prev) = current_name.take() {
+   384→                sections.insert(prev, current_body.trim().to_string());
+   385→            }
+   386→            current_name = Some(name.trim().to_lowercase());
+   387→            current_body = String::new();
+   388→        } else if let Some(_name) = &current_name {
+   389→            current_body.push_str(line);
+   390→            current_body.push('\n');
+   391→        }
+   392→    }
+   393→
+   394→    // Flush the last section.
+   395→    if let Some(name) = current_name {
+   396→        sections.insert(name, current_body.trim().to_string());
+   397→    }
+   398→
+   399→    sections
+   400→}
+   401→
+   402→/// Parses the body of the `## Identity` section into an [`AgentIdentity`].
+   403→///
+   404→/// Expects lines in the form `- key: value` or `key: value`.
+   405→fn parse_identity(body: &str) -> Result<AgentIdentity, ParseError> {
+   406→    let kv = parse_key_value_pairs(body);
+   407→
+   408→    let name = kv.get("name").cloned().unwrap_or_default();
+   409→    let role = kv.get("role").cloned().unwrap_or_default();
+   410→    let domain = kv.get("domain").cloned().unwrap_or_default();
+   411→    let version = kv.get("version").cloned().unwrap_or_else(|| "0.1.0".to_string());
+   412→
+   413→    if name.is_empty() {
+   414→        return Err(ParseError::InvalidFormat(
+   415→            "Identity section must contain a 'name' field".to_string(),
+   416→        ));
+   417→    }
+   418→
+   419→    Ok(AgentIdentity {
+   420→        name,
+   421→        role,
+   422→        domain,
+   423→        version,
+   424→    })
+   425→}
+   426→
+   427→/// Parses a `## Knowledge Base Scope` section body.
+   428→fn parse_knowledge_base_scope(body: &str) -> Result<KnowledgeBaseScope, ParseError> {
+   429→    let kv = parse_key_value_pairs(body);
+   430→    let refresh_policy = kv
+   431→        .get("refresh_policy")
+   432→        .cloned()
+   433→        .unwrap_or_else(|| "on-demand".to_string());
+   434→
+   435→    // Sources and exclusions are bulleted lists under sub-headings or
+   436→    // just tagged lines. We look for lines like `- source_name` and
+   437→    // categorise them.
+   438→    let mut sources = Vec::new();
+   439→    let mut exclusions = Vec::new();
+   440→    let mut in_exclusions = false;
+   441→
+   442→    for line in body.lines() {
+   443→        let trimmed = line.trim();
+   444→        // Detect a sub-heading like `### Exclusions` to switch mode.
+   445→        if trimmed.to_lowercase().starts_with("### exclusion") {
+   446→            in_exclusions = true;
+   447→            continue;
+   448→        }
+   449→        if trimmed.to_lowercase().starts_with("### source") {
+   450→            in_exclusions = false;
+   451→            continue;
+   452→        }
+   453→
+   454→        if let Some(item) = trimmed.strip_prefix("- ") {
+   455→            if in_exclusions {
+   456→                exclusions.push(item.trim().to_string());
+   457→            } else {
+   458→                sources.push(item.trim().to_string());
+   459→            }
+   460→        }
+   461→    }
+   462→
+   463→    Ok(KnowledgeBaseScope {
+   464→        sources,
+   465→        exclusions,
+   466→        refresh_policy,
+   467→    })
+   468→}
+   469→
+   470→/// Parses a `## Capabilities` section body into a list of [`ToolCapability`].
+   471→///
+   472→/// Expects lines like:
+   473→/// ```text
+   474→/// - tool_name: description of the tool
+   475→/// ```
+   476→fn parse_capabilities(body: &str) -> Vec<ToolCapability> {
+   477→    let mut caps = Vec::new();
+   478→
+   479→    // Regex for `- name: description` or `- name  (description)` patterns.
+   480→    let re = Regex::new(r"^-\s+(?P<name>[^:]+?):\s*(?P<desc>.+)$").unwrap();
+   481→
+   482→    for line in body.lines() {
+   483→        if let Some(caps_match) = re.captures(line.trim()) {
+   484→            caps.push(ToolCapability {
+   485→                name: caps_match["name"].trim().to_string(),
+   486→                description: caps_match["desc"].trim().to_string(),
+   487→            });
+   488→        }
+   489→    }
+   490→
+   491→    caps
+   492→}
+   493→
+   494→/// Parses a bulleted list from a section body.
+   495→///
+   496→/// Extracts the text after each `- ` prefix.
+   497→fn parse_bullet_list(body: &str) -> Vec<String> {
+   498→    body.lines()
+   499→        .filter_map(|line| {
+   500→            let trimmed = line.trim();
+   501→            trimmed.strip_prefix("- ").map(|s| s.trim().to_string())
+   502→        })
+   503→        .collect()
+   504→}
+   505→
+   506→/// Parses a `## Constraints` section body.
+   507→///
+   508→/// Expects key-value pairs like `max_output_tokens: 4096` and a
+   509→/// `system_prompt_invariant` multi-line value.
+   510→fn parse_constraints(body: &str) -> Result<AgentConstraints, ParseError> {
+   511→    let kv = parse_key_value_pairs(body);
+   512→
+   513→    // Parse system_prompt_invariant: it might be a multi-line value.
+   514→    // We take the first line for the key-value parse, but also try to
+   515→    // capture a fenced code block or block quote if present.
+   516→    let system_prompt_invariant = kv
+   517→        .get("system_prompt_invariant")
+   518→        .cloned()
+   519→        .unwrap_or_default();
+   520→
+   521→    let max_output_tokens = kv
+   522→        .get("max_output_tokens")
+   523→        .and_then(|v| v.parse::<u32>().ok())
+   524→        .unwrap_or(4096);
+   525→
+   526→    let temperature = kv
+   527→        .get("temperature")
+   528→        .and_then(|v| v.parse::<f32>().ok())
+   529→        .unwrap_or(0.7);
+   530→
+   531→    Ok(AgentConstraints {
+   532→        system_prompt_invariant,
+   533→        max_output_tokens,
+   534→        temperature,
+   535→    })
+   536→}
+   537→
+   538→/// Parses the `## IPC Policy` section body into an [`IpcPolicy`].
+   539→///
+   540→/// Expected structure:
+   541→/// ```text
+   542→/// ### Allowed Tables (Read)
+   543→/// - invoices
+   544→/// - customers
+   545→///
+   546→/// ### Allowed Tables (Write)
+   547→/// - audit_log
+   548→///
+   549→/// ### Allowed Endpoints
+   550→/// - /api/v1/invoices
+   551→/// - /api/v1/health
+   552→///
+   553→/// ### Resource Limits
+   554→/// memory_mb: 512
+   555→/// cpu_percent: 80
+   556→/// max_duration_seconds: 60
+   557→/// ```
+   558→fn parse_ipc_policy(body: &str) -> Result<IpcPolicy, ParseError> {
+   559→    let mut allowed_tables_read = Vec::new();
+   560→    let mut allowed_tables_write = Vec::new();
+   561→    let mut allowed_endpoints = Vec::new();
+   562→    let mut resource_limits = ResourceLimits::default();
+   563→
+   564→    // We use simple state-machine parsing: track which sub-section we're in.
+   565→    // Sub-sections are detected by `###` headings.
+   566→    let mut current_subsection: &str = "";
+   567→
+   568→    for line in body.lines() {
+   569→        let trimmed = line.trim();
+   570→
+   571→        // Detect sub-section headings.
+   572→        if let Some(heading) = trimmed.strip_prefix("### ") {
+   573→            let heading_lower = heading.to_lowercase();
+   574→            if heading_lower.contains("read") {
+   575→                current_subsection = "read";
+   576→            } else if heading_lower.contains("write") {
+   577→                current_subsection = "write";
+   578→            } else if heading_lower.contains("endpoint") {
+   579→                current_subsection = "endpoints";
+   580→            } else if heading_lower.contains("resource") {
+   581→                current_subsection = "resources";
+   582→            } else {
+   583→                current_subsection = "";
+   584→            }
+   585→            continue;
+   586→        }
+   587→
+   588→        // Parse bullet items in the current sub-section.
+   589→        if let Some(item) = trimmed.strip_prefix("- ") {
+   590→            let item = item.trim().to_string();
+   591→            match current_subsection {
+   592→                "read" => allowed_tables_read.push(item),
+   593→                "write" => allowed_tables_write.push(item),
+   594→                "endpoints" => allowed_endpoints.push(item),
+   595→                _ => {}
+   596→            }
+   597→            continue;
+   598→        }
+   599→
+   600→        // Parse key: value for resource limits.
+   601→        if current_subsection == "resources" {
+   602→            if let Some((key, value)) = trimmed.split_once(':') {
+   603→                let key = key.trim().to_lowercase();
+   604→                let value = value.trim();
+   605→                match key.as_str() {
+   606→                    "memory_mb" => {
+   607→                        resource_limits.memory_mb = value.parse().unwrap_or(resource_limits.memory_mb);
+   608→                    }
+   609→                    "cpu_percent" => {
+   610→                        resource_limits.cpu_percent = value.parse().unwrap_or(resource_limits.cpu_percent);
+   611→                    }
+   612→                    "max_duration_seconds" => {
+   613→                        resource_limits.max_duration_seconds = value.parse().unwrap_or(resource_limits.max_duration_seconds);
+   614→                    }
+   615→                    _ => {}
+   616→                }
+   617→            }
+   618→        }
+   619→    }
+   620→
+   621→    Ok(IpcPolicy {
+   622→        allowed_tables_read,
+   623→        allowed_tables_write,
+   624→        allowed_endpoints,
+   625→        resource_limits,
+   626→    })
+   627→}
+   628→
+   629→/// Extracts `key: value` pairs from a section body.
+   630→///
+   631→/// Handles both `- key: value` and plain `key: value` lines.
+   632→/// Values are trimmed. If a key appears multiple times, the last value wins.
+   633→fn parse_key_value_pairs(body: &str) -> HashMap<String, String> {
+   634→    let mut map = HashMap::new();
+   635→    let re = Regex::new(r"^-?\s*(?P<key>[a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*(?P<value>.+)$").unwrap();
+   636→
+   637→    for line in body.lines() {
+   638→        if let Some(caps) = re.captures(line.trim()) {
+   639→            map.insert(
+   640→                caps["key"].to_lowercase(),
+   641→                caps["value"].trim().to_string(),
+   642→            );
+   643→        }
+   644→    }
+   645→
+   646→    map
+   647→}
+   648→
+   649→// ---------------------------------------------------------------------------
+   650→// Tests
+   651→// ---------------------------------------------------------------------------
+   652→
+   653→#[cfg(test)]
+   654→mod tests {
+   655→    use super::*;
+   656→
+   657→    /// A well-formed SKILL.md document for testing.
+   658→    const SAMPLE_SKILL_MD: &str = r#"# SKILL.md - Invoice Processor Agent
+   659→
+   660→## Identity
+   661→- name: invoice-processor
+   662→- role: financial-analyst
+   663→- domain: finance
+   664→- version: 1.2.0
+   665→
+   666→## Purpose
+   667→Processes incoming invoices, validates them against purchase orders, and routes them for approval.
+   668→
+   669→## Knowledge Base Scope
+   670→- invoice_templates
+   671→- tax_rate_tables
+   672→- vendor_contracts
+   673→
+   674→### Exclusions
+   675→- employee_pii
+   676→- salary_data
+   677→
+   678→- refresh_policy: on-demand
+   679→
+   680→## Capabilities
+   681→- sql_query: Execute read-only SQL against the invoices database
+   682→- http_post: Send validated invoices to the approval endpoint
+   683→- pdf_parse: Extract structured data from PDF invoices
+   684→
+   685→## Forbidden Actions
+   686→- DELETE FROM invoices
+   687→- DROP TABLE
+   688→- /api/v1/admin/
+   689→- /api/v1/users/delete
+   690→
+   691→## Input Schema
+   692→{"type": "object", "properties": {"invoice_id": {"type": "string"}}}
+   693→
+   694→## Output Schema
+   695→{"type": "object", "properties": {"status": {"type": "string"}, "routing_id": {"type": "string"}}}
+   696→
+   697→## Constraints
+   698→- system_prompt_invariant: You are a financial invoice processor. Never modify data outside your allowed tables.
+   699→- max_output_tokens: 2048
+   700→- temperature: 0.3
+   701→
+   702→## IPC Policy
+   703→
+   704→### Allowed Tables (Read)
+   705→- invoices
+   706→- purchase_orders
+   707→- vendors
+   708→
+   709→### Allowed Tables (Write)
+   710→- audit_log
+   711→- invoice_routing
+   712→
+   713→### Allowed Endpoints
+   714→- /api/v1/invoices/validate
+   715→- /api/v1/approvals/submit
+   716→- /api/v1/health
+   717→
+   718→### Resource Limits
+   719→memory_mb: 256
+   720→cpu_percent: 60
+   721→max_duration_seconds: 30
+   722→
+   723→## Escalation Triggers
+   724→- invoice_amount > 100000
+   725→- vendor_not_in_approved_list
+   726→- duplicate_invoice_detected
+   727→"#;
+   728→
+   729→    #[test]
+   730→    fn test_parse_identity() {
+   731→        let manifest = SkillParser::parse_md(SAMPLE_SKILL_MD).unwrap();
+   732→        assert_eq!(manifest.identity.name, "invoice-processor");
+   733→        assert_eq!(manifest.identity.role, "financial-analyst");
+   734→        assert_eq!(manifest.identity.domain, "finance");
+   735→        assert_eq!(manifest.identity.version, "1.2.0");
+   736→    }
+   737→
+   738→    #[test]
+   739→    fn test_parse_purpose() {
+   740→        let manifest = SkillParser::parse_md(SAMPLE_SKILL_MD).unwrap();
+   741→        assert!(manifest.purpose.contains("invoice"));
+   742→        assert!(manifest.purpose.contains("approval"));
+   743→    }
+   744→
+   745→    #[test]
+   746→    fn test_parse_knowledge_base_scope() {
+   747→        let manifest = SkillParser::parse_md(SAMPLE_SKILL_MD).unwrap();
+   748→        assert_eq!(manifest.knowledge_base_scope.sources.len(), 3);
+   749→        assert!(manifest.knowledge_base_scope.sources.contains(&"invoice_templates".to_string()));
+   750→        assert_eq!(manifest.knowledge_base_scope.exclusions.len(), 2);
+   751→        assert!(manifest.knowledge_base_scope.exclusions.contains(&"employee_pii".to_string()));
+   752→        assert_eq!(manifest.knowledge_base_scope.refresh_policy, "on-demand");
+   753→    }
+   754→
+   755→    #[test]
+   756→    fn test_parse_capabilities() {
+   757→        let manifest = SkillParser::parse_md(SAMPLE_SKILL_MD).unwrap();
+   758→        assert_eq!(manifest.capabilities.len(), 3);
+   759→        assert_eq!(manifest.capabilities[0].name, "sql_query");
+   760→        assert!(manifest.capabilities[0].description.contains("SQL"));
+   761→    }
+   762→
+   763→    #[test]
+   764→    fn test_parse_forbidden_actions() {
+   765→        let manifest = SkillParser::parse_md(SAMPLE_SKILL_MD).unwrap();
+   766→        assert_eq!(manifest.forbidden_actions.len(), 4);
+   767→        assert!(manifest.forbidden_actions.contains(&"DELETE FROM invoices".to_string()));
+   768→        assert!(manifest.forbidden_actions.contains(&"DROP TABLE".to_string()));
+   769→    }
+   770→
+   771→    #[test]
+   772→    fn test_parse_constraints() {
+   773→        let manifest = SkillParser::parse_md(SAMPLE_SKILL_MD).unwrap();
+   774→        assert_eq!(manifest.constraints.max_output_tokens, 2048);
+   775→        assert!((manifest.constraints.temperature - 0.3).abs() < f32::EPSILON);
+   776→        assert!(manifest.constraints.system_prompt_invariant.contains("financial"));
+   777→    }
+   778→
+   779→    #[test]
+   780→    fn test_parse_ipc_policy_tables() {
+   781→        let manifest = SkillParser::parse_md(SAMPLE_SKILL_MD).unwrap();
+   782→        assert_eq!(manifest.ipc_policy.allowed_tables_read.len(), 3);
+   783→        assert!(manifest.ipc_policy.allowed_tables_read.contains(&"invoices".to_string()));
+   784→        assert_eq!(manifest.ipc_policy.allowed_tables_write.len(), 2);
+   785→        assert!(manifest.ipc_policy.allowed_tables_write.contains(&"audit_log".to_string()));
+   786→    }
+   787→
+   788→    #[test]
+   789→    fn test_parse_ipc_policy_endpoints() {
+   790→        let manifest = SkillParser::parse_md(SAMPLE_SKILL_MD).unwrap();
+   791→        assert_eq!(manifest.ipc_policy.allowed_endpoints.len(), 3);
+   792→        assert!(manifest
+   793→            .ipc_policy
+   794→            .allowed_endpoints
+   795→            .contains(&"/api/v1/invoices/validate".to_string()));
+   796→    }
+   797→
+   798→    #[test]
+   799→    fn test_parse_ipc_policy_resource_limits() {
+   800→        let manifest = SkillParser::parse_md(SAMPLE_SKILL_MD).unwrap();
+   801→        assert_eq!(manifest.ipc_policy.resource_limits.memory_mb, 256);
+   802→        assert_eq!(manifest.ipc_policy.resource_limits.cpu_percent, 60);
+   803→        assert_eq!(manifest.ipc_policy.resource_limits.max_duration_seconds, 30);
+   804→    }
+   805→
+   806→    #[test]
+   807→    fn test_parse_escalation_triggers() {
+   808→        let manifest = SkillParser::parse_md(SAMPLE_SKILL_MD).unwrap();
+   809→        assert_eq!(manifest.escalation_triggers.len(), 3);
+   810→        assert!(manifest.escalation_triggers.contains(&"duplicate_invoice_detected".to_string()));
+   811→    }
+   812→
+   813→    #[test]
+   814→    fn test_parse_input_output_schemas() {
+   815→        let manifest = SkillParser::parse_md(SAMPLE_SKILL_MD).unwrap();
+   816→        assert!(manifest.input_schema.contains("invoice_id"));
+   817→        assert!(manifest.output_schema.contains("routing_id"));
+   818→    }
+   819→
+   820→    #[test]
+   821→    fn test_missing_identity_section() {
+   822→        let content = "## Purpose\nDo things.\n";
+   823→        let result = SkillParser::parse_md(content);
+   824→        assert!(matches!(result, Err(ParseError::MissingSection(_))));
+   825→    }
+   826→
+   827→    #[test]
+   828→    fn test_empty_identity_name() {
+   829→        let content = "## Identity\n- name:\n- role: test\n- domain: test\n- version: 1.0.0\n";
+   830→        let result = SkillParser::parse_md(content);
+   831→        assert!(matches!(result, Err(ParseError::InvalidFormat(_))));
+   832→    }
+   833→
+   834→    #[test]
+   835→    fn test_minimal_manifest() {
+   836→        let content = "## Identity\n- name: minimal-agent\n- role: tester\n- domain: test\n- version: 0.0.1\n";
+   837→        let manifest = SkillParser::parse_md(content).unwrap();
+   838→        assert_eq!(manifest.identity.name, "minimal-agent");
+   839→        // Default values should be used for missing sections.
+   840→        assert!(manifest.capabilities.is_empty());
+   841→        assert!(manifest.forbidden_actions.is_empty());
+   842→        assert_eq!(manifest.constraints.max_output_tokens, 4096);
+   843→        assert_eq!(manifest.ipc_policy.resource_limits.memory_mb, 512);
+   844→    }
+   845→
+   846→    #[test]
+   847→    fn test_serialization_round_trip() {
+   848→        let manifest = SkillParser::parse_md(SAMPLE_SKILL_MD).unwrap();
+   849→        let json = serde_json::to_string(&manifest).unwrap();
+   850→        let deserialized: CapabilityManifest = serde_json::from_str(&json).unwrap();
+   851→        assert_eq!(manifest, deserialized);
+   852→    }
+   853→
+   854→    #[test]
+   855→    fn test_extract_sections_ordering() {
+   856→        let content = "## Alpha\nsome text\n## Beta\nmore text\n";
+   857→        let sections = extract_sections(content);
+   858→        assert_eq!(sections.len(), 2);
+   859→        assert_eq!(sections.get("alpha").unwrap(), "some text");
+   860→        assert_eq!(sections.get("beta").unwrap(), "more text");
+   861→    }
+   862→
+   863→    #[test]
+   864→    fn test_forbidden_actions_with_api_paths() {
+   865→        let content = "## Identity\n- name: test\n- role: t\n- domain: t\n- version: 1.0.0\n## Forbidden Actions\n- /api/v1/admin/users\n- DELETE FROM customers\n";
+   866→        let manifest = SkillParser::parse_md(content).unwrap();
+   867→        assert_eq!(manifest.forbidden_actions.len(), 2);
+   868→        assert!(manifest.forbidden_actions.iter().any(|a| a.contains("/api/v1/admin/")));
+   869→    }
+   870→
+   871→    #[test]
+   872→    fn test_ipc_policy_endpoint_prefixes() {
+   873→        let content = "## Identity\n- name: test\n- role: t\n- domain: t\n- version: 1.0.0\n## IPC Policy\n### Allowed Endpoints\n- /api/v1/invoices\n- /api/v2/health\n";
+   874→        let manifest = SkillParser::parse_md(content).unwrap();
+   875→        assert_eq!(manifest.ipc_policy.allowed_endpoints.len(), 2);
+   876→    }
+   877→}
+   878→

@@ -1,0 +1,695 @@
+     1→   501→   701→        If no target agent is specified (or the specified one is
+     2→   502→   702→        unknown), this method sends the sub-task description to the
+     3→   503→   703→        Kimi model and asks it to select the best agent.
+     4→   504→   704→
+     5→   505→   705→        Parameters
+     6→   506→   706→        ----------
+     7→   507→   707→        sub_task:
+     8→   508→   708→            The sub-task to route.
+     9→   509→   709→
+    10→   510→   710→        Returns
+    11→   511→   711→        -------
+    12→   512→   712→        str
+    13→   513→   713→            The agent name to execute this sub-task.
+    14→   514→   714→
+    15→   515→   715→        Raises
+    16→   516→   716→        ------
+    17→   517→   717→        ValueError
+    18→   518→   718→            If no valid agent can be determined.
+    19→   519→   719→        """
+    20→   520→   720→        known_agents = set(self._manifests.keys()) | set(self._agent_instances.keys())
+    21→   521→   721→
+    22→   522→   722→        # Fast path: agent is already specified and known
+    23→   523→   723→        if sub_task.target_agent and sub_task.target_agent in known_agents:
+    24→   524→   724→            self._log.debug(
+    25→   525→   725→                "route_direct",
+    26→   526→   726→                sub_task_id=sub_task.id,
+    27→   527→   727→                agent=sub_task.target_agent,
+    28→   528→   728→            )
+    29→   529→   729→            return sub_task.target_agent
+    30→   530→   730→
+    31→   531→   731→        # Slow path: ask the model to pick an agent
+    32→   532→   732→        if sub_task.target_agent and sub_task.target_agent not in known_agents:
+    33→   533→   733→            self._log.warning(
+    34→   534→   734→                "route_unknown_agent_fallback_to_model",
+    35→   535→   735→                sub_task_id=sub_task.id,
+    36→   536→   736→                unknown_agent=sub_task.target_agent,
+    37→   537→   737→            )
+    38→   538→   738→
+    39→   539→   739→        self._log.debug(
+    40→   540→   740→            "route_model_fallback",
+    41→   541→   741→            sub_task_id=sub_task.id,
+    42→   542→   742→        )
+    43→   543→   743→
+    44→   544→   744→        system = ROUTE_SYSTEM_PROMPT.format(
+    45→   545→   745→            agent_registry=self._agent_registry,
+    46→   546→   746→        )
+    47→   547→   747→
+    48→   548→   748→        response_text = await self._call_model(
+    49→   549→   749→            system_prompt=system,
+    50→   550→   750→            user_prompt=sub_task.description,
+    51→   551→   751→            temperature=0.0,
+    52→   552→   752→            max_tokens=50,
+    53→   553→   753→        )
+    54→   554→   754→
+    55→   555→   755→        # The model should return just the agent name as a plain string.
+    56→   556→   756→        # Strip whitespace, quotes, and code fences.
+    57→   557→   757→        agent_name = self._strip_code_fences(response_text).strip().strip('"').strip("'")
+    58→   558→   758→
+    59→   559→   759→        if agent_name not in known_agents:
+    60→   560→   760→            self._log.error(
+    61→   561→   761→                "route_model_returned_unknown_agent",
+    62→   562→   762→                sub_task_id=sub_task.id,
+    63→   563→   763→                model_response=response_text,
+    64→   564→   764→                known_agents=sorted(known_agents),
+    65→   565→   765→            )
+    66→   566→   766→            raise ValueError(
+    67→   567→   767→                f"Model returned unknown agent '{agent_name}' for sub-task "
+    68→   568→   768→                f"'{sub_task.id}'. Known agents: {sorted(known_agents)}"
+    69→   569→   769→            )
+    70→   570→   770→
+    71→   571→   771→        self._log.info(
+    72→   572→   772→            "route_complete",
+    73→   573→   773→            sub_task_id=sub_task.id,
+    74→   574→   774→            agent=agent_name,
+    75→   575→   775→        )
+    76→   576→   776→
+    77→   577→   777→        return agent_name
+    78→   578→   778→
+    79→   579→   779→    # -- DAG execution ------------------------------------------------------
+    80→   580→   780→
+    81→   581→   781→    async def execute_dag(self, dag: TaskDAG) -> Dict[str, Any]:
+    82→   582→   782→        """Execute a task DAG by routing and running each sub-task.
+    83→   583→   783→
+    84→   584→   784→        Execution follows topological order to respect dependencies.
+    85→   585→   785→        Completed results are made available to subsequent sub-tasks
+    86→   586→   786→        via the ``_completed_results`` dict.
+    87→   587→   787→
+    88→   588→   788→        Error handling:
+    89→   589→   789→
+    90→   590→   790→        - **PolicyViolationError**: Logs the violation, attempts to
+    91→   591→   791→          modify the request based on ``suggested_resolution``, retries
+    92→   592→   792→          once with the modified payload.
+    93→   593→   793→        - **EscalationRequiredError**: Logs the escalation, checks if
+    94→   594→   794→          re-routing to a different agent can resolve it.  If not,
+    95→   595→   795→          collects all completed results and returns them with the
+    96→   596→   796→          escalation noted.
+    97→   597→   797→
+    98→   598→   798→        Parameters
+    99→   599→   799→        ----------
+   100→   600→   800→        dag:
+   101→   601→   801→            The task DAG to execute.
+   102→   602→   802→
+   103→   603→   803→        Returns
+   104→   604→   804→        -------
+   105→   605→   805→        dict
+   106→   606→   806→            Mapping of ``sub_task_id`` → result dict.  Failed sub-tasks
+   107→   607→   807→            have an ``"error"`` key instead of normal results.
+   108→   608→   808→        """
+   109→   609→   809→        from agents.base import EscalationRequiredError, PolicyViolationError
+   110→   610→   810→
+   111→   611→   811→        self._log.info(
+   112→   612→   812→            "execute_dag_start",
+   113→   613→   813→            sub_task_count=len(dag.sub_tasks),
+   114→   614→   814→        )
+   115→   615→   815→
+   116→   616→   816→        # Topologically sort the sub-tasks
+   117→   617→   817→        ordered = dag.topological_order()
+   118→   618→   818→
+   119→   619→   819→        # Result store: sub_task_id → result dict
+   120→   620→   820→        results: Dict[str, Any] = {}
+   121→   621→   821→        # Completed results available for dependent sub-tasks
+   122→   622→   822→        completed_results: Dict[str, Any] = {}
+   123→   623→   823→        escalations: List[Dict[str, Any]] = []
+   124→   624→   824→
+   125→   625→   825→        for sub_task in ordered:
+   126→   626→   826→            self._log.info(
+   127→   627→   827→                "executing_sub_task",
+   128→   628→   828→                sub_task_id=sub_task.id,
+   129→   629→   829→                target_agent=sub_task.target_agent,
+   130→   630→   830→            )
+   131→   631→   831→
+   132→   632→   832→            try:
+   133→   633→   833→                # Route the sub-task to an agent
+   134→   634→   834→                agent_name = await self.route(sub_task)
+   135→   635→   835→
+   136→   636→   836→                # Get the agent instance
+   137→   637→   837→                agent = self._agent_instances.get(agent_name)
+   138→   638→   838→                if agent is None:
+   139→   639→   839→                    raise ValueError(
+   140→   640→   840→                        f"No registered agent instance for '{agent_name}'. "
+   141→   641→   841→                        f"Call orchestrator.register_agent('{agent_name}', instance) first."
+   142→   642→   842→                    )
+   143→   643→   843→
+   144→   644→   844→                # Build the task payload, injecting results from dependencies
+   145→   645→   845→                task_payload: Dict[str, Any] = {
+   146→   646→   846→                    "description": sub_task.description,
+   147→   647→   847→                    "sub_task_id": sub_task.id,
+   148→   648→   848→                    "dependency_results": {
+   149→   649→   849→                        dep_id: completed_results.get(dep_id)
+   150→   650→   850→                        for dep_id in sub_task.dependencies
+   151→   651→   851→                    },
+   152→   652→   852→                }
+   153→   653→   853→
+   154→   654→   854→                # Execute with policy violation retry
+   155→   655→   855→                result = await self._execute_with_retry(
+   156→   656→   856→                    agent=agent,
+   157→   657→   857→                    sub_task=sub_task,
+   158→   658→   858→                    task_payload=task_payload,
+   159→   659→   859→                )
+   160→   660→   860→
+   161→   661→   861→                results[sub_task.id] = result
+   162→   662→   862→                completed_results[sub_task.id] = result
+   163→   663→   863→
+   164→   664→   864→                self._log.info(
+   165→   665→   865→                    "sub_task_complete",
+   166→   666→   866→                    sub_task_id=sub_task.id,
+   167→   667→   867→                    agent=agent_name,
+   168→   668→   868→                )
+   169→   669→   869→
+   170→   670→   870→            except PolicyViolationError as exc:
+   171→   671→   871→                # Log and attempt retry with suggested resolution
+   172→   672→   872→                self._log.warning(
+   173→   673→   873→                    "sub_task_policy_violation",
+   174→   674→   874→                    sub_task_id=sub_task.id,
+   175→   675→   875→                    agent=sub_task.target_agent,
+   176→   676→   876→                    tier=exc.tier,
+   177→   677→   877→                    explanation=exc.explanation,
+   178→   678→   878→                )
+   179→   679→   879→
+   180→   680→   880→                # Try to apply the suggested resolution and retry once
+   181→   681→   881→                try:
+   182→   682→   882→                    modified_payload = self._apply_suggested_resolution(
+   183→   683→   883→                        task_payload,
+   184→   684→   884→                        exc.suggested_resolution,
+   185→   685→   885→                    )
+   186→   686→   886→                    agent_name = await self.route(sub_task)
+   187→   687→   887→                    agent = self._agent_instances.get(agent_name)
+   188→   688→   888→                    if agent is not None:
+   189→   689→   889→                        result = await agent.execute(modified_payload)
+   190→   690→   890→                        results[sub_task.id] = result
+   191→   691→   891→                        completed_results[sub_task.id] = result
+   192→   692→   892→                        self._log.info(
+   193→   693→   893→                            "sub_task_retry_success",
+   194→   694→   894→                            sub_task_id=sub_task.id,
+   195→   695→   895→                            agent=agent_name,
+   196→   696→   896→                        )
+   197→   697→   897→                        continue
+   198→   698→   898→                except Exception as retry_exc:
+   199→   699→   899→                    self._log.error(
+   200→   700→   900→                        "sub_task_retry_failed",
+   201→   701→   901→                        sub_task_id=sub_task.id,
+   202→   702→   902→                        error=str(retry_exc),
+   203→   703→   903→                    )
+   204→   704→   904→
+   205→   705→   905→                # Retry failed — record the error
+   206→   706→   906→                results[sub_task.id] = {
+   207→   707→   907→                    "error": "policy_violation",
+   208→   708→   908→                    "agent": sub_task.target_agent,
+   209→   709→   909→                    "tier": exc.tier,
+   210→   710→   910→                    "explanation": exc.explanation,
+   211→   711→   911→                    "suggested_resolution": exc.suggested_resolution,
+   212→   712→   912→                }
+   213→   713→   913→
+   214→   714→   914→            except EscalationRequiredError as exc:
+   215→   715→   915→                self._log.warning(
+   216→   716→   916→                    "sub_task_escalation",
+   217→   717→   917→                    sub_task_id=sub_task.id,
+   218→   718→   918→                    agent=exc.agent_id,
+   219→   719→   919→                    reason=exc.reason,
+   220→   720→   920→                )
+   221→   721→   921→
+   222→   722→   922→                escalations.append({
+   223→   723→   923→                    "sub_task_id": sub_task.id,
+   224→   724→   924→                    "agent_id": exc.agent_id,
+   225→   725→   925→                    "reason": exc.reason,
+   226→   726→   926→                    "context": exc.context,
+   227→   727→   927→                })
+   228→   728→   928→
+   229→   729→   929→                # Ask the escalation handler what to do
+   230→   730→   930→                decision = await self.handle_escalation({
+   231→   731→   931→                    "sub_task_id": sub_task.id,
+   232→   732→   932→                    "agent_id": exc.agent_id,
+   233→   733→   933→                    "reason": exc.reason,
+   234→   734→   934→                    "context": exc.context,
+   235→   735→   935→                    "completed_results": dict(completed_results),
+   236→   736→   936→                    "remaining_sub_tasks": [
+   237→   737→   937→                        st.id for st in ordered
+   238→   738→   938→                        if st.id not in completed_results and st.id != sub_task.id
+   239→   739→   939→                    ],
+   240→   740→   940→                })
+   241→   741→   941→
+   242→   742→   942→                if decision.action == "reroute" and decision.target_agent:
+   243→   743→   943→                    # Try a different agent
+   244→   744→   944→                    alt_agent = self._agent_instances.get(decision.target_agent)
+   245→   745→   945→                    if alt_agent is not None:
+   246→   746→   946→                        self._log.info(
+   247→   747→   947→                            "sub_task_rerouted",
+   248→   748→   948→                            sub_task_id=sub_task.id,
+   249→   749→   949→                            new_agent=decision.target_agent,
+   250→   750→   950→                            rationale=decision.rationale,
+   251→   751→   951→                        )
+   252→   752→   952→                        try:
+   253→   753→   953→                            result = await alt_agent.execute(task_payload)
+   254→   754→   954→                            results[sub_task.id] = result
+   255→   755→   955→                            completed_results[sub_task.id] = result
+   256→   756→   956→                            continue
+   257→   757→   957→                        except Exception as reroute_exc:
+   258→   758→   958→                            self._log.error(
+   259→   759→   959→                                "sub_task_reroute_failed",
+   260→   760→   960→                                sub_task_id=sub_task.id,
+   261→   761→   961→                                error=str(reroute_exc),
+   262→   762→   962→                            )
+   263→   763→   963→
+   264→   764→   964→                if decision.action == "compose":
+   265→   765→   965→                    # We have enough results — stop executing and compose
+   266→   766→   966→                    self._log.info(
+   267→   767→   967→                        "execute_dag_composing_early",
+   268→   768→   968→                        completed=len(completed_results),
+   269→   769→   969→                        total=len(ordered),
+   270→   770→   970→                        rationale=decision.rationale,
+   271→   771→   971→                    )
+   272→   772→   972→                    results["_orchestrator_note"] = (
+   273→   773→   973→                        f"DAG execution stopped early due to escalation. "
+   274→   774→   974→                        f"Composing with {len(completed_results)}/{len(ordered)} sub-tasks complete. "
+   275→   775→   975→                        f"Rationale: {decision.rationale}"
+   276→   776→   976→                    )
+   277→   777→   977→                    results["_escalations"] = escalations
+   278→   778→   978→                    break
+   279→   779→   979→
+   280→   780→   980→                if decision.action == "retry" and decision.modified_request:
+   281→   781→   981→                    agent = self._agent_instances.get(sub_task.target_agent or "")
+   282→   782→   982→                    if agent is not None:
+   283→   783→   983→                        try:
+   284→   784→   984→                            result = await agent.execute(decision.modified_request)
+   285→   785→   985→                            results[sub_task.id] = result
+   286→   786→   986→                            completed_results[sub_task.id] = result
+   287→   787→   987→                            continue
+   288→   788→   988→                        except Exception as retry_exc:
+   289→   789→   989→                            self._log.error(
+   290→   790→   990→                                "sub_task_escalation_retry_failed",
+   291→   791→   991→                                sub_task_id=sub_task.id,
+   292→   792→   992→                                error=str(retry_exc),
+   293→   793→   993→                            )
+   294→   794→   994→
+   295→   795→   995→                # escalate_to_human or no action — record and continue
+   296→   796→   996→                results[sub_task.id] = {
+   297→   797→   997→                    "error": "escalation_required",
+   298→   798→   998→                    "agent": exc.agent_id,
+   299→   799→   999→                    "reason": exc.reason,
+   300→   800→  1000→                    "decision": decision.action,
+   301→   801→  1001→                    "rationale": decision.rationale,
+   302→   802→  1002→                }
+   303→   803→  1003→
+   304→   804→  1004→            except Exception as exc:
+   305→   805→  1005→                self._log.error(
+   306→   806→  1006→                    "sub_task_unexpected_error",
+   307→   807→  1007→                    sub_task_id=sub_task.id,
+   308→   808→  1008→                    agent=sub_task.target_agent,
+   309→   809→  1009→                    error=str(exc),
+   310→   810→  1010→                    error_type=type(exc).__name__,
+   311→   811→  1011→                )
+   312→   812→  1012→                results[sub_task.id] = {
+   313→   813→  1013→                    "error": "unexpected_error",
+   314→   814→  1014→                    "agent": sub_task.target_agent,
+   315→   815→  1015→                    "error_type": type(exc).__name__,
+   316→   816→  1016→                    "message": str(exc),
+   317→   817→  1017→                }
+   318→   818→  1018→
+   319→   819→  1019→        # Attach escalations if any occurred
+   320→   820→  1020→        if escalations and "_escalations" not in results:
+   321→   821→  1021→            results["_escalations"] = escalations
+   322→   822→  1022→
+   323→   823→  1023→        self._log.info(
+   324→   824→  1024→            "execute_dag_complete",
+   325→   825→  1025→            total_sub_tasks=len(ordered),
+   326→   826→  1026→            successful=sum(1 for v in results.values() if not isinstance(v, dict) or "error" not in v),
+   327→   827→  1027→            failed=sum(1 for v in results.values() if isinstance(v, dict) and "error" in v),
+   328→   828→  1028→        )
+   329→   829→  1029→
+   330→   830→  1030→        return results
+   331→   831→  1031→
+   332→   832→  1032→    async def _execute_with_retry(
+   333→   833→  1033→        self,
+   334→   834→  1034→        agent: Any,
+   335→   835→  1035→        sub_task: SubTask,
+   336→   836→  1036→        task_payload: Dict[str, Any],
+   337→   837→  1037→    ) -> Dict[str, Any]:
+   338→   838→  1038→        """Execute a sub-task with a single retry on policy violation.
+   339→   839→  1039→
+   340→   840→  1040→        This is the inner execution helper used by ``execute_dag``.
+   341→   841→  1041→        The first policy violation triggers an automatic retry with
+   342→   842→  1042→        the suggested resolution applied.  Subsequent violations
+   343→   843→  1043→        are re-raised for the caller to handle.
+   344→   844→  1044→
+   345→   845→  1045→        Parameters
+   346→   846→  1046→        ----------
+   347→   847→  1047→        agent:
+   348→   848→  1048→            The agent instance to call ``execute`` on.
+   349→   849→  1049→        sub_task:
+   350→   850→  1050→            The sub-task being executed.
+   351→   851→  1051→        task_payload:
+   352→   852→  1052→            The task payload dict.
+   353→   853→  1053→
+   354→   854→  1054→        Returns
+   355→   855→  1055→        -------
+   356→   856→  1056→        dict
+   357→   857→  1057→            The agent's execution result.
+   358→   858→  1058→        """
+   359→   859→  1059→        from agents.base import PolicyViolationError
+   360→   860→  1060→
+   361→   861→  1061→        try:
+   362→   862→  1062→            return await agent.execute(task_payload)
+   363→   863→  1063→        except PolicyViolationError as exc:
+   364→   864→  1064→            self._log.info(
+   365→   865→  1065→                "auto_retry_on_policy_violation",
+   366→   866→  1066→                sub_task_id=sub_task.id,
+   367→   867→  1067→                tier=exc.tier,
+   368→   868→  1068→            )
+   369→   869→  1069→            modified = self._apply_suggested_resolution(
+   370→   870→  1070→                task_payload,
+   371→   871→  1071→                exc.suggested_resolution,
+   372→   872→  1072→            )
+   373→   873→  1073→            # Re-raise — let execute_dag handle the retry properly
+   374→   874→  1074→            # so it can update routing and result tracking
+   375→   875→  1075→            raise
+   376→   876→  1076→
+   377→   877→  1077→    @staticmethod
+   378→   878→  1078→    def _apply_suggested_resolution(
+   379→   879→  1079→        payload: Dict[str, Any],
+   380→   880→  1080→        suggested_resolution: str,
+   381→   881→  1081→    ) -> Dict[str, Any]:
+   382→   882→  1082→        """Attempt to apply the policy engine's suggested resolution.
+   383→   883→  1083→
+   384→   884→  1084→        This is a best-effort heuristic.  The suggested resolution is
+   385→   885→  1085→        a natural-language string from the policy engine; we look for
+   386→   886→  1086→        patterns like "use X instead of Y" and apply the substitution.
+   387→   887→  1087→
+   388→   888→  1088→        Parameters
+   389→   889→  1089→        ----------
+   390→   890→  1090→        payload:
+   391→   891→  1091→            The original task payload.
+   392→   892→  1092→        suggested_resolution:
+   393→   893→  1093→            The ``suggested_resolution`` from a ``PolicyViolationDetail``.
+   394→   894→  1094→
+   395→   895→  1095→        Returns
+   396→   896→  1096→        -------
+   397→   897→  1097→        dict
+   398→   898→  1098→            A modified copy of the payload.
+   399→   899→  1099→        """
+   400→   900→  1100→        modified = dict(payload)
+   401→   901→  1101→        modified["_policy_retry"] = True
+   402→   902→  1102→        modified["_original_resolution"] = suggested_resolution
+   403→   903→  1103→        return modified
+   404→   904→  1104→
+   405→   905→  1105→    # -- Synthesis ----------------------------------------------------------
+   406→   906→  1106→
+   407→   907→  1107→    async def synthesize(self, task: str, results: Dict[str, Any]) -> str:
+   408→   908→  1108→        """Synthesize sub-task results into a unified response.
+   409→   909→  1109→
+   410→   910→  1110→        Sends all sub-task results to the Kimi model along with the
+   411→   911→  1111→        original task description.  The model produces a single,
+   412→   912→  1112→        coherent response that addresses the user's request.
+   413→   913→  1113→
+   414→   914→  1114→        Parameters
+   415→   915→  1115→        ----------
+   416→   916→  1116→        task:
+   417→   917→  1117→            The user's original task description.
+   418→   918→  1118→        results:
+   419→   919→  1119→            Mapping of ``sub_task_id`` → result dict from ``execute_dag``.
+   420→   920→  1120→
+   421→   921→  1121→        Returns
+   422→   922→  1122→        -------
+   423→   923→  1123→        str
+   424→   924→  1124→            The synthesized response in markdown format.
+   425→   925→  1125→        """
+   426→   926→  1126→        self._log.info("synthesize_start")
+   427→   927→  1127→
+   428→   928→  1128→        # Build a structured summary of all results
+   429→   929→  1129→        results_summary_parts: list[str] = []
+   430→   930→  1130→        for sub_id, result in results.items():
+   431→   931→  1131→            if sub_id.startswith("_"):
+   432→   932→  1132→                # Orchestrator metadata, skip
+   433→   933→  1133→                continue
+   434→   934→  1134→            if isinstance(result, dict) and "error" in result:
+   435→   935→  1135→                results_summary_parts.append(
+   436→   936→  1136→                    f"### {sub_id}: FAILED\n"
+   437→   937→  1137→                    f"- Error: {result.get('error_type', result['error'])}\n"
+   438→   938→  1138→                    f"- Details: {result.get('message', result.get('reason', 'N/A'))}"
+   439→   939→  1139→                )
+   440→   940→  1140→            else:
+   441→   941→  1141→                # Truncate large results to keep within model context
+   442→   942→  1142→                result_str = json.dumps(result, default=str, indent=2)
+   443→   943→  1143→                if len(result_str) > 2000:
+   444→   944→  1144→                    result_str = result_str[:2000] + "\n... [truncated]"
+   445→   945→  1145→                results_summary_parts.append(
+   446→   946→  1146→                    f"### {sub_id}: SUCCESS\n````json\n{result_str}\n```"
+   447→   947→  1147→                )
+   448→   948→  1148→
+   449→   949→  1149→        # Include escalation notes if present
+   450→   950→  1150→        escalations = results.get("_escalations")
+   451→   951→  1151→        escalation_note = ""
+   452→   952→  1152→        if escalations:
+   453→   953→  1153→            escalation_lines = [
+   454→   954→  1154→                f"- Sub-task {e.get('sub_task_id')}: {e.get('reason')}"
+   455→   955→  1155→                for e in escalations
+   456→   956→  1156→            ]
+   457→   957→  1157→            escalation_note = (
+   458→   958→  1158→                "\n\n## Escalations That Occurred\n"
+   459→   959→  1159→                + "\n".join(escalation_lines)
+   460→   960→  1160→            )
+   461→   961→  1161→
+   462→   962→  1162→        orchestrator_note = results.get("_orchestrator_note", "")
+   463→   963→  1163→        note_section = ""
+   464→   964→  1164→        if orchestrator_note:
+   465→   965→  1165→            note_section = f"\n\n## Orchestrator Note\n{orchestrator_note}"
+   466→   966→  1166→
+   467→   967→  1167→        user_prompt = (
+   468→   968→  1168→            f"## Original Task\n{task}\n\n"
+   469→   969→  1169→            f"## Sub-Task Results\n\n"
+   470→   970→  1170→            f"{chr(10).join(results_summary_parts)}"
+   471→   971→  1171→            f"{escalation_note}"
+   472→   972→  1172→            f"{note_section}"
+   473→   973→  1173→        )
+   474→   974→  1174→
+   475→   975→  1175→        synthesis = await self._call_model(
+   476→   976→  1176→            system_prompt=SYNTHESIZE_SYSTEM_PROMPT,
+   477→   977→  1177→            user_prompt=user_prompt,
+   478→   978→  1178→            temperature=0.3,
+   479→   979→  1179→            max_tokens=4096,
+   480→   980→  1180→        )
+   481→   981→  1181→
+   482→   982→  1182→        self._log.info("synthesize_complete", response_length=len(synthesis))
+   483→   983→  1183→
+   484→   984→  1184→        return synthesis
+   485→   985→  1185→
+   486→   986→  1186→    # -- Escalation handling ------------------------------------------------
+   487→   987→  1187→
+   488→   988→  1188→    async def handle_escalation(self, event: Dict[str, Any]) -> EscalationDecision:
+   489→   989→  1189→        """Decide how to handle an escalation event.
+   490→   990→  1190→
+   491→   991→  1191→        Sends the escalation context to the Kimi model and asks it
+   492→   992→  1192→        to choose one of four actions: retry, reroute, compose, or
+   493→   993→  1193→        escalate_to_human.
+   494→   994→  1194→
+   495→   995→  1195→        Parameters
+   496→   996→  1196→        ----------
+   497→   997→  1197→        event:
+   498→   998→  1198→            The escalation event dict with keys: ``sub_task_id``,
+   499→   999→  1199→            ``agent_id``, ``reason``, ``context``, and optionally
+   500→  1000→  1200→            ``completed_results`` and ``remaining_sub_tasks``.
+   501→  1001→  1201→
+   502→  1002→  1202→        Returns
+   503→  1003→  1203→        -------
+   504→  1004→  1204→        EscalationDecision
+   505→  1005→  1205→            The model's decision with action, rationale, and optional
+   506→  1006→  1206→            target agent or modified request.
+   507→  1007→  1207→        """
+   508→  1008→  1208→        self._log.info(
+   509→  1009→  1209→            "handle_escalation_start",
+   510→  1010→  1210→            sub_task_id=event.get("sub_task_id"),
+   511→  1011→  1211→            agent_id=event.get("agent_id"),
+   512→  1012→  1212→            reason=event.get("reason"),
+   513→  1013→  1213→        )
+   514→  1014→  1214→
+   515→  1015→  1215→        system = ESCALATION_SYSTEM_PROMPT.format(
+   516→  1016→  1216→            agent_registry=self._agent_registry,
+   517→  1017→  1217→        )
+   518→  1018→  1218→
+   519→  1019→  1219→        # Build a focused context for the model
+   520→  1020→  1220→        event_context = {
+   521→  1021→  1221→            "sub_task_id": event.get("sub_task_id"),
+   522→  1022→  1222→            "agent_id": event.get("agent_id"),
+   523→  1023→  1223→            "reason": event.get("reason"),
+   524→  1024→  1224→            "context": event.get("context", {}),
+   525→  1025→  1225→            "completed_sub_tasks": list(event.get("completed_results", {}).keys()),
+   526→  1026→  1226→            "remaining_sub_tasks": event.get("remaining_sub_tasks", []),
+   527→  1027→  1227→        }
+   528→  1028→  1228→
+   529→  1029→  1229→        response_text = await self._call_model(
+   530→  1030→  1230→            system_prompt=system,
+   531→  1031→  1231→            user_prompt=json.dumps(event_context, default=str, indent=2),
+   532→  1032→  1232→            temperature=0.1,
+   533→  1033→  1233→            max_tokens=500,
+   534→  1034→  1234→        )
+   535→  1035→  1235→
+   536→  1036→  1236→        # Parse the model's JSON decision
+   537→  1037→  1237→        cleaned = self._strip_code_fences(response_text)
+   538→  1038→  1238→
+   539→  1039→  1239→        try:
+   540→  1040→  1240→            decision_data = json.loads(cleaned)
+   541→  1041→  1241→        except json.JSONDecodeError as exc:
+   542→  1042→  1242→            self._log.error(
+   543→  1043→  1243→                "escalation_decision_parse_error",
+   544→  1044→  1244→                response_text=response_text[:500],
+   545→  1045→  1245→                error=str(exc),
+   546→  1046→  1246→            )
+   547→  1047→  1247→            # Default to escalate_to_human on parse failure
+   548→  1048→  1248→            return EscalationDecision(
+   549→  1049→  1249→                action="escalate_to_human",
+   550→  1050→  1250→                rationale=(
+   551→  1051→  1251→                    f"Failed to parse model escalation decision: {exc}. "
+   552→  1052→  1252→                    f"Defaulting to human escalation."
+   553→  1053→  1253→                ),
+   554→  1054→  1254→            )
+   555→  1055→  1255→
+   556→  1056→  1256→        decision = EscalationDecision(
+   557→  1057→  1257→            action=decision_data.get("action", "escalate_to_human"),
+   558→  1058→  1258→            rationale=decision_data.get("rationale", "No rationale provided."),
+   559→  1059→  1259→            target_agent=decision_data.get("target_agent"),
+   560→  1060→  1260→            modified_request=decision_data.get("modified_request"),
+   561→  1061→  1261→        )
+   562→  1062→  1262→
+   563→  1063→  1263→        # Validate the action
+   564→  1064→  1264→        valid_actions = {"retry", "reroute", "compose", "escalate_to_human"}
+   565→  1065→  1265→        if decision.action not in valid_actions:
+   566→  1066→  1266→            self._log.warning(
+   567→  1067→  1267→                "escalation_invalid_action",
+   568→  1068→  1268→                action=decision.action,
+   569→  1069→  1269→                valid_actions=sorted(valid_actions),
+   570→  1070→  1270→            )
+   571→  1071→  1271→            decision.action = "escalate_to_human"
+   572→  1072→  1272→            decision.rationale += " (Invalid action corrected to escalate_to_human)"
+   573→  1073→  1273→
+   574→  1074→  1274→        self._log.info(
+   575→  1075→  1275→            "escalation_decision_made",
+   576→  1076→  1276→            action=decision.action,
+   577→  1077→  1277→            rationale=decision.rationale,
+   578→  1078→  1278→            target_agent=decision.target_agent,
+   579→  1079→  1279→        )
+   580→  1080→  1280→
+   581→  1081→  1281→        return decision
+   582→  1082→  1282→
+   583→  1083→  1283→    # -- Main entry point ---------------------------------------------------
+   584→  1084→  1284→
+   585→  1085→  1285→    async def run(self, task: str) -> Dict[str, Any]:
+   586→  1086→  1286→        """Execute the full orchestration pipeline.
+   587→  1087→  1287→
+   588→  1088→  1288→        The main entry point that orchestrates the complete flow:
+   589→  1089→  1289→
+   590→  1090→  1290→        1. **Decompose** the task into a sub-task DAG.
+   591→  1091→  1291→        2. **Execute** the DAG (with error handling and retries).
+   592→  1092→  1292→        3. **Synthesize** the results into a unified response.
+   593→  1093→  1293→
+   594→  1094→  1294→        Parameters
+   595→  1095→  1295→        ----------
+   596→  1096→  1296→        task:
+   597→  1097→  1297→            The user's task description in natural language.
+   598→  1098→  1298→
+   599→  1099→  1299→        Returns
+   600→  1100→  1300→        -------
+   601→  1101→  1301→        dict
+   602→  1102→  1302→            A result dictionary with keys:
+   603→  1103→  1303→
+   604→  1104→  1304→            - ``"synthesis"`` — The synthesized response string.
+   605→  1105→  1305→            - ``"sub_task_results"`` — Raw sub-task results dict.
+   606→  1106→  1306→            - ``"sub_task_count"`` — Total number of sub-tasks.
+   607→  1107→  1307→            - ``"successful_count"`` — Number of successful sub-tasks.
+   608→  1108→  1308→            - ``"escalations"`` — List of escalation events (if any).
+   609→  1109→  1309→            - ``"duration_seconds"`` — Total pipeline duration.
+   610→  1110→  1310→        """
+   611→  1111→  1311→        start_time = time.monotonic()
+   612→  1112→  1312→
+   613→  1113→  1313→        self._log.info("orchestration_run_start", task_length=len(task))
+   614→  1114→  1314→
+   615→  1115→  1315→        try:
+   616→  1116→  1316→            # Step 1: Decompose the task into a DAG
+   617→  1117→  1317→            dag = await self.decompose(task)
+   618→  1118→  1318→
+   619→  1119→  1319→            # Step 2: Execute the DAG
+   620→  1120→  1320→            sub_task_results = await self.execute_dag(dag)
+   621→  1121→  1321→
+   622→  1122→  1322→            # Step 3: Synthesize the results
+   623→  1123→  1323→            synthesis = await self.synthesize(task, sub_task_results)
+   624→  1124→  1324→
+   625→  1125→  1325→        except Exception as exc:
+   626→  1126→  1326→            self._log.error(
+   627→  1127→  1327→                "orchestration_run_error",
+   628→  1128→  1328→                error=str(exc),
+   629→  1129→  1329→                error_type=type(exc).__name__,
+   630→  1130→  1330→            )
+   631→  1131→  1331→            # Return a partial result with error information
+   632→  1132→  1332→            return {
+   633→  1133→  1333→                "synthesis": f"**Orchestration Error**: {exc}",
+   634→  1134→  1334→                "sub_task_results": {},
+   635→  1135→  1335→                "sub_task_count": 0,
+   636→  1136→  1336→                "successful_count": 0,
+   637→  1137→  1337→                "escalations": [],
+   638→  1138→  1338→                "duration_seconds": time.monotonic() - start_time,
+   639→  1139→  1339→                "error": str(exc),
+   640→  1140→  1340→                "error_type": type(exc).__name__,
+   641→  1141→  1341→            }
+   642→  1142→  1342→
+   643→  1143→  1343→        duration = time.monotonic() - start_time
+   644→  1144→  1344→
+   645→  1145→  1345→        # Compute summary stats
+   646→  1146→  1346→        successful = sum(
+   647→  1147→  1347→            1 for k, v in sub_task_results.items()
+   648→  1148→  1348→            if not k.startswith("_") and isinstance(v, dict) and "error" not in v
+   649→  1149→  1349→        )
+   650→  1150→  1350→        total = sum(1 for k in sub_task_results if not k.startswith("_"))
+   651→  1151→  1351→
+   652→  1152→  1352→        result: Dict[str, Any] = {
+   653→  1153→  1353→            "synthesis": synthesis,
+   654→  1154→  1354→            "sub_task_results": sub_task_results,
+   655→  1155→  1355→            "sub_task_count": total,
+   656→  1156→  1356→            "successful_count": successful,
+   657→  1157→  1357→            "escalations": sub_task_results.get("_escalations", []),
+   658→  1158→  1358→            "duration_seconds": round(duration, 3),
+   659→  1159→  1359→        }
+   660→  1160→  1360→
+   661→  1161→  1361→        self._log.info(
+   662→  1162→  1362→            "orchestration_run_complete",
+   663→  1163→  1363→            sub_task_count=total,
+   664→  1164→  1364→            successful=successful,
+   665→  1165→  1365→            duration_seconds=round(duration, 3),
+   666→  1166→  1366→        )
+   667→  1167→  1367→
+   668→  1168→  1368→        return result
+   669→  1169→  1369→
+   670→  1170→  1370→    # -- Utilities ----------------------------------------------------------
+   671→  1171→  1371→
+   672→  1172→  1372→    @staticmethod
+   673→  1173→  1373→    def _strip_code_fences(text: str) -> str:
+   674→  1174→  1374→        """Strip markdown code fences from a model response.
+   675→  1175→  1375→
+   676→  1176→  1376→        The Kimi model may wrap JSON in ``````json ... `````` blocks.
+   677→  1177→  1377→        This method removes those wrappers.
+   678→  1178→  1378→
+   679→  1179→  1379→        Parameters
+   680→  1180→  1380→        ----------
+   681→  1181→  1381→        text:
+   682→  1182→  1382→            The raw model response.
+   683→  1183→  1383→
+   684→  1184→  1384→        Returns
+   685→  1185→  1385→        -------
+   686→  1186→  1386→        str
+   687→  1187→  1387→            The text with code fences removed.
+   688→  1188→  1388→        """
+   689→  1189→  1389→        # Match ```json ... ``` or ``` ... ```
+   690→  1190→  1390→        pattern = r"^```(?:json)?\s*\n?(.*?)\n?\s*```$"
+   691→  1191→  1391→        match = re.match(pattern, text.strip(), re.DOTALL)
+   692→  1192→  1392→        if match:
+   693→  1193→  1393→            return match.group(1).strip()
+   694→  1194→  1394→        return text.strip()
+   695→  1195→  1395→

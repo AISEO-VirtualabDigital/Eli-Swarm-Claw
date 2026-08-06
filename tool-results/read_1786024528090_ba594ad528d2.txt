@@ -1,0 +1,894 @@
+     1→"""Eli-OS Agent Base Class.
+     2→
+     3→This module defines the abstract base class that all 12 Eli-OS SEO agents
+     4→inherit from, along with the domain-specific exception types for policy
+     5→violations and escalation events.
+     6→
+     7→Architecture
+     8→-----------
+     9→
+    10→```text
+    11→  SKILL.md (manifest)          Rust Control Plane
+    12→  ──────────────────          ───────────────────
+    13→       │                             │
+    14→       ▼                             │
+    15→  ┌──────────┐   gRPC/UDS IPC   ┌────────────┐
+    16→  │ EliAgent │──────────────────▶│ IpcServer  │
+    17→  │ (Python)  │                  │ (Rust)     │
+    18→  └──────────┘                  └────────────┘
+    19→       │
+    20→       ├── ipc_request()  ──▶  evaluate_request RPC
+    21→       ├── report_result() ──▶  report_result RPC
+    22→       ├── escalate()      ──▶  escalate RPC
+    23→       └── heartbeat_loop()──▶  heartbeat RPC
+    24→```
+    25→
+    26→Dependencies
+    27→------------
+    28→- ``structlog`` — structured logging
+    29→- ``ulid-py`` — ULID generation for request tracing
+    30→- ``grpc.aio`` — async gRPC channel (production; generated protobuf stubs)
+    31→
+    32→Usage
+    33→-----
+    34→
+    35→Subclass ``EliAgent`` and implement the abstract ``execute`` method::
+    36→
+    37→    class MyAgent(EliAgent):
+    38→        async def execute(self, task: dict) -> dict:
+    39→            response = await self.ipc_request('read', 'some_table', {'id': task['id']})
+    40→            # ... process response ...
+    41→            await self.report_result('success', {'data': processed})
+    42→            return {'status': 'ok', 'data': processed}
+    43→"""
+    44→
+    45→from __future__ import annotations
+    46→
+    47→import asyncio
+    48→import re
+    49→import time
+    50→from abc import ABC, abstractmethod
+    51→from dataclasses import dataclass, field
+    52→from pathlib import Path
+    53→from typing import Any, Dict, Optional
+    54→
+    55→import structlog
+    56→
+    57→# NOTE: Production uses generated protobuf stubs from the .proto file.
+    58→#       The StubIpcClient is a prototype implementation that simulates
+    59→#       gRPC calls locally.  Replace with real gRPC stubs when the
+    60→#       proto toolchain is available.
+    61→from .ipc_client import StubIpcClient  # noqa: F401  (re-exported for convenience)
+    62→
+    63→__all__ = [
+    64→    "EliAgent",
+    65→    "EscalationRequiredError",
+    66→    "IpcResponse",
+    67→    "PolicyViolationError",
+    68→    "TechnicalSeoAgent",
+    69→]
+    70→
+    71→logger = structlog.get_logger(__name__)
+    72→
+    73→
+    74→# ---------------------------------------------------------------------------
+    75→# SKILL.md parser
+    76→# ---------------------------------------------------------------------------
+    77→
+    78→def _parse_skill_md(skill_md_path: str) -> Dict[str, Any]:
+    79→    """Parse a SKILL.md manifest file into a structured dictionary.
+    80→
+    81→    Extracts the following top-level sections:
+    82→
+    83→    - **Identity** — ``name``, ``role``, ``domain``, ``version``
+    84→    - **Purpose** — the full purpose paragraph
+    85→    - **Knowledge Base Scope** — ``sources``, ``exclusions``, ``refresh_policy``
+    86→    - **Capabilities** — list of tool definitions
+    87→    - **Forbidden Actions** — list of forbidden action strings
+    88→    - **Input Schema** — parsed JSON schema dict
+    89→    - **Output Schema** — parsed JSON schema dict
+    90→    - **Constraints** — list of constraint strings
+    91→    - **IPC Policy** — ``allowed_tables``, ``allowed_endpoints``, ``resource_limits``
+    92→    - **Escalation Triggers** — list of trigger descriptions
+    93→
+    94→    Parameters
+    95→    ----------
+    96→    skill_md_path:
+    97→        Filesystem path to the agent's ``SKILL.md`` file.
+    98→
+    99→    Returns
+   100→    -------
+   101→    dict
+   102→        Structured representation of the manifest.
+   103→    """
+   104→    path = Path(skill_md_path)
+   105→    if not path.exists():
+   106→        raise FileNotFoundError(f"SKILL.md not found: {skill_md_path}")
+   107→
+   108→    text = path.read_text(encoding="utf-8")
+   109→    manifest: Dict[str, Any] = {"raw_text": text}
+   110→
+   111→    # --- Identity ---
+   112→    identity_match = re.search(r"## Identity\n(.*?)(?=\n## )", text, re.DOTALL)
+   113→    if identity_match:
+   114→        block = identity_match.group(1)
+   115→        manifest["identity"] = {
+   116→            "name": _extract_field(block, "Name"),
+   117→            "role": _extract_field(block, "Role"),
+   118→            "domain": _extract_field(block, "Domain"),
+   119→            "version": _extract_field(block, "Version"),
+   120→        }
+   121→
+   122→    # --- Purpose ---
+   123→    purpose_match = re.search(r"## Purpose\n(.*?)(?=\n## )", text, re.DOTALL)
+   124→    if purpose_match:
+   125→        manifest["purpose"] = purpose_match.group(1).strip()
+   126→
+   127→    # --- Knowledge Base Scope ---
+   128→    kb_match = re.search(r"## Knowledge Base Scope\n(.*?)(?=\n## )", text, re.DOTALL)
+   129→    if kb_match:
+   130→        block = kb_match.group(1)
+   131→        manifest["knowledge_base_scope"] = {
+   132→            "sources": _extract_field(block, "Sources"),
+   133→            "exclusions": _extract_field(block, "Exclusions"),
+   134→            "refresh_policy": _extract_field(block, "Refresh Policy"),
+   135→        }
+   136→
+   137→    # --- Capabilities ---
+   138→    caps_match = re.search(r"## Capabilities[^\n]*\n(.*?)(?=\n## )", text, re.DOTALL)
+   139→    if caps_match:
+   140→        manifest["capabilities"] = _extract_numbered_list(caps_match.group(1))
+   141→
+   142→    # --- Forbidden Actions ---
+   143→    forbidden_match = re.search(r"## Forbidden Actions\n(.*?)(?=\n## )", text, re.DOTALL)
+   144→    if forbidden_match:
+   145→        manifest["forbidden_actions"] = _extract_numbered_list(forbidden_match.group(1))
+   146→
+   147→    # --- Input Schema ---
+   148→    input_schema_match = re.search(r"## Input Schema\n```json\n(.*?)```", text, re.DOTALL)
+   149→    if input_schema_match:
+   150→        import json
+   151→        try:
+   152→            manifest["input_schema"] = json.loads(input_schema_match.group(1).strip())
+   153→        except json.JSONDecodeError:
+   154→            manifest["input_schema"] = input_schema_match.group(1).strip()
+   155→
+   156→    # --- Output Schema ---
+   157→    output_schema_match = re.search(r"## Output Schema\n```json\n(.*?)```", text, re.DOTALL)
+   158→    if output_schema_match:
+   159→        import json
+   160→        try:
+   161→            manifest["output_schema"] = json.loads(output_schema_match.group(1).strip())
+   162→        except json.JSONDecodeError:
+   163→            manifest["output_schema"] = output_schema_match.group(1).strip()
+   164→
+   165→    # --- Constraints ---
+   166→    constraints_match = re.search(r"## Constraints\n(.*?)(?=\n## )", text, re.DOTALL)
+   167→    if constraints_match:
+   168→        manifest["constraints"] = _extract_bullet_list(constraints_match.group(1))
+   169→
+   170→    # --- IPC Policy ---
+   171→    ipc_match = re.search(r"## IPC Policy\n(.*?)(?=\n## )", text, re.DOTALL)
+   172→    if ipc_match:
+   173→        manifest["ipc_policy"] = _parse_ipc_policy(ipc_match.group(1))
+   174→
+   175→    # --- Escalation Triggers ---
+   176→    esc_match = re.search(r"## Escalation Triggers\n(.*?)(?=$|\n# )", text, re.DOTALL)
+   177→    if esc_match:
+   178→        manifest["escalation_triggers"] = _extract_numbered_list(esc_match.group(1))
+   179→
+   180→    return manifest
+   181→
+   182→
+   183→def _extract_field(block: str, field_name: str) -> Optional[str]:
+   184→    """Extract a ``- Field: value`` entry from a markdown block."""
+   185→    pattern = rf"^-\s*{re.escape(field_name)}:\s*(.+)$"
+   186→    match = re.search(pattern, block, re.MULTILINE)
+   187→    return match.group(1).strip() if match else None
+   188→
+   189→
+   190→def _extract_numbered_list(block: str) -> list[str]:
+   191→    """Extract a numbered list (``1. ...``) from a markdown block."""
+   192→    return [
+   193→        line.strip().lstrip("0123456789.").strip()
+   194→        for line in block.strip().splitlines()
+   195→        if re.match(r"^\s*\d+\.\s", line)
+   196→    ]
+   197→
+   198→
+   199→def _extract_bullet_list(block: str) -> list[str]:
+   200→    """Extract a bullet list (``- ...``) from a markdown block."""
+   201→    return [
+   202→        line.strip().lstrip("-").strip()
+   203→        for line in block.strip().splitlines()
+   204→        if re.match(r"^\s*-\s", line)
+   205→    ]
+   206→
+   207→
+   208→def _parse_ipc_policy(block: str) -> Dict[str, Any]:
+   209→    """Parse the IPC Policy section into a structured dict."""
+   210→    policy: Dict[str, Any] = {}
+   211→
+   212→    # Allowed Tables
+   213→    tables_match = re.search(r"Allowed Tables:\n(.*?)(?=\n-\s|$)", block, re.DOTALL)
+   214→    if tables_match:
+   215→        policy["allowed_tables"] = _extract_bullet_list(tables_match.group(1))
+   216→
+   217→    # Allowed Endpoints
+   218→    endpoints_match = re.search(r"Allowed Endpoints:\n(.*?)(?=\n-\s|$)", block, re.DOTALL)
+   219→    if endpoints_match:
+   220→        policy["allowed_endpoints"] = _extract_bullet_list(endpoints_match.group(1))
+   221→
+   222→    # Resource Limits
+   223→    limits_match = re.search(r"Resource Limits:\s*\{([^}]+)\}", block)
+   224→    if limits_match:
+   225→        limits_str = "{" + limits_match.group(1) + "}"
+   226→        import json
+   227→        try:
+   228→            policy["resource_limits"] = json.loads(limits_str)
+   229→        except json.JSONDecodeError:
+   230→            policy["resource_limits"] = limits_str
+   231→
+   232→    return policy
+   233→
+   234→
+   235→# ---------------------------------------------------------------------------
+   236→# IPC Response (mirrors Rust IpcResponse)
+   237→# ---------------------------------------------------------------------------
+   238→
+   239→@dataclass(frozen=True)
+   240→class IpcResponse:
+   241→    """Mirrors the Rust ``IpcResponse`` returned by the gRPC IPC handler.
+   242→
+   243→    Attributes
+   244→    ----------
+   245→    approved:
+   246→        Whether the request was approved by the policy engine.
+   247→    tier:
+   248→        The enforcement tier (``"GREEN"``, ``"AMBER"``, ``"RED"``).
+   249→        Only present when approved.
+   250→    violation_detail:
+   251→        JSON-encoded ``PolicyViolationDetail`` if the request was denied.
+   252→    escalation_reason:
+   253→        Human-readable reason if the request was escalated.
+   254→    raw:
+   255→        The full response dict as received from the IPC client.
+   256→    """
+   257→    approved: bool
+   258→    tier: Optional[str] = None
+   259→    violation_detail: Optional[Dict[str, Any]] = None
+   260→    escalation_reason: Optional[str] = None
+   261→    raw: Optional[Dict[str, Any]] = field(default=None, repr=False)
+   262→
+   263→    @property
+   264→    def status(self) -> str:
+   265→        """Return a string status: ``'approved'``, ``'policy_violation'``, or ``'escalated'``."""
+   266→        if self.approved:
+   267→            return "approved"
+   268→        if self.violation_detail is not None:
+   269→            return "policy_violation"
+   270→        if self.escalation_reason is not None:
+   271→            return "escalated"
+   272→        return "unknown"
+   273→
+   274→
+   275→# ---------------------------------------------------------------------------
+   276→# Exception types
+   277→# ---------------------------------------------------------------------------
+   278→
+   279→@dataclass
+   280→class PolicyViolationError(Exception):
+   281→    """Raised when the Rust control plane denies an IPC request.
+   282→
+   283→    Carries the full ``PolicyViolationDetail`` from the policy engine,
+   284→    enabling agents (and the orchestrator) to make informed retry or
+   285→    escalation decisions.
+   286→
+   287→    Attributes
+   288→    ----------
+   289→    agent_id:
+   290→        The agent that issued the violating request.
+   291→    operation_type:
+   292→        The IPC operation type that was attempted (``read``, ``write``, etc.).
+   293→    target_resource:
+   294→        The table, endpoint, or command the agent tried to access.
+   295→    violated_section:
+   296→        The SKILL.md section that was violated (e.g. ``"IPC Policy"``,
+   297→        ``"Forbidden Actions"``).
+   298→    rule_text:
+   299→        The exact rule text from the SKILL.md that was violated.
+   300→    tier:
+   301→        The enforcement tier (``"GREEN"``, ``"AMBER"``, ``"RED"``).
+   302→    explanation:
+   303→        Human-readable explanation of why this is a violation.
+   304→    suggested_resolution:
+   305→        Suggested fix the agent can attempt.
+   306→    """
+   307→    agent_id: str
+   308→    operation_type: str
+   309→    target_resource: str
+   310→    violated_section: str
+   311→    rule_text: str
+   312→    tier: str
+   313→    explanation: str
+   314→    suggested_resolution: str
+   315→
+   316→    def __str__(self) -> str:
+   317→        return (
+   318→            f"PolicyViolationError: Agent '{self.agent_id}' attempted "
+   319→            f"{self.operation_type.upper()} on '{self.target_resource}'\n"
+   320→            f"  Tier:           {self.tier}\n"
+   321→            f"  Violated:       {self.violated_section}\n"
+   322→            f"  Rule:           {self.rule_text}\n"
+   323→            f"  Explanation:    {self.explanation}\n"
+   324→            f"  Suggested Fix:  {self.suggested_resolution}"
+   325→        )
+   326→
+   327→
+   328→@dataclass
+   329→class EscalationRequiredError(Exception):
+   330→    """Raised when the Rust control plane escalates an IPC request.
+   331→
+   332→    Escalation means the request requires human operator review or
+   333→    the orchestrator's intervention before it can proceed.
+   334→
+   335→    Attributes
+   336→    ----------
+   337→    agent_id:
+   338→        The agent that triggered the escalation.
+   339→    reason:
+   340→        Human-readable reason for the escalation.
+   341→    context:
+   342→        Structured context dict providing additional details.
+   343→    """
+   344→    agent_id: str
+   345→    reason: str
+   346→    context: Dict[str, Any]
+   347→
+   348→    def __str__(self) -> str:
+   349→        ctx_summary = ", ".join(f"{k}={v}" for k, v in self.context.items())
+   350→        return (
+   351→            f"EscalationRequiredError: Agent '{self.agent_id}' requires escalation\n"
+   352→            f"  Reason:  {self.reason}\n"
+   353→            f"  Context: {ctx_summary}"
+   354→        )
+   355→
+   356→
+   357→# ---------------------------------------------------------------------------
+   358→# EliAgent — abstract base class
+   359→# ---------------------------------------------------------------------------
+   360→
+   361→class EliAgent(ABC):
+   362→    """Abstract base class for all 12 Eli-OS SEO agents.
+   363→
+   364→    Every concrete agent:
+   365→
+   366→    1. Reads its ``SKILL.md`` manifest at construction time.
+   367→    2. Connects to the Rust control plane via the gRPC IPC client.
+   368→    3. Routes all inter-agent and resource access through
+   369→       ``ipc_request()`` so the policy engine can enforce the
+   370→       Green / Amber / Red tier model.
+   371→    4. Reports results back to the kernel via ``report_result()``.
+   372→    5. Sends heartbeats to signal liveness.
+   373→
+   374→    Parameters
+   375→    ----------
+   376→    skill_md_path:
+   377→        Absolute path to this agent's ``SKILL.md`` manifest file.
+   378→    ipc_client:
+   379→        An ``EliIpcClient`` (or ``StubIpcClient``) instance.  If ``None``,
+   380→        a ``StubIpcClient`` is created with default settings.
+   381→    """
+   382→
+   383→    def __init__(
+   384→        self,
+   385→        skill_md_path: str,
+   386→        ipc_client: Optional[Any] = None,
+   387→    ) -> None:
+   388→        # Parse the SKILL.md manifest
+   389→        self._manifest: Dict[str, Any] = _parse_skill_md(skill_md_path)
+   390→
+   391→        # Structured logger bound to this agent
+   392→        self._log = structlog.get_logger(
+   393→            "eli_agent",
+   394→            agent_id=self.agent_id,
+   395→            domain=self.domain,
+   396→        )
+   397→        self._log.info(
+   398→            "agent_initialized",
+   399→            agent_id=self.agent_id,
+   400→            domain=self.domain,
+   401→            version=self._manifest.get("identity", {}).get("version", "unknown"),
+   402→        )
+   403→
+   404→        # IPC client — connects to the Rust kernel over gRPC/UDS
+   405→        if ipc_client is not None:
+   406→            self.ipc_client = ipc_client
+   407→        else:
+   408→            from .ipc_client import StubIpcClient
+   409→            self.ipc_client = StubIpcClient()
+   410→
+   411→        # Heartbeat task handle (set by heartbeat_loop)
+   412→        self._heartbeat_task: Optional[asyncio.Task[None]] = None
+   413→
+   414→    # -- Properties --------------------------------------------------------
+   415→
+   416→    @property
+   417→    def agent_id(self) -> str:
+   418→        """Return the agent's identity name from the parsed SKILL.md.
+   419→
+   420→        This value must match the key used in the Rust policy engine's
+   421→        manifest map.
+   422→        """
+   423→        return self._manifest.get("identity", {}).get("name", "unknown_agent")
+   424→
+   425→    @property
+   426→    def domain(self) -> str:
+   427→        """Return the agent's domain from the parsed SKILL.md."""
+   428→        return self._manifest.get("identity", {}).get("domain", "unknown_domain")
+   429→
+   430→    @property
+   431→    def manifest(self) -> Dict[str, Any]:
+   432→        """Return the full parsed SKILL.md manifest dictionary."""
+   433→        return self._manifest
+   434→
+   435→    # -- Abstract method ----------------------------------------------------
+   436→
+   437→    @abstractmethod
+   438→    async def execute(self, task: dict) -> dict:
+   439→        """Execute a task assigned by the orchestrator.
+   440→
+   441→        Subclasses must implement this method.  The implementation
+   442→        should:
+   443→
+   444→        1. Call ``self.ipc_request()`` for any data reads/writes.
+   445→        2. Process the data according to the agent's domain logic.
+   446→        3. Call ``self.report_result()`` to notify the kernel of completion.
+   447→        4. Return a result dict.
+   448→
+   449→        Parameters
+   450→        ----------
+   451→        task:
+   452→            A task dictionary.  The exact shape depends on the agent
+   453→            type and is defined in the agent's SKILL.md ``Input Schema``.
+   454→
+   455→        Returns
+   456→        -------
+   457→        dict
+   458→            The execution result, conforming to the agent's SKILL.md
+   459→            ``Output Schema``.
+   460→        """
+   461→        ...  # pragma: no cover
+   462→
+   463→    # -- IPC methods --------------------------------------------------------
+   464→
+   465→    async def ipc_request(
+   466→        self,
+   467→        operation_type: str,
+   468→        target_resource: str,
+   469→        payload: Optional[Dict[str, Any]] = None,
+   470→    ) -> IpcResponse:
+   471→        """Send a policy-gated IPC request to the Rust control plane.
+   472→
+   473→        Constructs an ``IpcRequest`` with a ULID and timestamp, sends it
+   474→        via the gRPC IPC client's ``evaluate()`` method, and interprets
+   475→        the response:
+   476→
+   477→        - **approved** → returns the ``IpcResponse``
+   478→        - **policy_violation** → raises :class:`PolicyViolationError`
+   479→        - **escalated** → raises :class:`EscalationRequiredError`
+   480→
+   481→        Parameters
+   482→        ----------
+   483→        operation_type:
+   484→            One of ``"read"``, ``"write"``, ``"execute"``, ``"delete"``.
+   485→        target_resource:
+   486→            The table name, endpoint URL, or command identifier.
+   487→        payload:
+   488→            Optional request payload (will be JSON-serialized by the client).
+   489→
+   490→        Returns
+   491→        -------
+   492→        IpcResponse
+   493→            The approved response from the policy engine.
+   494→
+   495→        Raises
+   496→        ------
+   497→        PolicyViolationError
+   498→            If the request violates the agent's SKILL.md policy.
+   499→        EscalationRequiredError
+   500→            If the request requires human operator review.
+   501→        """
+   502→        # Generate ULID for distributed tracing.
+   503→        # Dependency: ``pip install ulid-py``
+   504→        try:
+   505→            import ulid
+   506→            request_ulid = str(ulid.new())
+   507→        except ImportError:
+   508→            # Fallback: timestamp + random hex
+   509→            request_ulid = f"{int(time.time() * 1000):012x}{int(time.time() * 1000) % 0xFFFF:04x}"
+   510→
+   511→        # Build the request dict matching the Rust IpcRequest struct
+   512→        request: Dict[str, Any] = {
+   513→            "agent_id": self.agent_id,
+   514→            "operation_type": operation_type.upper(),
+   515→            "target_resource": target_resource,
+   516→            "payload": payload,
+   517→            "request_ulid": request_ulid,
+   518→            "timestamp": int(time.time()),
+   519→        }
+   520→
+   521→        self._log.debug(
+   522→            "ipc_request_sent",
+   523→            operation_type=operation_type,
+   524→            target_resource=target_resource,
+   525→            request_ulid=request_ulid,
+   526→        )
+   527→
+   528→        # Send to the Rust kernel via gRPC
+   529→        response_dict = await self.ipc_client.evaluate(request)
+   530→
+   531→        # Wrap in the typed IpcResponse dataclass
+   532→        response = IpcResponse(
+   533→            approved=response_dict.get("approved", False),
+   534→            tier=response_dict.get("tier"),
+   535→            violation_detail=response_dict.get("violation_detail"),
+   536→            escalation_reason=response_dict.get("escalation_reason"),
+   537→            raw=response_dict,
+   538→        )
+   539→
+   540→        # Dispatch based on the policy verdict
+   541→        status = response.status
+   542→        self._log.debug(
+   543→            "ipc_response_received",
+   544→            request_ulid=request_ulid,
+   545→            status=status,
+   546→            tier=response.tier,
+   547→        )
+   548→
+   549→        if status == "approved":
+   550→            return response
+   551→
+   552→        if status == "policy_violation":
+   553→            detail = response.violation_detail or {}
+   554→            raise PolicyViolationError(
+   555→                agent_id=detail.get("agent_id", self.agent_id),
+   556→                operation_type=detail.get("operation_type", operation_type),
+   557→                target_resource=detail.get("target_resource", target_resource),
+   558→                violated_section=detail.get("violated_section", "unknown"),
+   559→                rule_text=detail.get("rule_text", "unknown"),
+   560→                tier=detail.get("tier", "RED"),
+   561→                explanation=detail.get("explanation", "No explanation provided."),
+   562→                suggested_resolution=detail.get(
+   563→                    "suggested_resolution", "No resolution suggested."
+   564→                ),
+   565→            )
+   566→
+   567→        if status == "escalated":
+   568→            raise EscalationRequiredError(
+   569→                agent_id=self.agent_id,
+   570→                reason=response.escalation_reason or "No reason provided.",
+   571→                context=payload or {},
+   572→            )
+   573→
+   574→        # Unknown status — treat as a policy violation for safety
+   575→        self._log.warning(
+   576→            "ipc_unknown_status",
+   577→            request_ulid=request_ulid,
+   578→            response=response_dict,
+   579→        )
+   580→        raise PolicyViolationError(
+   581→            agent_id=self.agent_id,
+   582→            operation_type=operation_type,
+   583→            target_resource=target_resource,
+   584→            violated_section="unknown",
+   585→            rule_text="Unknown IPC response status",
+   586→            tier="RED",
+   587→            explanation=f"Received unknown status from IPC handler: {response_dict}",
+   588→            suggested_resolution="Check IPC handler logs and retry.",
+   589→        )
+   590→
+   591→    async def report_result(
+   592→        self,
+   593→        result_type: str,
+   594→        payload: Dict[str, Any],
+   595→        task_id: Optional[str] = None,
+   596→    ) -> Dict[str, Any]:
+   597→        """Report an execution result to the Rust control plane.
+   598→
+   599→        This maps to the ``report_result`` gRPC RPC.  The kernel uses
+   600→        these reports for audit logging, task tracking, and billing.
+   601→
+   602→        Parameters
+   603→        ----------
+   604→        result_type:
+   605→            One of ``"success"``, ``"error"``, ``"partial"``.
+   606→        payload:
+   607→            The result payload (JSON-serializable dict).
+   608→        task_id:
+   609→            Optional task ID this result pertains to.  If ``None``,
+   610→            a ULID is generated.
+   611→
+   612→        Returns
+   613→        -------
+   614→        dict
+   615→            The acknowledgement from the control plane, including
+   616→            ``success``, ``message``, and ``audit_ulid``.
+   617→        """
+   618→        try:
+   619→            import ulid
+   620→            effective_task_id = task_id or str(ulid.new())
+   621→        except ImportError:
+   622→            effective_task_id = task_id or f"{int(time.time() * 1000):012x}"
+   623→
+   624→        request: Dict[str, Any] = {
+   625→            "agent_id": self.agent_id,
+   626→            "task_id": effective_task_id,
+   627→            "result_type": result_type,
+   628→            "payload": payload,
+   629→            "timestamp": int(time.time()),
+   630→        }
+   631→
+   632→        self._log.info(
+   633→            "reporting_result",
+   634→            result_type=result_type,
+   635→            task_id=effective_task_id,
+   636→        )
+   637→
+   638→        ack = await self.ipc_client.report_result(request)
+   639→
+   640→        if not ack.get("success", False):
+   641→            self._log.error(
+   642→                "report_result_failed",
+   643→                message=ack.get("message", "unknown error"),
+   644→            )
+   645→
+   646→        return ack
+   647→
+   648→    async def escalate(
+   649→        self,
+   650→        trigger_reason: str,
+   651→        context: Dict[str, Any],
+   652→        severity: str = "high",
+   653→    ) -> Dict[str, Any]:
+   654→        """Send an escalation event to the Rust control plane.
+   655→
+   656→        This maps to the ``escalate`` gRPC RPC.  Use this when the
+   657→        agent encounters conditions defined in its SKILL.md
+   658→        ``Escalation Triggers`` section.
+   659→
+   660→        Parameters
+   661→        ----------
+   662→        trigger_reason:
+   663→            Human-readable description of why the escalation was triggered.
+   664→        context:
+   665→            Structured context dict for the operator.
+   666→        severity:
+   667→            One of ``"low"``, ``"medium"``, ``"high"``, ``"critical"``.
+   668→
+   669→        Returns
+   670→        -------
+   671→        dict
+   672→            The acknowledgement from the control plane.
+   673→        """
+   674→        request: Dict[str, Any] = {
+   675→            "agent_id": self.agent_id,
+   676→            "trigger_reason": trigger_reason,
+   677→            "context": context,
+   678→            "severity": severity,
+   679→            "timestamp": int(time.time()),
+   680→        }
+   681→
+   682→        self._log.warning(
+   683→            "escalation_triggered",
+   684→            trigger_reason=trigger_reason,
+   685→            severity=severity,
+   686→        )
+   687→
+   688→        ack = await self.ipc_client.escalate(request)
+   689→
+   690→        if not ack.get("success", False):
+   691→            self._log.error(
+   692→                "escalate_failed",
+   693→                message=ack.get("message", "unknown error"),
+   694→            )
+   695→
+   696→        return ack
+   697→
+   698→    async def heartbeat_loop(self) -> None:
+   699→        """Run a background task that sends heartbeats every 30 seconds.
+   700→
+   701→        The heartbeat carries the agent's current status and resource
+   702→        usage to the Rust kernel.  The kernel checks these against the
+   703→        agent's declared IPC policy ``Resource Limits`` and may return
+   704→        a warning if limits are being approached.
+   705→
+   706→        This method is designed to be run as an ``asyncio`` background
+   707→        task::
+   708→
+   709→            asyncio.create_task(agent.heartbeat_loop())
+   710→
+   711→        The loop runs until cancelled (e.g. on agent shutdown).
+   712→        """
+   713→        import resource as resource_module  # stdlib
+   714→
+   715→        self._log.info("heartbeat_loop_started")
+   716→
+   717→        try:
+   718→            while True:
+   719→                # Gather resource telemetry
+   720→                try:
+   721→                    # rusage is Unix-only; fall back gracefully
+   722→                    usage = resource_module.getrusage(resource_module.RUSAGE_SELF)
+   723→                    memory_usage_mb = usage.ru_maxrss / 1024.0  # macOS: bytes; Linux: KB
+   724→                    if memory_usage_mb > 100_000:
+   725→                        # Likely Linux where ru_maxrss is in KB
+   726→                        memory_usage_mb = usage.ru_maxrss / 1024.0
+   727→                except (ValueError, AttributeError):
+   728→                    memory_usage_mb = 0.0
+   729→
+   730→                heartbeat_request: Dict[str, Any] = {
+   731→                    "agent_id": self.agent_id,
+   732→                    "status": "processing",
+   733→                    "tasks_completed": 0,  # Subclasses should track this
+   734→                    "memory_usage_mb": round(memory_usage_mb, 2),
+   735→                }
+   736→
+   737→                try:
+   738→                    ack = await self.ipc_client.heartbeat(heartbeat_request)
+   739→                    warning = ack.get("resource_warning")
+   740→                    if warning:
+   741→                        self._log.warning(
+   742→                            "heartbeat_resource_warning",
+   743→                            warning=warning,
+   744→                        )
+   745→                except Exception as exc:
+   746→                    # Heartbeat failures should not crash the agent
+   747→                    self._log.error(
+   748→                        "heartbeat_failed",
+   749→                        error=str(exc),
+   750→                    )
+   751→
+   752→                await asyncio.sleep(30)
+   753→
+   754→        except asyncio.CancelledError:
+   755→            self._log.info("heartbeat_loop_stopped")
+   756→
+   757→    def start_heartbeat(self) -> asyncio.Task[None]:
+   758→        """Start the heartbeat loop as a background task.
+   759→
+   760→        Returns the ``asyncio.Task`` so it can be cancelled on shutdown.
+   761→
+   762→        Returns
+   763→        -------
+   764→        asyncio.Task
+   765→            The background heartbeat task.
+   766→        """
+   767→        self._heartbeat_task = asyncio.create_task(self.heartbeat_loop())
+   768→        return self._heartbeat_task
+   769→
+   770→    async def shutdown(self) -> None:
+   771→        """Gracefully shut down the agent.
+   772→
+   773→        Cancels the heartbeat loop and closes the IPC client.
+   774→        """
+   775→        if self._heartbeat_task is not None:
+   776→            self._heartbeat_task.cancel()
+   777→            try:
+   778→                await self._heartbeat_task
+   779→            except asyncio.CancelledError:
+   780→                pass
+   781→
+   782→        if hasattr(self.ipc_client, "close"):
+   783→            await self.ipc_client.close()
+   784→
+   785→        self._log.info("agent_shutdown_complete", agent_id=self.agent_id)
+   786→
+   787→
+   788→# ---------------------------------------------------------------------------
+   789→# Concrete example subclass: TechnicalSeoAgent
+   790→# ---------------------------------------------------------------------------
+   791→
+   792→class TechnicalSeoAgent(EliAgent):
+   793→    """Example concrete agent: Technical SEO Specialist.
+   794→
+   795→    Demonstrates the full lifecycle of an agent execution:
+   796→
+   797→    1. Reads crawl results from the ``crawl_results`` table via IPC.
+   798→    2. Processes the crawl data to produce technical SEO findings.
+   799→    3. Writes the audit findings to the ``tech_seo_audits`` table via IPC.
+   800→    4. Reports the result to the kernel.
+   801→
+   802→    This is a **reference implementation** — the actual processing
+   803→    logic would use the tools listed in the Technical SEO SKILL.md
+   804→    (HTTP status checker, robots.txt parser, Core Web Vitals scanner, etc.).
+   805→    """
+   806→
+   807→    async def execute(self, task: dict) -> dict:
+   808→        """Execute a technical SEO audit task.
+   809→
+   810→        Parameters
+   811→        ----------
+   812→        task:
+   813→            Must contain at minimum ``{"crawl_id": "..."}``.
+   814→            May also contain ``"target_urls"`` and ``"audit_scope"``.
+   815→
+   816→        Returns
+   817→        -------
+   818→        dict
+   819→            The audit result conforming to the Technical SEO output schema.
+   820→        """
+   821→        crawl_id = task.get("crawl_id")
+   822→        if not crawl_id:
+   823→            raise ValueError("Task must contain a 'crawl_id' field.")
+   824→
+   825→        self._log.info("tech_seo_execute_start", crawl_id=crawl_id)
+   826→
+   827→        # Step 1: Read crawl results via IPC (policy-gated)
+   828→        crawl_response = await self.ipc_request(
+   829→            "read",
+   830→            "crawl_results",
+   831→            {"crawl_id": crawl_id},
+   832→        )
+   833→        crawl_data = crawl_response.raw or {}
+   834→        self._log.debug("crawl_data_retrieved", crawl_id=crawl_id)
+   835→
+   836→        # Step 2: Process the crawl data to produce findings.
+   837→        #         In production, this calls real tools (HTTP checker,
+   838→        #         Core Web Vitals scanner, etc.).  Here we simulate.
+   839→        target_urls = task.get("target_urls", [])
+   840→        audit_scope = task.get("audit_scope", "full")
+   841→
+   842→        findings: list[Dict[str, Any]] = []
+   843→        for url in target_urls:
+   844→            # Simulated finding — real implementation would use actual tools
+   845→            findings.append({
+   846→                "url": url,
+   847→                "category": "crawlability",
+   848→                "severity": "medium",
+   849→                "issue": f"Simulated: {url} returns soft 404 for non-existent paths",
+   850→                "evidence": "HTTP 200 with minimal content (< 200 bytes)",
+   851→                "recommendation": "Return proper 404 status codes for non-existent URLs",
+   852→                "reference": "https://developers.google.com/search/docs/crawling-indexing/404-soft-404s",
+   853→            })
+   854→
+   855→        audit_id = f"audit-{crawl_id}"
+   856→        audit_result: Dict[str, Any] = {
+   857→            "agent": self.agent_id,
+   858→            "audit_id": audit_id,
+   859→            "target_urls": target_urls,
+   860→            "findings": findings,
+   861→            "summary": {
+   862→                "total_issues": len(findings),
+   863→                "critical_count": sum(1 for f in findings if f["severity"] == "critical"),
+   864→                "crawl_budget_waste_percent": 0.0,
+   865→                "avg_lcp_ms": None,
+   866→                "avg_cls_score": None,
+   867→                "avg_inp_ms": None,
+   868→            },
+   869→            "audit_scope": audit_scope,
+   870→            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+   871→        }
+   872→
+   873→        # Step 3: Write audit findings via IPC (policy-gated)
+   874→        await self.ipc_request(
+   875→            "write",
+   876→            "tech_seo_audits",
+   877→            {"findings": findings, "audit_id": audit_id},
+   878→        )
+   879→
+   880→        # Step 4: Report result to the kernel
+   881→        await self.report_result(
+   882→            "audit_complete",
+   883→            {"audit_id": audit_id, "total_findings": len(findings)},
+   884→            task_id=crawl_id,
+   885→        )
+   886→
+   887→        self._log.info(
+   888→            "tech_seo_execute_complete",
+   889→            audit_id=audit_id,
+   890→            findings_count=len(findings),
+   891→        )
+   892→
+   893→        return audit_result
+   894→
