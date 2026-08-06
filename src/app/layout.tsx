@@ -9,11 +9,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Eli OS — Growth Command Center",
-  description: "VirtuaLab Digital's AI growth intelligence platform. Eli is the daughter of Joseph — your command center for SEO, content, campaigns, and business growth automation.",
-  keywords: ["Eli OS", "VirtuaLab", "AI", "Growth", "SEO", "Command Center", "Intelligence"],
+  title: "Eli — AI Growth Intelligence | VirtuaLab Digital",
+  description: "VirtuaLab Digital's AI-powered growth intelligence platform. Ask Eli about SEO strategy, keyword research, content optimization, competitive analysis, and automation workflows.",
+  keywords: ["Eli", "VirtuaLab Digital", "AI SEO", "Growth Intelligence", "Keyword Research", "Content Strategy", "SEO Automation", "MicroSaaS"],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/logo.svg",
   },
 };
 
@@ -27,6 +27,9 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased bg-[#f8fafc] text-[#1e293b]`}>
         {children}
         <Toaster />
+        <footer className="text-center py-3 text-[11px] text-[#94a3b8] border-t border-[#e2e8f0] bg-white">
+          &copy; {new Date().getFullYear()} <a href="https://virtualabdigital.com" className="hover:text-[#7c3aed] transition-colors" target="_blank" rel="noopener noreferrer">VirtuaLab Digital</a> &mdash; Eli MicroSaaS
+        </footer>
       </body>
     </html>
   );

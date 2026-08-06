@@ -144,20 +144,22 @@ const CATEGORY_META: Record<string, { emoji: string; label: string; color: strin
   'social-media': { emoji: '📱', label: 'Social Media Mgmt', color: '#059669' },
   'shopify-ecommerce': { emoji: '🛒', label: 'Shopify & E-Commerce', color: '#d97706' },
   'github-batch4': { emoji: '📂', label: 'GitHub Batch 4 Directory', color: '#64748b' },
+  'seo-tools': { emoji: '🔧', label: 'SEO Tools & Keyword Research', color: '#059669' },
 };
 
-const ELI_WELCOME = `Hey there! I'm **Eli** — VirtuaLab's AI Growth Intelligence.
+const ELI_WELCOME = `Hey! I'm **Eli** — VirtuaLab Digital's AI Growth Intelligence.
 
-I'm running on **Llama** with access to **157+ knowledge files** across **32 categories** spanning SEO, content strategy, automation, AI tools, and more. I'm here to help you accelerate growth.
+I have **160+ knowledge files** across **33 categories** — SEO tools, keyword research workflows, AI agents, automation, competitor analysis, and more.
 
 **What I can do:**
-• Analyze SEO opportunities and audit findings
-• Generate content strategies and campaign plans
-• Research tools, competitors, and market opportunities
-• Help with automation workflows and integrations
-• Provide actionable growth recommendations
+• Keyword research strategy (Keywords Everywhere + Gemini + Claude + Perplexity)
+• SEO audits and technical analysis
+• Content strategy and optimization
+• Competitive intelligence and backlink analysis
+• Automation workflow design (n8n, GHL, Baserow)
+• Tool recommendations and stack guidance
 
-What would you like to work on today?`;
+Ask me anything about growth.`;
 
 // ─── Helper: Count-up animation hook (fixed count) ───────────
 function useMetricCounts(targets: number[], duration = 800) {
