@@ -1,0 +1,492 @@
+  2860→        general website audit code, how-to design plumbing sites.
+  2861→        Commercial / Local
+  2862→        Focus the local service page on commercial terms; move step-by-step optimization guides to the GBP resource page.
+  2863→        AI Search Optimization
+  2864→        /geo-services
+  2865→        /perplexity-citation-guide 24
+  2866→        generative engine optimization, ai answer readiness.13
+  2867→        suburban local search statistics, direct google ads costs.
+  2868→        Informational / Emerging
+  2869→        Keep service offerings on the GEO landing page; move technical crawler and robots.txt guides to the Perplexity blog post.24
+  2870→        HVAC Marketing
+  2871→        /industries/hvac 1
+  2872→        /blog/hvac-marketing-plan 1
+  2873→        hvac digital marketing agency, ac repair seo campaigns.7
+  2874→        roofing storm storm setups, general concrete services.
+  2875→        Commercial / Industry
+  2876→        Use the industry page to address HVAC owners; move seasonal or generic marketing plans to the HVAC blog.9
+  2877→        Roofing Marketing
+  2878→        /industries/roofing 1
+  2879→        /blog/roofing-lead-generation 1
+  2880→        roofing contractor marketing services, storm damage seo.6
+  2881→        hvac emergency dispatch integrations, dentist seo setups.
+  2882→        Commercial / Industry
+  2883→        Focus the roofing page on storm and high-ticket service keywords; move pricing comparisons to a dedicated blog post.9
+  2884→        The table below maps these specific URLs to their search intent, primary keywords, and internal linking structure.
+  2885→
+  2886→
+  2887→Target URL Pattern
+  2888→        Assigned Page Type
+  2889→        Primary Target Keyword
+  2890→        Secondary Key Phrases
+  2891→        Direct Excluded Keywords
+  2892→        Recommended Schema Types
+  2893→        https://virtualabdigital.com/ 1
+  2894→        Knowledge Hub Homepage
+  2895→        local seo for contractors 17
+  2896→        suburban trade growth systems, rebuilt organic lead flow.1
+  2897→        cheap local listings software, ppc setup templates.
+  2898→        ProfessionalService, WebPage, FAQPage.21
+  2899→        https://virtualabdigital.com/services/local-seo
+  2900→        Core Service Page
+  2901→        google business profile optimization 18
+  2902→        local pack ranking factors, suburban map prominence.18
+  2903→        hvac logo design guidelines, how to build wordpress sites.
+  2904→        Service, LocalBusiness.21
+  2905→        https://virtualabdigital.com/services/geo
+  2906→        Core Service Page
+  2907→        generative engine optimization 13
+  2908→        ai search citations, aeo optimization guides.14
+  2909→        local print mail setup guides, yelp listing packages.
+  2910→        Service, WebPage.22
+  2911→        https://virtualabdigital.com/industries/hvac
+  2912→        Specialized Industry Page
+  2913→        hvac digital marketing agency 7
+  2914→        hvac local search maps, lead generation for ac repairs.7
+  2915→        commercial roofing seo setup, landscaping designs.
+  2916→        ProfessionalService, HVACBusiness.21
+  2917→        https://virtualabdigital.com/industries/roofing
+  2918→        Specialized Industry Page
+  2919→        roofing contractor marketing 6
+  2920→        roofing organic search leads, storm damage visibility.6
+  2921→        dentist near me local terms, plumbing dispatch tools.
+  2922→        ProfessionalService, RoofingContractor.21
+  2923→        Suggested Homepage Word Count Blueprint
+  2924→To ensure deep topical coverage without unnecessary filler, we must structure the word count based on the goals of each section.1
+  2925→
+  2926→
+  2927→Assigned Content Area
+  2928→        Target Word Count Range
+  2929→        Structural Content Requirements
+  2930→        Hero & Introduction
+  2931→        250 to 350 words
+  2932→        Clear problem statement, value proposition, and an overview of the three-step framework.1
+  2933→        The Paid Ad Trap
+  2934→        300 to 400 words
+  2935→        Data-dense comparison of paid ad costs vs. long-term organic search asset building.5
+  2936→        Maps & Local Pack mechanics
+  2937→        400 to 500 words
+  2938→        Explanation of the three main Google Maps ranking factors: proximity, relevance, and prominence.18
+  2939→        Service & Industry Directories
+  2940→        500 to 600 words
+  2941→        Structured pathways detailing specialized trade search setups (such as HVAC and roofing).1
+  2942→        AI Search & GEO Modules
+  2943→        300 to 450 words
+  2944→        Summaries of Princeton research and the 9 key factors for getting cited in AI search engines.13
+  2945→        Technical SEO & CRM Systems
+  2946→        350 to 450 words
+  2947→        Explanation of clean site architecture and lead tracking integrations (like ServiceTitan).8
+  2948→        Master FAQ Accordion
+  2949→        600 to 800 words
+  2950→        Detailed answers to the six core trade SEO and web design questions.1
+  2951→        SEO Master Glossary
+  2952→        400 to 500 words
+  2953→        Definitions of key search terms to help AI engines crawl and categorize the page.13
+  2954→        Total Homepage Word Count
+  2955→        3,100 to 4,250 words
+  2956→        Comprehensive, resource-heavy homepage built to establish topical authority.14
+  2957→        Trust Signals and EEAT Requirements
+  2958→To demonstrate Experience, Expertise, Authoritativeness, and Trustworthiness (E-E-A-T), the homepage must highlight real-world credentials and avoid unsupported claims.14
+  2959→
+  2960→
+  2961→Recommended EEAT Element
+  2962→        Implementation Strategy
+  2963→        Required Supporting Proof
+  2964→        Target Location on Homepage
+  2965→        Founder Profile
+  2966→        Highlight the founder's background, years in the trade marketing industry, and direct experience.
+  2967→        Links to verified LinkedIn profiles and past industry publications.
+  2968→        Section 11 (Audit / Case Study section).1
+  2969→        Agency Stack
+  2970→        List the specific tools used for tracking and auditing (like Ahrefs, Semrush, and Screaming Frog).
+  2971→        Visual logos of the software platforms.
+  2972→        Section 07 (Technical SEO module).1
+  2973→        ServiceTitan Integration
+  2974→        Highlight experience syncing search leads with dispatch CRMs like ServiceTitan and Jobber.8
+  2975→        Technical workflow diagrams.
+  2976→        Section 10 (CRM Integration module).1
+  2977→        Visual Case Studies
+  2978→        Display real before-and-after search maps showing increases in local visibility.17
+  2979→        High-resolution screenshots of local search grids.
+  2980→        Section 11 (Audit / Case Study section).1
+  2981→        Professional Certifications
+  2982→        Show official partner badges from major platforms.
+  2983→        Google Partner and Microsoft Advertising Partner badges.8
+  2984→        Footer area.1
+  2985→        No-Guarantee Disclaimer
+  2986→        State clearly that because search algorithms change, the agency focuses on technical processes rather than guaranteeing specific rankings.20
+  2987→        Clear, professional text block.
+  2988→        Global footer.1
+  2989→        Claims to Remove from Page Copy
+  2990→To maintain credibility and comply with AI search citation standards, the following terms should be removed unless backed by verifiable data:
+  2991→* Avoid generic sales phrases like "Guaranteed #1 Rankings" or "Dominate Google".20
+  2992→* Do not use unbacked claims like "The best SEO agency for HVAC companies".34
+  2993→* Remove empty jargon like "cutting-edge algorithms" or "instant lead systems".11
+  2994→* Clearly label estimated results or case studies as individual client examples, not guaranteed outcomes.32
+  2995→Structured Schema Markup Framework
+  2996→To ensure search engines can read and categorize the site’s content, we must implement structured JSON-LD schema. This setup nests specific local business and trade categories under a master professional service structure.21
+  2997→
+  2998→
+  2999→
+  3000→
+  3001→
+  3002→
+  3003→JSON
+  3004→{
+  3005→ "@context": "https://schema.org",
+  3006→ "@graph":,
+  3007→     "knowsAbout":
+  3008→   },
+  3009→   {
+  3010→     "@type": "Service",
+  3011→     "@id": "https://virtualabdigital.com/#localseo",
+  3012→     "name": "Local SEO for Contractors",
+  3013→     "serviceType": "Local Search Optimization",
+  3014→     "provider": {
+  3015→       "@id": "https://virtualabdigital.com/#agency"
+  3016→     },
+  3017→     "areaServed": {
+  3018→       "@type": "Country",
+  3019→       "name": "US"
+  3020→     }
+  3021→   },
+  3022→   {
+  3023→     "@type": "FAQPage",
+  3024→     "@id": "https://virtualabdigital.com/#faq",
+  3025→     "mainEntity":
+  3026→   }
+  3027→ ]
+  3028→}
+  3029→
+  3030→Conversion Optimization Strategy (CRO)
+  3031→To generate leads without using pushy sales pitches, we must align our calls-to-action (CTAs) with the user’s level of awareness.1 The table below lists CTAs ranked from educational to transactional.
+  3032→
+  3033→
+  3034→Conversion Step
+  3035→        Strategic Purpose
+  3036→        Suggested Copy
+  3037→        Placement
+  3038→        Alignment
+  3039→        01: Micro-Engagement
+  3040→        Capture users in the early research stage.
+  3041→        "Explore Our Local SEO Library".1
+  3042→        Section 02 (Learning Intro).
+  3043→        Fully Educational
+  3044→        02: Pain-Point Diagnosis
+  3045→        Help users understand why their local maps are invisible.18
+  3046→        "Check Your Google Maps Visibility"
+  3047→        Section 04 (Google Maps module).
+  3048→        Problem-Focused
+  3049→        03: Competitor Benchmark
+  3050→        Let users compare template and custom design options.19
+  3051→        "Compare Custom vs. Template Performance".19
+  3052→        Section 05 (Service Directory).
+  3053→        Solution-Focused
+  3054→        04: Tool Access
+  3055→        Offer a free checklist to help users audit their own site.
+  3056→        "Download the GBP Optimization Checklist"
+  3057→        Section 09 (Content module).
+  3058→        Action-Oriented
+  3059→        05: Diagnostic Lead
+  3060→        Provide a comprehensive website and local search audit.1
+  3061→        "Request Your Free SEO Audit".1
+  3062→        Section 11 (Case Studies / Audits).
+  3063→        Direct Lead
+  3064→        06: Primary Conversion
+  3065→        Let users schedule an educational strategy call.
+  3066→        "Schedule a Local Strategy Audit".1
+  3067→        Sections 01 (Hero) and 14 (Footer).
+  3068→        High Intent
+  3069→        Research-Backed Implementation Roadmap
+  3070→The final roadmap provides title tag, H1, and structure recommendations, followed by a priority action plan.
+  3071→Recommended Title Tag, Meta Description, and H1
+  3072→* Title Tag: Local SEO for Contractors & Home Services | VirtuaLab Digital 1
+  3073→* Meta Description: Optimize your suburban service business for Google Maps, organic search, and AI-powered engines. Turn your homepage into an educational resource. Get a free audit. 1
+  3074→* H1: Helping Contractors & Local Businesses Build Long-Term Search Assets 1
+  3075→Strategic Action Plans
+  3076→7-Day Quick-Win Action List
+  3077→
+  3078→
+  3079→Priority
+  3080→        Task Description
+  3081→        Target Section
+  3082→        Primary Owner
+  3083→        Difficulty
+  3084→        Expected Benefit
+  3085→        01
+  3086→        Revise the H1 and above-the-fold copy to focus on organic search assets.8
+  3087→        Section 01 (Hero)
+  3088→        Copywriter
+  3089→        Low
+  3090→        Immediately clarifies the page’s value proposition to visitors.11
+  3091→        02
+  3092→        Create and publish an llms.txt file in the site's root directory.24
+  3093→        Root (/llms.txt)
+  3094→        Developer
+  3095→        Low
+  3096→        Allows AI engines to crawl and parse key content easily.24
+  3097→        03
+  3098→        Submit the sitemap to Google Search Console and Bing Webmaster Tools.12
+  3099→        Search Console
+  3100→        SEO Strategist
+  3101→        Low
+  3102→        Ensures both search bots and AI crawlers can index the site.14
+  3103→        04
+  3104→        Implement the nested JSON-LD schema framework.21
+  3105→        Global Header
+  3106→        Developer
+  3107→        Medium
+  3108→        Helps search engines understand key service and location entities.21
+  3109→        30-Day Transition Action List
+  3110→
+  3111→
+  3112→Priority
+  3113→        Task Description
+  3114→        Target Section
+  3115→        Primary Owner
+  3116→        Difficulty
+  3117→        Expected Benefit
+  3118→        01
+  3119→        Replace repetitive trade copy with industry-specific search intent profiles.1
+  3120→        Section 06 (Industries)
+  3121→        Industry Copywriter
+  3122→        Medium
+  3123→        Builds stronger relevance for local search terms.18
+  3124→        02
+  3125→        Build out the master FAQ accordion with detailed technical answers.1
+  3126→        Section 12 (FAQ Accordion)
+  3127→        SEO Specialist
+  3128→        Medium
+  3129→        Captures informational search terms and question-based queries.24
+  3130→        03
+  3131→        Add data-dense comparison tables detailing paid ad costs vs. organic search ROI.5
+  3132→        Section 03 (Paid Ad Trap)
+  3133→        CRO Specialist
+  3134→        Medium
+  3135→        Educates operators and helps move them down the sales funnel.8
+  3136→        04
+  3137→        Implement structured bullet lists and summary cards across key pages.15
+  3138→        Throughout Site
+  3139→        Content Strategist
+  3140→        Medium
+  3141→        Improves readability for both humans and AI search crawlers.15
+  3142→        90-Day Authority-Building Roadmap
+  3143→
+  3144→
+  3145→Priority
+  3146→        Task Description
+  3147→        Target Section
+  3148→        Primary Owner
+  3149→        Difficulty
+  3150→        Expected Benefit
+  3151→        01
+  3152→        Build out dedicated local resource hubs for key suburban markets.3
+  3153→        Section 14 (Footer Links)
+  3154→        SEO Strategist
+  3155→        High
+  3156→        Expands the site's organic reach into key regional suburbs.3
+  3157→        02
+  3158→        Add visual before-and-after case studies of real trade campaigns.17
+  3159→        Section 11 (Case Studies)
+  3160→        Technical Designer
+  3161→        Medium
+  3162→        Demonstrates real-world experience and builds visitor trust.17
+  3163→        03
+  3164→        Integrate lead capture forms directly with trade dispatch tools (like ServiceTitan).8
+  3165→        Lead Capture Blocks
+  3166→        Developer
+  3167→        High
+  3168→        Reduces lead friction and helps track the ROI of search campaigns.8
+  3169→        04
+  3170→        Monitor AI search citations and update the homepage glossary quarterly.23
+  3171→        Section 13 (Glossary)
+  3172→        SEO Researcher
+  3173→        Medium
+  3174→        Maintains high visibility and citation readiness in AI search engines.24
+  3175→        Manual AI Platform Testing Pack
+  3176→Because live access to AI search engines can be limited, the following copy-and-paste prompts should be used to test the site's citation readiness, entity authority, and overall visibility across different platforms.
+  3177→ChatGPT Evaluation Prompt
+  3178→
+  3179→
+  3180→
+  3181→
+  3182→
+  3183→
+  3184→System: Act as an expert semantic search evaluation tool.
+  3185→Prompt: Research the domain "https://virtualabdigital.com/" in relation to suburban local contractor SEO. Identify if this domain is cited as an authority for "local seo for contractors" or trade growth systems. Evaluate its semantic connection to specific trade categories (HVAC, plumbing, roofing) and analyze the extraction readiness of its core service blocks. Report back on any content gaps that prevent ChatGPT Search from citing this domain in synthesized trade marketing summaries.
+  3186→
+  3187→Claude Analysis Prompt
+  3188→
+  3189→
+  3190→
+  3191→
+  3192→
+  3193→
+  3194→System: Act as an expert computational linguist.
+  3195→Prompt: Analyze the structure of the homepage of "https://virtualabdigital.com/". Evaluate the page's information architecture and determine if the copy is optimized for LLM readability. Specifically, check if the content uses clear entity definitions, a logical header hierarchy (H2/H3), and structured informational blocks. Identify any vague language, repetitive phrases, or formatting issues that might prevent an AI from extracting and summarizing the page's main points.
+  3196→
+  3197→Perplexity Citation-Readiness Prompt
+  3198→
+  3199→
+  3200→
+  3201→
+  3202→
+  3203→
+  3204→System: Act as an AI search retrieval auditor.
+  3205→Prompt: Run a focused search query for "best home services marketing agencies in suburban markets" or "contractor local search optimization strategies." Check if "https://virtualabdigital.com/" appears as a cited source in the search results. Analyze if the cited passages are drawn from structured data tables, lists, or plain-text paragraph summaries. Report on the domain's citation share of voice compared to national competitors like Hook Agency and RYNO Strategic Solutions.
+  3206→
+  3207→Bing Search Evaluation Protocol
+  3208→Submit the primary homepage URL to Bing Search Console. Run the following queries in Bing's search box to verify indexed content blocks:
+  3209→1. site:https://virtualabdigital.com/ "local seo for contractors"
+  3210→2. site:https://virtualabdigital.com/ "generative engine optimization"
+  3211→3. Check the indexed cache to verify that all content, lists, and tables are fully readable without requiring JavaScript execution.
+  3212→Microsoft Copilot Optimization Prompt
+  3213→
+  3214→
+  3215→
+  3216→
+  3217→
+  3218→
+  3219→System: Act as an enterprise search analyst.
+  3220→Prompt: Query Copilot on the topic of "balancing Google Local Service Ads with organic SEO for local trade businesses." Monitor if "https://virtualabdigital.com/" is cited as a source when comparing paid ads with long-term search assets. Verify if Copilot extracts key statistics from our comparison modules, and check if our nested professional service schema is recognized in its summary.
+  3221→
+  3222→Google AI Overview Verification Protocol
+  3223→Run high-intent local queries in a clean, logged-out browser window to check for Google AI Overview citations:
+  3224→1. Query: how do HVAC companies optimize for Google Maps in 2026
+  3225→2. Query: contractor local search ranking signals
+  3226→3. Check if our homepage or supporting service pages appear in Google's AI Overview summary cards. Verify if the extracted copy is drawn from our direct-answer FAQ blocks.
+  3227→AI Citation Recording Template
+  3228→Use the template below to track the site's visibility across different AI search engines over time.
+  3229→
+  3230→
+  3231→Evaluation Date
+  3232→        AI Platform Tested
+  3233→        Query Run
+  3234→        Domain Cited?
+  3235→        Source Section of Page
+  3236→        Competitor Cited Instead
+  3237→        Identified Content Gap
+  3238→        MM/DD/YYYY
+  3239→        ChatGPT Search
+  3240→        local seo for contractors
+  3241→        Yes / No
+  3242→        Section 01 (Hero) 1
+  3243→        Hook Agency 6
+  3244→        Lacks specific trade review data.2
+  3245→        MM/DD/YYYY
+  3246→        Perplexity AI
+  3247→        how to rank on google maps
+  3248→        Yes / No
+  3249→        Section 04 (Maps module)
+  3250→        RYNO Strategic Solutions 6
+  3251→        Needs more inline statistics.14
+  3252→        MM/DD/YYYY
+  3253→        Google AI Overview
+  3254→        hvac seo optimization
+  3255→        Yes / No
+  3256→        Section 06 (Industries)
+  3257→        Blue Corona 7
+  3258→        Lacks detailed process examples.20
+  3259→        Works cited
+  3260→1. screencapture-virtualabdigital-2026-07-06-20_31_47.pdf
+  3261→2. Can You Mix And Match Hook Agency's Services?, accessed July 6, 2026, https://hookagency.com/blog/mix-match-hooks-services/
+  3262→3. Local SEO Statistics 2026: 120+ Data Points for Business - Digital Applied, accessed July 6, 2026, https://www.digitalapplied.com/blog/local-seo-statistics-2026-data-points
+  3263→4. 10+ Local SEO Strategies for Contractors to Get Chosen in Your Area - Gushwork, accessed July 6, 2026, https://www.gushwork.ai/blog/local-seo-for-contractors
+  3264→5. Local Service Ads Stats & Cost Per Lead Data for 11 Industries - The Media Captain, accessed July 6, 2026, https://www.themediacaptain.com/google-local-service-ad-statistics/
+  3265→6. Best Home Services SEO Agencies - OuterBox, accessed July 6, 2026, https://www.outerboxdesign.com/articles/seo/best-home-services-seo-agencies/
+  3266→7. 9 Best HVAC Digital Marketing Agencies, accessed July 6, 2026, https://www.onthemap.com/blog/best-hvac-digital-marketing-agencies/
+  3267→8. 11 Top Construction Marketing Agencies in 2026, accessed July 6, 2026, https://themarketingagency.ca/blog/top-construction-marketing-agencies/
+  3268→9. Best Marketing Agencies for Home Services: An Honest Comparison - Zio Advertising, accessed July 6, 2026, https://www.zioadvertising.com/articles/best-marketing-agencies-home-services
+  3269→10. SEO-Friendly Web Design: Build A Site That Ranks - Hook Agency, accessed July 6, 2026, https://hookagency.com/blog/seo-friendly-web-design/
+  3270→11. The Homepage Hook: What Your Website Needs in the First 5 Seconds to Win Sales, accessed July 6, 2026, https://www.webmad.co.nz/blog/the-homepage-hook-what-your-website-needs-in-the-first-5-seconds-to-win-sales/
+  3271→12. SEO Basics: Learn The Fundamentals For Business Growth - Hook Agency, accessed July 6, 2026, https://hookagency.com/blog/seo-basics/
+  3272→13. Generative Engine Optimization (GEO): The Definitive Guide [2026] - Geoptie, accessed July 6, 2026, https://geoptie.com/blog/generative-engine-optimization
+  3273→14. Generative Engine Optimization (GEO) 2026: Princeton-Backed Playbook for AI Search, accessed July 6, 2026, https://aithinkerlab.com/generative-engine-optimization-2026/
+  3274→15. Generative Engine Optimization (GEO): What you need to know | Kontent.ai, accessed July 6, 2026, https://kontent.ai/blog/generative-engine-optimization-geo-what-you-need-to-know/
+  3275→16. GEO: Complete Definition and Guide to Generative Engine Optimization - KERN-IT, accessed July 6, 2026, https://www.kern-it.be/en/definitions/geo-generative-engine-optimization/
+  3276→17. Local SEO Guide for General Contractors - Buildertrend, accessed July 6, 2026, https://buildertrend.com/blog/local-seo-for-contractors/
+  3277→18. Local SEO for Contractors: How It Generates More Leads and Helps Grow Your Business, accessed July 6, 2026, https://localrankingcoach.com/blog/local-seo-for-contractors-how-it-generates-more-leads-and-helps-grow-your-business
+  3278→19. Home Service Website Design & Custom Solutions - Hook Agency, accessed July 6, 2026, https://hookagency.com/website-design/
+  3279→20. 1 Trusted Construction SEO Company - Blue Corona, accessed July 6, 2026, https://www.bluecorona.com/digital-marketing/seo/construction/
+  3280→21. Local Business Schema JSON-LD -- Examples and 100+ Sub-Types, accessed July 6, 2026, https://jsonld.com/local-business/
+  3281→22. Schema Markup Examples | Clearer Decisions & Next Steps - Symaxx Digital, accessed July 6, 2026, https://symaxx.com/resources/seo/technical-seo/schema-markup-examples
+  3282→23. How to Get Cited by Perplexity AI in 2026 - AI Labs Audit, accessed July 6, 2026, https://ailabsaudit.com/blog/en/perplexity-guide-maximize-citations
+  3283→24. How To Get Cited By Perplexity AI - TABSCAP, accessed July 6, 2026, https://www.tabscap.com/blog/how-to-get-cited-by-perplexity-ai
+  3284→25. Perplexity SEO: Get Cited by Perplexity AI Search - BeKnow, accessed July 6, 2026, https://www.beknow.io/perplexity-seo
+  3285→26. Local SEO Statistics 2026: 46% of Searches Are Local (68… - theStacc, accessed July 6, 2026, https://thestacc.com/blog/local-seo-statistics/
+  3286→27. Local SEO Statistics (2026): Ranking Factors, GBP Performance & ROI Data - BizIQ, accessed July 6, 2026, https://biziq.com/blog/local-seo-statistics/
+  3287→28. Local SEO Statistics (2026): 52+ Data Points on Search Clicks, Map Pack Leads, and First-Page ROI, accessed July 6, 2026, https://hookedmarketing.ca/local-seo-statistics-2026-52-data-points-on-search-clicks-map-pack-leads-and-first-page-roi/
+  3288→29. SEO for Contractors: Importance, Advantages, and How to Implement It - LinkGraph, accessed July 6, 2026, https://www.linkgraph.com/blog/seo-for-general-contractors/
+  3289→30. How can I create region-specific landing pages faster? - White Label Coders, accessed July 6, 2026, https://whitelabelcoders.com/blog/how-can-i-create-region-specific-landing-pages-faster/
+  3290→31. Best Home Services Marketing Agencies 2026 - CT Acquisitions, accessed July 6, 2026, https://ctacquisitions.com/best-home-services-marketing-agencies-2026/
+  3291→32. Why Is Hook Agency More Expensive Than Some Competitors?, accessed July 6, 2026, https://hookagency.com/blog/hook-agency-pricing/
+  3292→33. TOP 20 LOCAL SEO STATISTICS 2026 THAT EXPOSE SHOCKING NEARBY SEARCH DOMINATION - Amra & Elma, accessed July 6, 2026, https://www.amraandelma.com/best-local-seo-statistics/
+  3293→34. 12 Best HVAC Marketing Companies in 2026 | Thrive Agency, accessed July 6, 2026, https://thriveagency.com/news/best-hvac-marketing-companies/
+  3294→35. Plumber Schema Generator and Guide, accessed July 6, 2026, https://schemantra.com/schema_list/Plumber
+  3295→36. Client Portal - RYNO Strategic Solutions, accessed July 6, 2026, https://rynoss.com/client-portal/
+  3296→37. SEO for Contractors -- Dominate Local Search in Your Service Area, accessed July 6, 2026, https://dynamicglobalmarketing.com/industries/seo-contractors/
+  3297→38. Allow ChatGPT and Perplexity to Crawl Your Site (2026) | Chudi.dev, accessed July 6, 2026, https://chudi.dev/blog/how-to-optimize-for-perplexity-chatgpt-ai-search
+  3298→39. ProfessionalService - Schema.org Type, accessed July 6, 2026, https://schema.org/ProfessionalService
+  3299→
+  3300→============================================================
+  3301→
+  3302→===DOC ID: 1jptG_rVD1IB7v_G4JY_w9MpVHkUAU0QZB6lGhXRZ-FY===
+  3303→URL: https://docs.google.com/document/d/1jptG_rVD1IB7v_G4JY_w9MpVHkUAU0QZB6lGhXRZ-FY/edit?tab=t.0
+  3304→Lines: 18 | Chars: 8715
+  3305→============================================================
+  3306→<!DOCTYPE html><style nonce="WUIz1tT8If5r4nnRwury9w">body{height:100%;margin:0;width:100%}@media (max-height:350px){.button{font-size:10px}.button-container{margin-top:16px}.button.primary-button,.button.primary-button:active,.button.primary-button:focus,.button.primary-button:hover{padding:4px 12px}.title-text{font-size:22px;line-height:24px}.subtitle-text{font-size:12px;line-height:18px}}@media (min-height:350px){.button{font-size:14px}.button-container{margin-top:16px}.button.primary-button,.button.primary-button:active,.button.primary-button:focus,.button.primary-button:hover{padding:12px 24px}.title-text{font-size:28px;line-height:36px}.subtitle-text{font-size:16px;line-height:24px}}.document-root{display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;inset:0;position:absolute}.error,.login,.request-storage-access{display:none}.error,.login,.request-storage-access,.too-many-login-redirects{margin:auto;padding:36px}.document-root.show-error .error,.document-root.show-login-page .login,.document-root.show-storage-access .request-storage-access,.too-many-login-redirects{-webkit-box-align:center;-webkit-align-items:center;-moz-box-align:center;-ms-flex-align:center;align-items:center;display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-webkit-flex-direction:column;-moz-box-orient:vertical;-moz-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.button-container{display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-flex-wrap:wrap;-ms-flex-wrap:wrap;flex-wrap:wrap;-webkit-box-pack:center;-webkit-justify-content:center;-moz-box-pack:center;-ms-flex-pack:center;justify-content:center}.button{border:none;cursor:pointer;color:#0b57d0;-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0;font-family:Google Sans Text,Roboto,sans-serif;border-radius:100px;padding:12px;margin:0 8px;text-decoration:none}.button:hover{background-color:rgba(11,87,208,.078)}.button:active,.button:focus{background-color:rgba(11,87,208,.122)}.button.primary-button,.button.primary-button:active,.button.primary-button:focus,.button.primary-button:hover{background-color:#0b57d0;color:#fff}.button.primary-button:hover{box-shadow:0 1px 3px 1px rgba(0,0,0,.149),0 1px 2px 0 rgba(0,0,0,.302)}.icon{height:48px;margin-bottom:16px}.title-text{font-family:Google Sans,Roboto,sans-serif;text-align:center}.subtitle-text{font-family:Google Sans Text,Roboto,sans-serif;margin-top:16px;text-align:center}
+  3307→/*# sourceMappingURL=style.css.map */</style><script nonce="TmuSJliJyE_EYqdz7gaRmQ">'use strict';function h(a){var b=0;return function(){return b<a.length?{done:!1,value:a[b++]}:{done:!0}}}function k(a){var b=typeof Symbol!="undefined"&&Symbol.iterator&&a[Symbol.iterator];if(b)return b.call(a);if(typeof a.length=="number")return{next:h(a)};throw Error(String(a)+" is not an iterable or ArrayLike");};var l=["storage_access_granted","not_in_iframe","login_counter"];function m(a,b,c){c=c===void 0?"true":c;a=new URL(a);for(var d=0;d<l.length;d++)a.searchParams.delete(l[d]);a.searchParams.set(b,c);return a.toString()};/*
+  3308→
+  3309→ Copyright The Closure Library Authors.
+  3310→ SPDX-License-Identifier: Apache-2.0
+  3311→*/
+  3312→/*
+  3313→
+  3314→ Copyright Google LLC
+  3315→ SPDX-License-Identifier: Apache-2.0
+  3316→*/
+  3317→function n(){var a=new p,b=new q,c=document.getElementsByClassName("document-root")[0],d=this;this.g=new r;this.h=a;this.l=b;this.i=c;c.getElementsByClassName("accept-button")[0].addEventListener("click",function(){return void t(d)});c.getElementsByClassName("sign-in-button")[0].addEventListener("click",function(e){return void u(d,e)})}
+  3318→function v(){var a=new n;w()?x()||typeof document.hasStorageAccess!=="function"||typeof document.requestStorageAccess!=="function"?y(a,"show-login-page"):a.h.hasStorageAccess().then(function(b){b?y(a,"show-login-page"):z().then(function(c){c==="prompt"?y(a,"show-storage-access"):c==="granted"?t(a):y(a,"show-error")})},function(){y(a,"show-error")}):A(a,window.location.href,"not_in_iframe")}
+  3319→function A(a,b,c){c=c?m(b,c):b;if(a.g.get()){if(b=a.g.get())c=B(c),c=C(c),c!==void 0&&(b.action=c);a.g.submit()}else window.location.href===c?window.location.reload():(a=window.location,b=B(c)||D,b=C(b),b!==void 0&&(a.href=b))}function y(a,b){a.i.className="document-root "+b}function t(a){a.h.requestStorageAccess().then(function(){A(a,window.location.href,"storage_access_granted")},function(){y(a,"show-error")})}
+  3320→function u(a,b){var c;if(b=(c=b.currentTarget)==null?void 0:c.getAttribute("data-popup-url")){var d=E(window,B(b)||D);F(a.l,function(){d&&d.close();var e=window.location.href;var f=(new URL(e)).searchParams,g=1;f.has("login_counter")&&(f=Number(f.get("login_counter")),isFinite(f)&&(g=f+1));e=m(e,"login_counter",String(g));A(a,e)})}};function G(a){this.g=a}G.prototype.toString=function(){return this.g};var D=new G("about:invalid#zClosurez");function H(a){this.j=a}function I(a){return new H(function(b){return b.substr(0,a.length+1).toLowerCase()===a+":"})}var J=[I("data"),I("http"),I("https"),I("mailto"),I("ftp"),new H(function(a){return/^[^:]*([/?#]|$)/.test(a)})];function B(a){var b=b===void 0?J:b;if(a instanceof G)return a;for(var c=0;c<b.length;++c){var d=b[c];if(d instanceof H&&d.j(a))return new G(a)}}var K=/^\s*(?!javascript:)(?:[\w+.-]+:|[^:/?#]*(?:[/?#]|$))/i;
+  3321→function C(a){if(a instanceof G)if(a instanceof G)a=a.g;else throw Error("");else a=K.test(a)?a:void 0;return a};function E(a,b){b=C(b);return b!==void 0?a.open(b,"popupWindow","popup=yes,height=500,width=690"):null};function r(){}r.prototype.get=function(){return document.querySelector("form")};r.prototype.submit=function(){var a;(a=this.get())==null||a.submit()};function L(a){for(var b=k(document.cookie.split(";")),c=b.next();!c.done;c=b.next())if(c=c.value.split("="),c[0].trim()===a)return c[1]};function q(){this.h=["SAPISID","__Secure-1PAPISID","__Secure-3PAPISID"];this.g=void 0}function F(a,b){a.g&&clearInterval(a.g);for(var c={},d=k(a.h),e=d.next();!e.done;e=d.next())e=e.value,c[e]=L(e);a.g=setInterval(function(){a:{var f=k(a.h);for(var g=f.next();!g.done;g=f.next())if(g=g.value,L(g)!==void 0&&c[g]!==L(g)){f=!0;break a}f=!1}f&&(clearInterval(a.g),a.g=void 0,b())},1E3)};function w(){var a=!0;try{a=window.self!==window.top}catch(b){}return a};function p(){}p.prototype.hasStorageAccess=function(){return document.hasStorageAccess()};function z(){return navigator.permissions.query({name:"storage-access"}).then(function(a){return a.state}).catch(function(){return"prompt"})}p.prototype.requestStorageAccess=function(){return document.requestStorageAccess()};
+  3322→function x(){if(window.navigator.userAgentData&&window.navigator.userAgentData.brands)for(var a=window.navigator.userAgentData.brands,b=0;b<a.length;b++){var c=a[b];if(c.brand==="Google Chrome")return c.version==="115"||c.version==="116"}return!1};document.readyState==="complete"?v():document.addEventListener("DOMContentLoaded",M);function M(){v()};
+  3323→</script><div class="document-root loading"><div class="request-storage-access"><div><img src=&#47;&#47;ssl.gstatic.com&#47;docs&#47;common&#47;product&#47;docs_app_icon1.png alt=Google&#32;文件 class="icon"></div><div class="title-text">允許「Google 文件」存取你必要的 Cookie</div><div class="subtitle-text">如關閉必要的 Cookie，你將無法存取此內容</div><div class="button-container"><a target="cookieAccessHelp" href="https://support.google.com/drive?p=enable_storage_access" class=" button">瞭解更多資訊</a><button type="button" class="accept-button button primary-button">允許 Cookie</button></div></div><div class="login"><div><img src=https:&#47;&#47;www.gstatic.com&#47;images&#47;branding&#47;googleg&#47;1x&#47;googleg_standard_color_48dp.png alt=Google&#32;標誌 class="icon"></div><div class="title-text">登入您的 Google 帳戶</div><div class="subtitle-text">你必須登入才能存取此內容</div><div class="button-container"><button type="button" class="sign-in-button button primary-button" data-popup-url=https:&#47;&#47;accounts.google.com&#47;ServiceLogin?continue&#61;https:&#47;&#47;docs.google.com&#47;document&#47;d&#47;1jptG_rVD1IB7v_G4JY_w9MpVHkUAU0QZB6lGhXRZ&#45;FY&#47;export?format%3Dtxt&amp;btmpl&#61;popup&amp;hl&#61;zh_HK>登入</button></div></div><div class="error"><div><img src=https:&#47;&#47;www.gstatic.com&#47;images&#47;branding&#47;googleg&#47;1x&#47;googleg_standard_color_48dp.png alt=Google&#32;標誌 class="icon"></div><div class="title-text">無法存取你的 Google 帳戶</div><div class="subtitle-text">目前無法存取此內容。如要繼續操作，請嘗試登入你的 Google 帳戶或允許使用 Cookie。</div><div class="button-container"><a target="cookieAccessHelp" href="https://support.google.com/drive?p=enable_storage_access" class="primary-button button">瞭解更多資訊</a></div></div></div>
+  3324→
+  3325→============================================================
+  3326→
+  3327→===DOC ID: 1LHgnnQVLHTbYyI4vubW8ZTZ0_6hhUi2A9QTAInJsI_E===
+  3328→URL: https://docs.google.com/document/d/1LHgnnQVLHTbYyI4vubW8ZTZ0_6hhUi2A9QTAInJsI_E/edit?tab=t.0
+  3329→Lines: 18 | Chars: 8711
+  3330→============================================================
+  3331→<!DOCTYPE html><style nonce="ru4F6EEbv-IWtbVkC9zqmw">body{height:100%;margin:0;width:100%}@media (max-height:350px){.button{font-size:10px}.button-container{margin-top:16px}.button.primary-button,.button.primary-button:active,.button.primary-button:focus,.button.primary-button:hover{padding:4px 12px}.title-text{font-size:22px;line-height:24px}.subtitle-text{font-size:12px;line-height:18px}}@media (min-height:350px){.button{font-size:14px}.button-container{margin-top:16px}.button.primary-button,.button.primary-button:active,.button.primary-button:focus,.button.primary-button:hover{padding:12px 24px}.title-text{font-size:28px;line-height:36px}.subtitle-text{font-size:16px;line-height:24px}}.document-root{display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;inset:0;position:absolute}.error,.login,.request-storage-access{display:none}.error,.login,.request-storage-access,.too-many-login-redirects{margin:auto;padding:36px}.document-root.show-error .error,.document-root.show-login-page .login,.document-root.show-storage-access .request-storage-access,.too-many-login-redirects{-webkit-box-align:center;-webkit-align-items:center;-moz-box-align:center;-ms-flex-align:center;align-items:center;display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-webkit-flex-direction:column;-moz-box-orient:vertical;-moz-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.button-container{display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-flex-wrap:wrap;-ms-flex-wrap:wrap;flex-wrap:wrap;-webkit-box-pack:center;-webkit-justify-content:center;-moz-box-pack:center;-ms-flex-pack:center;justify-content:center}.button{border:none;cursor:pointer;color:#0b57d0;-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0;font-family:Google Sans Text,Roboto,sans-serif;border-radius:100px;padding:12px;margin:0 8px;text-decoration:none}.button:hover{background-color:rgba(11,87,208,.078)}.button:active,.button:focus{background-color:rgba(11,87,208,.122)}.button.primary-button,.button.primary-button:active,.button.primary-button:focus,.button.primary-button:hover{background-color:#0b57d0;color:#fff}.button.primary-button:hover{box-shadow:0 1px 3px 1px rgba(0,0,0,.149),0 1px 2px 0 rgba(0,0,0,.302)}.icon{height:48px;margin-bottom:16px}.title-text{font-family:Google Sans,Roboto,sans-serif;text-align:center}.subtitle-text{font-family:Google Sans Text,Roboto,sans-serif;margin-top:16px;text-align:center}
+  3332→/*# sourceMappingURL=style.css.map */</style><script nonce="qijfSTmllwtDCEgRfGs-0w">'use strict';function h(a){var b=0;return function(){return b<a.length?{done:!1,value:a[b++]}:{done:!0}}}function k(a){var b=typeof Symbol!="undefined"&&Symbol.iterator&&a[Symbol.iterator];if(b)return b.call(a);if(typeof a.length=="number")return{next:h(a)};throw Error(String(a)+" is not an iterable or ArrayLike");};var l=["storage_access_granted","not_in_iframe","login_counter"];function m(a,b,c){c=c===void 0?"true":c;a=new URL(a);for(var d=0;d<l.length;d++)a.searchParams.delete(l[d]);a.searchParams.set(b,c);return a.toString()};/*
+  3333→
+  3334→ Copyright The Closure Library Authors.
+  3335→ SPDX-License-Identifier: Apache-2.0
+  3336→*/
+  3337→/*
+  3338→
+  3339→ Copyright Google LLC
+  3340→ SPDX-License-Identifier: Apache-2.0
+  3341→*/
+  3342→function n(){var a=new p,b=new q,c=document.getElementsByClassName("document-root")[0],d=this;this.g=new r;this.h=a;this.l=b;this.i=c;c.getElementsByClassName("accept-button")[0].addEventListener("click",function(){return void t(d)});c.getElementsByClassName("sign-in-button")[0].addEventListener("click",function(e){return void u(d,e)})}
+  3343→function v(){var a=new n;w()?x()||typeof document.hasStorageAccess!=="function"||typeof document.requestStorageAccess!=="function"?y(a,"show-login-page"):a.h.hasStorageAccess().then(function(b){b?y(a,"show-login-page"):z().then(function(c){c==="prompt"?y(a,"show-storage-access"):c==="granted"?t(a):y(a,"show-error")})},function(){y(a,"show-error")}):A(a,window.location.href,"not_in_iframe")}
+  3344→function A(a,b,c){c=c?m(b,c):b;if(a.g.get()){if(b=a.g.get())c=B(c),c=C(c),c!==void 0&&(b.action=c);a.g.submit()}else window.location.href===c?window.location.reload():(a=window.location,b=B(c)||D,b=C(b),b!==void 0&&(a.href=b))}function y(a,b){a.i.className="document-root "+b}function t(a){a.h.requestStorageAccess().then(function(){A(a,window.location.href,"storage_access_granted")},function(){y(a,"show-error")})}
+  3345→function u(a,b){var c;if(b=(c=b.currentTarget)==null?void 0:c.getAttribute("data-popup-url")){var d=E(window,B(b)||D);F(a.l,function(){d&&d.close();var e=window.location.href;var f=(new URL(e)).searchParams,g=1;f.has("login_counter")&&(f=Number(f.get("login_counter")),isFinite(f)&&(g=f+1));e=m(e,"login_counter",String(g));A(a,e)})}};function G(a){this.g=a}G.prototype.toString=function(){return this.g};var D=new G("about:invalid#zClosurez");function H(a){this.j=a}function I(a){return new H(function(b){return b.substr(0,a.length+1).toLowerCase()===a+":"})}var J=[I("data"),I("http"),I("https"),I("mailto"),I("ftp"),new H(function(a){return/^[^:]*([/?#]|$)/.test(a)})];function B(a){var b=b===void 0?J:b;if(a instanceof G)return a;for(var c=0;c<b.length;++c){var d=b[c];if(d instanceof H&&d.j(a))return new G(a)}}var K=/^\s*(?!javascript:)(?:[\w+.-]+:|[^:/?#]*(?:[/?#]|$))/i;
+  3346→function C(a){if(a instanceof G)if(a instanceof G)a=a.g;else throw Error("");else a=K.test(a)?a:void 0;return a};function E(a,b){b=C(b);return b!==void 0?a.open(b,"popupWindow","popup=yes,height=500,width=690"):null};function r(){}r.prototype.get=function(){return document.querySelector("form")};r.prototype.submit=function(){var a;(a=this.get())==null||a.submit()};function L(a){for(var b=k(document.cookie.split(";")),c=b.next();!c.done;c=b.next())if(c=c.value.split("="),c[0].trim()===a)return c[1]};function q(){this.h=["SAPISID","__Secure-1PAPISID","__Secure-3PAPISID"];this.g=void 0}function F(a,b){a.g&&clearInterval(a.g);for(var c={},d=k(a.h),e=d.next();!e.done;e=d.next())e=e.value,c[e]=L(e);a.g=setInterval(function(){a:{var f=k(a.h);for(var g=f.next();!g.done;g=f.next())if(g=g.value,L(g)!==void 0&&c[g]!==L(g)){f=!0;break a}f=!1}f&&(clearInterval(a.g),a.g=void 0,b())},1E3)};function w(){var a=!0;try{a=window.self!==window.top}catch(b){}return a};function p(){}p.prototype.hasStorageAccess=function(){return document.hasStorageAccess()};function z(){return navigator.permissions.query({name:"storage-access"}).then(function(a){return a.state}).catch(function(){return"prompt"})}p.prototype.requestStorageAccess=function(){return document.requestStorageAccess()};
+  3347→function x(){if(window.navigator.userAgentData&&window.navigator.userAgentData.brands)for(var a=window.navigator.userAgentData.brands,b=0;b<a.length;b++){var c=a[b];if(c.brand==="Google Chrome")return c.version==="115"||c.version==="116"}return!1};document.readyState==="complete"?v():document.addEventListener("DOMContentLoaded",M);function M(){v()};
+  3348→</script><div class="document-root loading"><div class="request-storage-access"><div><img src=&#47;&#47;ssl.gstatic.com&#47;docs&#47;common&#47;product&#47;docs_app_icon1.png alt=Google&#32;文件 class="icon"></div><div class="title-text">允許「Google 文件」存取你必要的 Cookie</div><div class="subtitle-text">如關閉必要的 Cookie，你將無法存取此內容</div><div class="button-container"><a target="cookieAccessHelp" href="https://support.google.com/drive?p=enable_storage_access" class=" button">瞭解更多資訊</a><button type="button" class="accept-button button primary-button">允許 Cookie</button></div></div><div class="login"><div><img src=https:&#47;&#47;www.gstatic.com&#47;images&#47;branding&#47;googleg&#47;1x&#47;googleg_standard_color_48dp.png alt=Google&#32;標誌 class="icon"></div><div class="title-text">登入您的 Google 帳戶</div><div class="subtitle-text">你必須登入才能存取此內容</div><div class="button-container"><button type="button" class="sign-in-button button primary-button" data-popup-url=https:&#47;&#47;accounts.google.com&#47;ServiceLogin?continue&#61;https:&#47;&#47;docs.google.com&#47;document&#47;d&#47;1LHgnnQVLHTbYyI4vubW8ZTZ0_6hhUi2A9QTAInJsI_E&#47;export?format%3Dtxt&amp;btmpl&#61;popup&amp;hl&#61;zh_HK>登入</button></div></div><div class="error"><div><img src=https:&#47;&#47;www.gstatic.com&#47;images&#47;branding&#47;googleg&#47;1x&#47;googleg_standard_color_48dp.png alt=Google&#32;標誌 class="icon"></div><div class="title-text">無法存取你的 Google 帳戶</div><div class="subtitle-text">目前無法存取此內容。如要繼續操作，請嘗試登入你的 Google 帳戶或允許使用 Cookie。</div><div class="button-container"><a target="cookieAccessHelp" href="https://support.google.com/drive?p=enable_storage_access" class="primary-button button">瞭解更多資訊</a></div></div></div>
+  3349→
+  3350→============================================================
+  3351→
