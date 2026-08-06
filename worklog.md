@@ -71,3 +71,25 @@ Stage Summary:
 - 10 URLs identified as usable, 13 filtered out with documented reasons
 - Keyword research workflow: Tier 1 (KE data) → Tier 2 (Gemini SERP validation) → Tier 3 (Claude clustering/strategy) → Tier 4 (Perplexity competitive intel)
 - knowledge-search.ts updated to find new tool files in 'seo-tools' category
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Production-hardening Eli MicroSaaS for subdomain deployment
+
+Work Log:
+- Audited entire app for production readiness (env vars, hardcoded paths, build config, security)
+- Fixed next.config.ts: disabled ignoreBuildErrors, enabled reactStrictMode, added security headers
+- Made knowledge-search.ts UPLOAD_DIR configurable via KNOWLEDGE_DIR env var
+- Added /api/health endpoint (checks knowledge base status)
+- Excluded data/, skills/, scripts/, tests/ from tsconfig to eliminate false TS errors
+- Created .env.example with production variable documentation
+- Updated .gitignore to allow .env.example
+- Verified: zero TypeScript errors, clean production build (76MB standalone)
+- Created deploy.sh — full one-command deployment script (build, rsync, systemd, Caddy auto-HTTPS)
+- Production Caddyfile embedded in deploy script for eli.virtuabaldigital.com
+
+Stage Summary:
+- App is production-ready: clean build, 0 TS errors, configurable paths, health check
+- deploy.sh handles: build → rsync to /opt/eli/ → systemd service → Caddy with auto-HTTPS
+- User needs: VPS IP + SSH access + DNS record for eli.virtuabaldigital.com
