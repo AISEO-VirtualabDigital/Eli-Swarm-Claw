@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://github.com/diegosouzapw/OmniRoute",
+    "name": "diegosouzapw/OmniRoute: Never stop coding. Free MIT AI",
+    "snippet": "2 days ago — OmniRoute is also the first Brazilian open-source project . The most complete catalog of any open-source router: 291 providers, 90+ with a free ...",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "Aug 5, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/diegosouzapw/OmniRoute/wiki/Architecture",
+    "name": "Architecture · diegosouzapw/OmniRoute Wiki",
+    "snippet": "May 13, 2026 — OmniRoute is a local AI routing gateway and dashboard built on Next.js. It provides a single OpenAI-compatible endpoint ( /v1/* ) and routes ...",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "May 13, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/diegosouzapw/OmniRoute/discussions/2126",
+    "name": "Can use windsurf #2126 - diegosouzapw OmniRoute",
+    "snippet": "Yes, Windsurf works great with OmniRoute! Since OmniRoute exposes an OpenAI-compatible API endpoint , any IDE or tool that supports custom OpenAI-compatible ...",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/diegosouzapw/OmniRoute/releases",
+    "name": "Releases · diegosouzapw/OmniRoute",
+    "snippet": "Never stop coding. Free MIT AI gateway : one endpoint, 290+ providers (90+ free), 500+ models — Kimi, Claude, GPT, OpenAI, Gemini, GLM, DeepSeek, MiniMax.",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://sourceforge.net/projects/omniroute.mirror",
+    "name": "OmniRoute download",
+    "snippet": "Jul 30, 2026 — OmniRoute is an AI gateway for multi-provider LLM . This is an exact mirror of the OmniRoute project, hosted at https://github.com/diegosouzapw/ ...",
+    "host_name": "sourceforge.net",
+    "rank": 4,
+    "date": "Jul 30, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/diegosouzapw/OmniRoute/issues",
+    "name": "Issues · diegosouzapw/OmniRoute",
+    "snippet": "Never stop coding. Free MIT AI gateway : one endpoint, 290+ providers (90+ free), 500+ models — Kimi, Claude, GPT, OpenAI, Gemini, GLM, DeepSeek, MiniMax.",
+    "host_name": "github.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/diegosouzapw/OmniRoute/discussions/2566",
+    "name": "How to use Cursor #2566 - diegosouzapw OmniRoute",
+    "snippet": "May 27, 2026 — If you want OmniRoute to consume Cursor Premium as a provider, that would need an extracted Cursor-CLI integration similar to how kiro works.",
+    "host_name": "github.com",
+    "rank": 6,
+    "date": "May 27, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/diegosouzapw/OmniRoute/wiki/Provider-Reference",
+    "name": "Provider Reference · diegosouzapw/OmniRoute Wiki",
+    "snippet": "Jun 15, 2026 — Never stop coding. Free MIT AI gateway : one endpoint, 290+ providers (90+ free), 500+ models — Kimi, Claude, GPT, OpenAI, Gemini, GLM, ...",
+    "host_name": "github.com",
+    "rank": 7,
+    "date": "Jun 15, 2026",
+    "favicon": ""
+  }
+]

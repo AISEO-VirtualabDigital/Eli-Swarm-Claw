@@ -52,6 +52,26 @@ export interface ClawState {
   providerStats: Record<string, { generated: number; errors: number; emailsRead: number }>;
 }
 
+// ─── Browser Automation Types (browser-use pattern) ─────────────
+
+export interface ClawBrowserStep {
+  action: 'goto' | 'click' | 'fill' | 'wait' | 'screenshot';
+  url?: string;
+  selector?: string;
+  value?: string;
+  ms?: number;
+  timeout?: number;
+}
+
+export interface ClawBrowserTask {
+  service: string;
+  email: string;
+  inboxId: string;
+  steps: ClawBrowserStep[];
+  postAction: string;    // e.g. "poll-inbox:gm-xxx:30" = poll inbox 30 times
+  keyPattern: string | null;  // regex to extract from email, null if no key
+}
+
 // ─── Default Config ──────────────────────────────────────────────
 
 const DEFAULT_CONFIG: ClawConfig = {
@@ -528,6 +548,67 @@ export class OpenClaw {
     const now = Date.now();
     this.inboxes = this.inboxes.filter(i => i.status !== 'expired' && now < i.expiresAt);
     return before - this.inboxes.length;
+  }
+
+  // ─── Browser Automation Actions (inspired by browser-use) ──────
+  //
+  // These methods generate the INSTRUCTIONS for browser automation.
+  // The actual Playwright/browser-use execution happens on a Python
+  // subprocess or a separate microservice.
+  //
+  // This keeps the claw (TypeScript/Next.js) decoupled from the browser
+  // automation layer (Python/Playwright), following OmniRoute's provider
+  // abstraction pattern.
+  //
+
+  /**
+   * Generate a browser automation task for signing up at a service.
+   * Returns instructions that a browser-use agent can execute.
+   */
+  async generateBrowserTask(service: string): Promise<ClawBrowserTask | null> {
+    const inbox = await this.getFreshInbox();
+    if (!inbox) return null;
+
+    const tasks: Record<string, ClawBrowserTask> = {
+      gemini: {
+        service,
+        email: inbox.email,
+        inboxId: inbox.id,
+        steps: [
+          { action: 'goto', url: 'https://aistudio.google.com/apikey' },
+          { action: 'wait', selector: 'input[type="email"]', timeout: 10000 },
+          { action: 'fill', selector: 'input[type="email"]', value: inbox.email },
+          { action: 'click', selector: 'button:has-text("Create API key"), button:has-text("Get API key"), [aria-label*="API key"]' },
+          { action: 'wait', ms: 5000 },
+        ],
+        postAction: `poll-inbox:${inbox.id}:30`,
+        keyPattern: 'AIza[0-9A-Za-z_-]{35}',
+      },
+      cloudflare: {
+        service,
+        email: inbox.email,
+        inboxId: inbox.id,
+        steps: [
+          { action: 'goto', url: 'https://dash.cloudflare.com/sign-up' },
+          { action: 'wait', selector: 'input[name="email"]', timeout: 10000 },
+          { action: 'fill', selector: 'input[name="email"]', value: inbox.email },
+          { action: 'fill', selector: 'input[name="password"]', value: `Claw${Date.now().toString(36)}!S${Math.random().toString(36).slice(2, 8)}` },
+          { action: 'click', selector: 'button[type="submit"]' },
+          { action: 'wait', ms: 3000 },
+        ],
+        postAction: `poll-inbox:${inbox.id}:60`,
+        keyPattern: null,
+      },
+    };
+
+    return tasks[service] || null;
+  }
+
+  /**
+   * Get all browser automation tasks for available services
+   */
+  getSupportedBrowserServices(): string[] {
+    return ['gemini', 'cloudflare'];
   }
 }
 

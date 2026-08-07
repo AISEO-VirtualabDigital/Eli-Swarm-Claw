@@ -168,8 +168,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ action: 'claw-state', ...claw.getState() });
     }
 
+    // ── Browser task: get browser-use instructions for a service signup ──
+    if (action === 'browser-task') {
+      const service = searchParams.get('service') || 'gemini';
+      const task = await claw.generateBrowserTask(service);
+      if (!task) {
+        return NextResponse.json({ error: `No browser task for service: ${service}` }, { status: 400 });
+      }
+      return NextResponse.json({
+        action: 'browser-task',
+        ...task,
+        note: 'Execute these steps with browser-use/Playwright. After completion, the claw will auto-poll the inbox for the API key.',
+        supportedServices: claw.getSupportedBrowserServices(),
+      });
+    }
+
     return NextResponse.json(
-      { error: 'Unknown action. Use: state, key, test, signup, claw' },
+      { error: 'Unknown action. Use: state, key, test, signup, claw, browser-task' },
       { status: 400 }
     );
   } catch (err: any) {

@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://github.com/cloudflare/cloudflare-os",
+    "name": "Cloudflare OS: An AI productivity environment",
+    "snippet": "9 hours ago — The Cloudflare OS agent is a Code Mode agent -- it performs tasks by writing and immediately executing snippets of code. It can be connected to ...",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "Aug 7, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.cloudflare.com/cloudflare-os",
+    "name": "Cloudflare OS: an open platform for agents, apps, and work",
+    "snippet": "2 days ago — Cloudflare OS is an open-source platform that lets everyone in your company build apps, automate work, and safely access internal systems, ...",
+    "host_name": "blog.cloudflare.com",
+    "rank": 1,
+    "date": "Aug 5, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=P3FByUv2kJg",
+    "name": "Cloudflare OS: 4000 Apps in 1 Month [Now Open Source]",
+    "snippet": "Cloudflare OS is an open-source agent workspace built on Cloudflare Workers and Durable Objects. Employees chat with AI agents that carry ...",
+    "host_name": "www.youtube.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.developersdigest.tech/blog/cloudflare-os-open-source-agent-platform-2026",
+    "name": "Cloudflare OS: The Open Source Agent Workspace That",
+    "snippet": "2 days ago — It is an agent workspace, a security framework, and an app runtime … keepers ship for GitHub , Google, Slack, Notion, Confluence, Cloudflare OS : ...",
+    "host_name": "www.developersdigest.tech",
+    "rank": 3,
+    "date": "Aug 5, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/cloudflare/skills",
+    "name": "Skills for teaching agents how to build on Cloudflare.",
+    "snippet": "Cloudflare Skills . A collection of Agent Skills for building on Cloudflare, Workers, the Agents SDK, and the wider Cloudflare Developer Platform. Read more",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

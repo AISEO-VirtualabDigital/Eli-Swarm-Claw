@@ -78,3 +78,25 @@ Stage Summary:
 - Temp inbox lifecycle: Create → Use email for signup → Poll for API key → Extract → Inject → Auto-rotate before expiry
 - To use: POST /api/omni/inject { service: 'gemini', key: 'AIza...' } to give Eli a real key, or POST /api/omni to auto-create an inbox
 - OpenInbox API key (OPENINBOX_API_KEY env var) needed for email reading — creation works without it
+---
+Task ID: 1
+Agent: main
+Task: Research and absorb 5 GitHub repos + article, integrate with Open Claw
+
+Work Log:
+- Searched GitHub for omnirouter → found diegosouzapw/OmniRoute (42k stars, 290+ providers)
+- Read OmniRoute README + Architecture wiki (extracted combo fallback, circuit breaker, quota-aware routing patterns)
+- Read Cloudflare OS README (gadgets sandbox, gatekeepers security framework, agent workspace)
+- Read Agent-Reach README (multi-backend routing for web scraping, one-CLI internet access)
+- Read browser-use README (Playwright-based browser automation for AI agents, form filling, data extraction)
+- Read KOS Starter Kit README (Markdown-driven knowledge OS with AGENTS.md router, handoff.md)
+- Absorbed 8 knowledge chunks into eli-vault/01-Active/absorbed-repos/
+- Built search-index-absorbed.json (758 unique terms, 8 chunks)
+- Added ClawBrowserTask type + generateBrowserTask() to open-claw.ts
+- Added browser-task API endpoint to /api/omni
+
+Stage Summary:
+- OmniRoute combo pattern validated as the architectural basis for Open Claw provider chain
+- browser-use integration designed: Claw generates task instructions → browser-use executes → Claw polls for key
+- Cloudflare OS gatekeeper pattern adopted for Open Claw action validation
+- 8 chunks in vault covering: omniroute (2), cloudflare-os (2), agent-reach (1), browser-use (1), kos (1), synthesis (1)

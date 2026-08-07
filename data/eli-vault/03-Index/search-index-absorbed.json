@@ -1,0 +1,2729 @@
+{
+  "terms": {
+    "226": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "290": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "403": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "500": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "2026": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "8787": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "agent": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "reach": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "gives": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "agents": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "internet": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "capability": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "with": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "one": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "cli": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "install": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "supports": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "reading": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "and": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "searching": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "twitter": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "reddit": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "youtube": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "github": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "bilibili": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "xiaohongshu": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "zero": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "api": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "fees": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "core": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "value": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "proposition": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "can": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "write": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "code": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "manage": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "projects": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "but": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "they": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "access": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "the": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "paid": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "blocks": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "server": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "ips": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "requires": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "login": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "generic": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "download": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "tools": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "subtitles": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "are": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "hard": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "extract": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "html": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "scraping": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "returns": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "garbage": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "solves": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "all": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "these": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "free": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "open": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "source": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "single": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "command": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "key": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "design": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "principles": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "completely": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "apis": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "only": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "cost": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "optional": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "proxy": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "month": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "privacy": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "safe": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "cookies": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "stored": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "locally": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "never": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "uploaded": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "continuous": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "replacement": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "each": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "platform": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "has": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "primary": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "backup": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "multi": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "backend": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "routing": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "method": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "fails": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "switch": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "next": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "transparently": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "universal": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "compatibility": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "works": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "claude": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "openclaw": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "cursor": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "windsurf": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "any": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "that": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "run": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "commands": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "self": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "diagnosing": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "doctor": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "tells": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "you": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "what": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "doesn": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "line": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "your": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "help": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "https": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "raw": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "githubusercontent": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "com": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "panniantong": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "main": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "docs": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "relevance": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "eli": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "same": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "pattern": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "omniroute": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "combos": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "claw": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "provider": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "chains": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "approach": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "could": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "use": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "tool": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "for": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "browser": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "automation": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "needed": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "actually": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "sign": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "services": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "like": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "google": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "studio": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "using": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "generated": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "temp": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "emails": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "maps": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "health": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md"
+    ],
+    "check": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "endpoint": [
+      "absorbed-repos/abs-agent-reach-3f8520a4.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "lets": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "web": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "way": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "human": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "does": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "opens": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "pages": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "clicks": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "buttons": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "types": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "fills": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "forms": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "describe": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "task": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "completes": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "capabilities": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "fill": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "this": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "job": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "application": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "resume": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "navigates": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "submits": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "data": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "structured": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "about": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "followers": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "browses": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "scrapes": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "exports": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "csv": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "test": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "website": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "report": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "bugs": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "screenshots": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "reports": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "technical": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "details": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "python": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "library": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "pip": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "uses": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "playwright": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "under": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "hood": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "real": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "control": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "llm": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "via": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "cloud": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "codex": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "hermes": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "skill": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "harness": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "connection": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "management": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "architecture": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "receives": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "natural": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "language": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "description": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "translates": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "actions": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "click": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "type": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "navigate": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "executes": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "chromium": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "results": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "returned": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "vision": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "screenshot": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "analysis": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "integration": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "missing": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "piece": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "full": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "loop": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "generates": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "email": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "guerrilla": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "mail": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "signup": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "page": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "address": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "create": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "arrives": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "inbox": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "reads": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "extracts": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "omni": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "route": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "injects": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "into": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "creates": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "fully": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "autonomous": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "rotation": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "cycle": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "interaction": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "cloudflare": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "account": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "creation": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "pipeline": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "automate": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "password": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "name": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "captcha": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "possible": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "hands": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "off": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "sends": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "verification": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "link": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "from": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "created": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "verified": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "user": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "meant": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "make": [
+      "absorbed-repos/abs-browser-use-3917ff19.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "closes": [
+      "absorbed-repos/abs-browser-use-3917ff19.md"
+    ],
+    "operating": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "system": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "productivity": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "originally": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "developed": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "inside": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "large": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "portion": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "workforce": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "daily": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "concepts": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "gadgets": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "new": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "paradigm": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "where": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "every": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "runs": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "their": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "own": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "copy": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "apps": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "when": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "slide": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "deck": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "private": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "instance": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "software": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "just": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "running": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "separate": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "sandbox": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "impossible": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "app": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "leak": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "between": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "users": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "freely": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "modify": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "ask": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "add": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "features": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "because": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "sandboxing": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "makes": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "departure": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "years": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "saas": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "changes": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "equation": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "three": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "pillars": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "chat": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "tasks": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "preloaded": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "knowledge": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "how": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "company": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "operates": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "sandboxed": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "development": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "build": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "small": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "personal": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "safely": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "share": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "others": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "security": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "framework": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "gatekeepers": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "guardrails": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "both": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "non": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "stack": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "wrangler": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "workerd": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "workers": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "runtime": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "pnpm": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "based": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "monorepo": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "local": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "dev": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "localhost": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "deploy": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "built": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "blueprints": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "slides": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "whiteboard": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "tic": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "tac": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "toe": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "issue": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "dashboard": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "repo": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "editing": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "gadget": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "instances": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "modifiability": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "isolation": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "concept": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "client": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "gets": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "isolated": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "input": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "sanitization": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "prompt": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "injection": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "guards": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "blueprint": [
+      "absorbed-repos/abs-cfos-arch-93fff478.md"
+    ],
+    "includes": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "called": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "applies": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "applications": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "enabling": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "team": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "sleep": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "night": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "not": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "bolted": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "nuts": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "nothing": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "bad": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "will": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "happen": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "other": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "sit": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "layer": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "execution": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "action": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "passes": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "through": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "gatekeeper": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "evaluation": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "configurable": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "per": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "workspace": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "designed": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "extensible": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "organizations": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "custom": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "mapping": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "needs": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "similar": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "guardkeeper": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "engine": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "before": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "executing": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "creating": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "inboxes": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "injecting": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "keys": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "should": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "validate": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "prevents": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "being": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "abused": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "rate": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "limiting": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "domain": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "restrictions": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "validation": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "session": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "have": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "state": [
+      "absorbed-repos/abs-cfos-security-92d428da.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "release": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "went": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "august": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "version": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "complete": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "rewrite": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "lessons": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "learned": [
+      "absorbed-repos/abs-cfos-security-92d428da.md"
+    ],
+    "synthesis": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "infinite": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "combo": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "fallback": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "openinbox": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "service": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "form": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "waits": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "polls": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "detects": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "regex": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "patterns": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "process": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "env": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "air": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "picks": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "becomes": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "live": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "drains": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "expires": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "restarts": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "step": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "model": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "chain": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "ordered": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "55min": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "ttl": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "read": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "secondary": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "jwt": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "auth": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "tertiary": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "10min": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "count": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "circuit": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "breaker": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "row": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "skip": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "minutes": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "evaluates": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "limited": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "don": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "spam": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "healthy": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "extracted": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "format": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "valid": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "working": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "call": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "points": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "environment": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "vps": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "headless": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "subprocess": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "microservice": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "calls": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "http": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "auto": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "registered": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "gemini": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "openai": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "phone": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "harder": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "anthropic": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "console": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "various": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "seo": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "tiers": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "ahrefs": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "semrush": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "trials": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "etc": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "joke": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "feasible": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "tokens": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "multiple": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "accounts": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "different": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "purposes": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "its": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "production": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "considerations": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "handling": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "blocker": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "may": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "need": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "some": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "reputation": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "matters": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "too": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "many": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "signups": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "ban": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "fingerprinting": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "detection": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "stealth": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "mode": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "fast": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "legal": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "tos": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "compliance": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "varies": [
+      "absorbed-repos/abs-claw-browser-integration-098b0026.md"
+    ],
+    "starter": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "kit": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "markdown": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "driven": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "installer": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "portable": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "business": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "work": [
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "research": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "learning": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "assisted": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "numbered": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "obsidian": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "compatible": [
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "structure": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "canonical": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "router": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "thin": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "adapters": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "durable": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "memory": [
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "current": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "handoff": [
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "context": [
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "metadata": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "token": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "archive": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "policies": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "examples": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "git": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "initialization": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "migration": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "conflict": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "files": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "decisions": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "reference": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "used": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "derive": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "reusable": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "notes": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "identities": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "credentials": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "included": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "shared": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "templates": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "base": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "protocol": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "tracks": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "across": [
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "sessions": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "window": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "optimization": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "handles": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "conflicts": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "updating": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "existing": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "systems": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "project": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "kos": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "executable": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "contract": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "questionnaire": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "interactive": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "answer": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "file": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "questions": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "schema": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "template": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "installation": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "neutral": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "scripts": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "manifest": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "utilities": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "validates": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "vault": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "micro": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "chunk": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "containment": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "conversation": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "history": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "informs": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "handle": [
+      "absorbed-repos/abs-kos-f01a8493.md"
+    ],
+    "policy": [
+      "absorbed-repos/abs-kos-f01a8493.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "gateway": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "provides": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "aggregates": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "providers": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "models": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "unified": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "request": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "flow": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "executors": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "response": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "translation": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "level": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "quota": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "aware": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "selection": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "out": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "costs": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "spike": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "silently": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "unbreakable": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "config": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "box": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "tier": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "aggregation": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "53b": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "stacking": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "pools": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "components": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "integrations": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "preflight": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "oauth": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "modules": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "modal": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "embeddings": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "image": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "gen": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "audio": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "tts": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "video": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "music": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "search": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "moderations": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "reranking": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "think": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "tag": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "parsing": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "reasoning": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "rtk": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "caveman": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "compression": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "saves": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "mcp": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "transports": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "stdio": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "sse": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "streamable": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "a2a": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "json": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "rpc": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "skills": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "anti": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "thundering": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "herd": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "protection": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "specific": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "profiles": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "allowlist": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "blocklist": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "audit": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "logging": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "directly": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "applicable": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "instead": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "routes": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md",
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "tracking": [
+      "absorbed-repos/abs-omniroute-arch-fa91ac62.md"
+    ],
+    "flagship": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "feature": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "automatically": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "sets": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "specifies": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "tries": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "first": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "sees": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "failure": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "transparent": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "implementation": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "steps": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "ordering": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "compositetiers": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "checks": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "remaining": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "making": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "repeatedly": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "temporarily": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "removed": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "mutex": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "locking": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "cascading": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "failures": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "relay": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "summaries": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "continuity": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "centralized": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "lockout": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "budget": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "telemetry": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "p50": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "p95": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "p99": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "latency": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "mailtm": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "error": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "counting": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "temporary": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "removal": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "polling": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "extraction": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "callback": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "insight": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "style": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "generation": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ],
+    "inference": [
+      "absorbed-repos/abs-omniroute-combo-e2b349fa.md"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\"># Knowledge OS Starter Kit\n\nOpen-source, Markdown-driven installer for creating a portable Knowledge OS for business, projects, personal work, research, learning, and AI-assisted execution.\n\n## What It Generates\n\n- Numbered Obsidian-compatible domain structure.\n- Canonical `AGENTS.md` router with thin Claude and Codex adapters.\n- Durable `memory.md` and current-state `handoff.md`.\n- Context, metadata, privacy, token, archive, and automation policies.\n- Optional examples, Git initialization, and migration-safe conflict files.\n- Installation state, privacy scan, and validation report.\n\n## Supported Execution\n\n- Codex CLI\n- Claude Code\n- PowerShell 7+\n- Bash 4+ with Python 3\n- Obsidian and VS Code\n- Any capable agent that can execute `KOS-INSTALLER.md`\n\n## Quick Start\n\nWindows:\n\n```powershell\n.\\initialize.ps1 -Agent codex\n```\n\nmacOS or Linux:\n\n```bash\n./initialize.sh --agent codex\n```\n\nDirect answer-file installation:\n\n```powershell\n.\\install.ps1 -Answers .\\installer\\answers.example.json -DryRun\n.\\install.ps1 -Answers .\\installer\\answers.example.json\n```\n\n## Privacy Model\n\nThe reference system is used only to derive reusable architecture and behavior. Its private notes, identities, organizations, projects, histories, inventories, credentials, and operational state are not included. Generated sensitive material defaults to internal or restricted handling. External integrations start as `Not configured`.\n\nGenerated Knowledge OS repositories are private by default. They may contain identity, business, project, daily, personal, attachment, and installation metadata. Do not connect a generated system to a public remote without a separate content review.\n\n## Project Structure\n\n- `KOS-INSTALLER.md`: canonical agent-executable installer contract.\n- `QUESTIONNAIRE.md`: interactive and answer-file questions.\n- `installer/`: schema, examples, state template, and installation engine.\n- `templates/`: neutral source templates.\n- `scripts/`: validation, privacy, and manifest utilities.\n- `reports/`: design analysis and build evidence.\n- `test-output/`: disposable synthetic installations.\n\n## Status\n\nPublic-release candidate. Complete [PUBLICATION.md](PUBLICATION.md) before the initial public push.\n\n## License\n\nThis project is licensed under the Apache License 2.0.\n\nSee the [LICENSE](LICENSE) file for the full license text and the [NOTICE](NOTICE) file for attribution information.\n</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/kravetech/kos-starter-kit/main/README.md",
+    "usage": {
+      "tokens": 557
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 557
+    }
+  },
+  "status": 200
+}
