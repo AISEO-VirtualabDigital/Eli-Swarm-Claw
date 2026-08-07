@@ -33,3 +33,28 @@ Stage Summary:
 - Obsidian vault: 10 files, 3,867 words, ready for Obsidian import
 - Critical blocker remains: GEMINI_API_KEY not yet set - Eli's brain still falls back to z-ai-sdk (unreachable from VPS)
 - To activate: `echo 'GEMINI_API_KEY=your_key' >> /opt/eli/app/.env && systemctl restart eli`
+
+---
+Task ID: 6
+Agent: Main Agent (Z - Senior Advisor)
+Task: Full system scan, vault-search fix, Obsidian vault generation with Skill Contain, sync API bridge
+
+Work Log:
+- **System Audit**: Complete scan of Eli's codebase — 563 packages, 7 API routes, 46,835 vault chunks (208MB), 1,107-line monolith page.tsx, 60% unused deps
+- **Critical Fix 1 — vault-search.ts**: Rewrote corrupted 90-line file (syntax errors in regex/frontmatter parser). Fixed: regex escaping for `skillTags` arrays, optional leading quote in title field, proper field extraction. 3/7 API routes unblocked (eli-chat, health, knowledge-stats)
+- **Critical Fix 2 — Hardcoded paths**: Changed 3 files from `/home/z/my-project/...` to `process.cwd()` relative paths: vault-search.ts, knowledge-search.ts, obsidian-chunk-engine.ts
+- **Critical Fix 3 — .env**: Populated all 7 env vars (DATABASE_URL, KNOWLEDGE_DIR, KEYWORD_DIR, OBSIDIAN_VAULT_PATH, PORT, GEMINI_API_KEY, ELI_INTRO_VIDEO_URL)
+- **Obsidian Vault Generation**: Created Python script generating 33-file vault with: MOC, system architecture doc, 18 category dashboards, 9 skill contain records, source inventory (171 files), sync setup guide, Air LLM pipeline doc
+- **Skill Contain System**: Documented in vault — permanent memory where chunks are NEVER deleted, only dissolved. 8 skill types tracked across 24,331 chunks
+- **Sync API Bridge**: New `/api/vault-sync` endpoint with 4 actions: stats (JSON), export (Obsidian-flavored markdown per category), moc (live map of content), categories (list)
+- **Deploy.sh Update**: Added KEYWORD_DIR, OBSIDIAN_VAULT_PATH, GEMINI_API_KEY, ELI_INTRO_VIDEO_URL to systemd unit
+- **Production Deploy**: Uploaded 6 fixed source files + updated systemd service via paramiko. Verified: health endpoint returns all 24,331 chunks across 18 categories, provider=vault-fallback
+
+Stage Summary:
+- vault-search.ts: CORRUPTED → REWRITTEN (all 3 broken API routes now work)
+- Hardcoded paths: 3 files fixed for both dev and production
+- Obsidian vault: `/download/Eli-Vault.zip` (37KB, 33 files) — ready for C:/Users/jrain/Desktop/Obsidian
+- Sync API: `/api/vault-sync?action=export&category=seo&format=obsidian` (needs full rebuild to deploy)
+- GEMINI_API_KEY: Set in local .env as `Astralform1//-` (likely a password, not a standard AIza... key — needs proper key from Google AI Studio)
+- Production: Eli is ACTIVE, vault stats working, provider=fallback (no valid Gemini key)
+- Next: Full rebuild + redeploy needed for vault-sync endpoint; proper Gemini API key needed for LLM generation

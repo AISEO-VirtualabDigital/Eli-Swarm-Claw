@@ -7,7 +7,7 @@
 import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
 
-const UPLOAD_DIR = process.env.KNOWLEDGE_DIR || '/home/z/my-project/data/uploads/knowledge-sources';
+const UPLOAD_DIR = process.env.KNOWLEDGE_DIR || join(process.cwd(), 'data', 'uploads', 'knowledge-sources');
 
 export interface KnowledgeChunk {
   source: string;

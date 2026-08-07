@@ -1,0 +1,889 @@
+     1→     1→/**
+     2→     2→ * Obsidian Micro-Chunk Engine with Skill Containment
+     3→     3→ * 
+     4→     4→ * Architecture:
+     5→     5→ * - Dissolves ALL knowledge into tiny semantic chunks (~200-500 chars)
+     6→     6→ * - Each chunk gets: hash, embedding signature, skill tags, containment metadata
+     7→     7→ * - Skill Containment: chunks are NEVER deleted, only marked as "dissolved"
+     8→     8→ *   → they persist in a hidden `.containment/` layer even if removed from active vault
+     9→     9→ * - Air LLM: lightweight Gemini-powered retrieval with semantic scoring
+    10→    10→ * 
+    11→    11→ * Storage format: Obsidian-flavored markdown in a structured vault
+    12→    12→ * - 00-Containment/ — deletion-proof skill memory (hidden layer)
+    13→    13→ * - 01-Active/     — currently active knowledge chunks
+    14→    14→ * - 02-Skills/     — extracted patterns, processes, capabilities
+    15→    15→ * - 03-Index/      — JSON index files for fast retrieval
+    16→    16→ */
+    17→    17→
+    18→    18→import { readdir, readFile, writeFile, mkdir, stat, copyFile, rm, access } from 'fs/promises';
+    19→    19→import { join, basename, dirname, relative } from 'path';
+    20→    20→import { createHash } from 'crypto';
+    21→    21→
+    22→    22→// ─── Types ──────────────────────────────────────────────────────────
+    23→    23→
+    24→    24→export interface MicroChunk {
+    25→    25→  id: string;              // sha256 hash of content
+    26→    26→  content: string;         // the actual text (200-500 chars)
+    27→    27→  meta: ChunkMeta;
+    28→    28→}
+    29→    29→
+    30→    30→export interface ChunkMeta {
+    31→    31→  source: string;          // original filename
+    32→    32→  sourcePath: string;      // original full path
+    33→    33→  title: string;           // extracted title
+    34→    34→  category: string;        // topic category
+    35→    35→  skillTags: string[];     // extracted skill/pattern tags
+    36→    36→  containmentHash: string; // hash for containment tracking
+    37→    37→  createdAt: number;       // timestamp
+    38→    38→  dissolved: boolean;      // marked as dissolved (still in containment)
+    39→    39→  links: string[];         // [[wikilinks]] to related chunks
+    40→    40→  embeddingSig: string;    // lightweight semantic signature (not full embedding)
+    41→    41→}
+    42→    42→
+    43→    43→export interface SkillRecord {
+    44→    44→  id: string;
+    45→    45→  name: string;
+    46→    46→  pattern: string;         // the pattern/process description
+    47→    47→  chunks: string[];        // chunk IDs that form this skill
+    48→    48→  category: string;
+    49→    49→ strength: number;        // 0-1 how reinforced this skill is
+    50→    50→  lastUsed: number;
+    51→    51→  containmentProof: string; // merkle-like proof of existence
+    52→    52→}
+    53→    53→
+    54→    54→export interface ContainmentIndex {
+    55→    55→  totalChunks: number;
+    56→    56→  activeChunks: number;
+    57→    57→  dissolvedChunks: number;
+    58→    58→  skills: number;
+    59→    59→  categories: Record<string, number>;
+    60→    60→  lastIngestion: number;
+    61→    61→  vaultPath: string;
+    62→    62→}
+    63→    63→
+    64→    64→// ─── Config ──────────────────────────────────────────────────────────
+    65→    65→
+    66→    66→const CHUNK_TARGET_SIZE = 350;     // target chars per chunk
+    67→    67→const CHUNK_MIN_SIZE = 100;        // minimum chars
+    68→    68→const CHUNK_MAX_SIZE = 600;        // hard max
+    69→    69→const OVERLAP_SIZE = 50;           // overlap between chunks for context preservation
+    70→    70→const CONTAINMENT_DIR = '.containment';
+    71→    71→
+    72→    72→const SKILL_PATTERNS: Record<string, RegExp[]> = {
+    73→    73→  'process': [/step \d/i, /first[,\.]/i, /then[,\.]/i, /next[,\.]/i, /finally[,\.]/i, /workflow/i, /pipeline/i, /\d+\.\s/],
+    74→    74→  'pattern': [/pattern/i, /whenever/i, /always/i, /never/i, /rule/i, /principle/i, /framework/i],
+    75→    75→  'capability': [/can\s/i, /able to/i, /supports/i, /integrates/i, /provides/i, /enables/i, /allows?\s/i],
+    76→    76→  'tool': [/tool/i, /api\b/i, /library/i, /plugin/i, /extension/i, /sdk\b/i, /cli\b/i, /package\b/i],
+    77→    77→  'strategy': [/strategy/i, /approach/i, /tactic/i, /methodology/i, /playbook/i, /framework/i],
+    78→    78→  'metric': [/\d+%/, /\$\d+/, /\d+x\b/, /score/i, /rate/i, /volume/i, /traffic/i, /conversion/i],
+    79→    79→  'code': [/function\s/, /const\s/, /import\s/, /class\s/, /async\s/, /return\s/, /=>\s/, /```/],
+    80→    80→  'warning': [/warning/i, /caution/i, /avoid/i, /don'?t\s/i, /risk/i, /critical/i, /important/i],
+    81→    81→};
+    82→    82→
+    83→    83→// ─── Hashing ──────────────────────────────────────────────────────────
+    84→    84→
+    85→    85→function contentHash(content: string): string {
+    86→    86→  return createHash('sha256').update(content.trim()).digest('hex').slice(0, 16);
+    87→    87→}
+    88→    88→
+    89→    89→function containmentHash(content: string, source: string, timestamp: number): string {
+    90→    90→  return createHash('sha256')
+    91→    91→    .update(`${content}|${source}|${timestamp}`)
+    92→    92→    .digest('hex').slice(0, 20);
+    93→    93→}
+    94→    94→
+    95→    95→// ─── Semantic Signature (lightweight, no external API) ──────────────
+    96→    96→
+    97→    97→function buildSemanticSig(content: string): string {
+    98→    98→  const words = content.toLowerCase()
+    99→    99→    .replace(/[^a-z0-9\s]/g, ' ')
+   100→   100→    .split(/\s+/)
+   101→   101→    .filter(w => w.length > 3);
+   102→   102→  
+   103→   103→  // Build a bloom-filter-like signature from word trigrams
+   104→   104→  const trigrams = new Set<string>();
+   105→   105→  for (let i = 0; i < words.length - 2; i++) {
+   106→   106→    trigrams.add(`${words[i]}:${words[i+1]}:${words[i+2]}`);
+   107→   107→  }
+   108→   108→  
+   109→   109→  // Create a compact signature string (first 8 trigrams sorted)
+   110→   110→  return Array.from(trigrams).slice(0, 12).sort().join('|');
+   111→   111→}
+   112→   112→
+   113→   113→// ─── Chunking ──────────────────────────────────────────────────────
+   114→   114→
+   115→   115→function dissolveIntoChunks(content: string, source: string, sourcePath: string): MicroChunk[] {
+   116→   116→  const chunks: MicroChunk[] = [];
+   117→   117→  const title = extractTitle(content, source);
+   118→   118→  const category = extractCategory(content, source);
+   119→   119→  const now = Date.now();
+   120→   120→  
+   121→   121→  // Strip frontmatter
+   122→   122→  const clean = content.replace(/^---[\s\S]*?---\n?/, '');
+   123→   123→  
+   124→   124→  if (clean.length <= CHUNK_MAX_SIZE) {
+   125→   125→    // Small file → single chunk
+   126→   126→    const sig = buildSemanticSig(clean);
+   127→   127→    const ch = containmentHash(clean, source, now);
+   128→   128→    chunks.push({
+   129→   129→      id: contentHash(clean),
+   130→   130→      content: clean,
+   131→   131→      meta: {
+   132→   132→        source,
+   133→   133→        sourcePath,
+   134→   134→        title,
+   135→   135→        category,
+   136→   136→        skillTags: extractSkillTags(clean),
+   137→   137→        containmentHash: ch,
+   138→   138→        createdAt: now,
+   139→   139→        dissolved: false,
+   140→   140→        links: [],
+   141→   141→        embeddingSig: sig,
+   142→   142→      },
+   143→   143→    });
+   144→   144→    return chunks;
+   145→   145→  }
+   146→   146→  
+   147→   147→  // Large file → split by paragraphs/sections with overlap
+   148→   148→  const sections = splitIntoSections(clean);
+   149→   149→  let buffer = '';
+   150→   150→  
+   151→   151→  for (const section of sections) {
+   152→   152→    buffer += (buffer ? '\n' : '') + section;
+   153→   153→    
+   154→   154→    while (buffer.length >= CHUNK_TARGET_SIZE) {
+   155→   155→      // Find a good split point near target size
+   156→   156→      let splitAt = findSplitPoint(buffer, CHUNK_TARGET_SIZE);
+   157→   157→      
+   158→   158→      const chunkText = buffer.slice(0, splitAt).trim();
+   159→   159→      if (chunkText.length >= CHUNK_MIN_SIZE) {
+   160→   160→        const sig = buildSemanticSig(chunkText);
+   161→   161→        const ch = containmentHash(chunkText, source, now);
+   162→   162→        chunks.push({
+   163→   163→          id: contentHash(chunkText + chunks.length.toString()), // unique per position
+   164→   164→          content: chunkText,
+   165→   165→          meta: {
+   166→   166→            source,
+   167→   167→            sourcePath,
+   168→   168→            title,
+   169→   169→            category,
+   170→   170→            skillTags: extractSkillTags(chunkText),
+   171→   171→            containmentHash: ch,
+   172→   172→            createdAt: now,
+   173→   173→            dissolved: false,
+   174→   174→            links: [],
+   175→   175→            embeddingSig: sig,
+   176→   176→          },
+   177→   177→        });
+   178→   178→      }
+   179→   179→      
+   180→   180→      // Keep overlap for context
+   181→   181→      buffer = buffer.slice(Math.max(0, splitAt - OVERLAP_SIZE));
+   182→   182→    }
+   183→   183→  }
+   184→   184→  
+   185→   185→  // Don't forget remaining buffer
+   186→   186→  if (buffer.trim().length >= CHUNK_MIN_SIZE) {
+   187→   187→    const chunkText = buffer.trim();
+   188→   188→    const sig = buildSemanticSig(chunkText);
+   189→   189→    const ch = containmentHash(chunkText, source, now);
+   190→   190→    chunks.push({
+   191→   191→      id: contentHash(chunkText + chunks.length.toString()),
+   192→   192→      content: chunkText,
+   193→   193→      meta: {
+   194→   194→        source,
+   195→   195→        sourcePath,
+   196→   196→        title,
+   197→   197→        category,
+   198→   198→        skillTags: extractSkillTags(chunkText),
+   199→   199→        containmentHash: ch,
+   200→   200→        createdAt: now,
+   201→   201→        dissolved: false,
+   202→   202→        links: [],
+   203→   203→        embeddingSig: sig,
+   204→   204→      },
+   205→   205→    });
+   206→   206→  }
+   207→   207→  
+   208→   208→  // Wire up wikilinks between consecutive chunks from same source
+   209→   209→  for (let i = 0; i < chunks.length - 1; i++) {
+   210→   210→    chunks[i].meta.links.push(chunks[i + 1].id);
+   211→   211→    chunks[i + 1].meta.links.push(chunks[i].id);
+   212→   212→  }
+   213→   213→  
+   214→   214→  return chunks;
+   215→   215→}
+   216→   216→
+   217→   217→function splitIntoSections(content: string): string[] {
+   218→   218→  // Split by headings, double newlines, or code blocks
+   219→   219→  const parts: string[] = [];
+   220→   220→  let current = '';
+   221→   221→  const lines = content.split('\n');
+   222→   222→  
+   223→   223→  for (const line of lines) {
+   224→   224→    if (line.match(/^#{1,4}\s/) && current.trim()) {
+   225→   225→      parts.push(current.trim());
+   226→   226→      current = line + '\n';
+   227→   227→    } else if (line.trim() === '' && current.trim().length > 100) {
+   228→   228→      parts.push(current.trim());
+   229→   229→      current = '';
+   230→   230→    } else {
+   231→   231→      current += line + '\n';
+   232→   232→    }
+   233→   233→  }
+   234→   234→  if (current.trim()) parts.push(current.trim());
+   235→   235→  
+   236→   236→  return parts.length > 0 ? parts : [content];
+   237→   237→}
+   238→   238→
+   239→   239→function findSplitPoint(text: string, target: number): number {
+   240→   240→  // Try to split at sentence or paragraph boundary near target
+   241→   241→  const searchStart = Math.max(0, target - 80);
+   242→   242→  const searchEnd = Math.min(text.length, target + 80);
+   243→   243→  const window = text.slice(searchStart, searchEnd);
+   244→   244→  
+   245→   245→  // Priority 1: double newline (paragraph)
+   246→   246→  let idx = window.lastIndexOf('\n\n');
+   247→   247→  if (idx > 20) return searchStart + idx + 2;
+   248→   248→  
+   249→   249→  // Priority 2: sentence end
+   250→   250→  idx = window.lastIndexOf('. ');
+   251→   251→  if (idx > 20) return searchStart + idx + 2;
+   252→   252→  idx = window.lastIndexOf('! ');
+   253→   253→  if (idx > 20) return searchStart + idx + 2;
+   254→   254→  idx = window.lastIndexOf('? ');
+   255→   255→  if (idx > 20) return searchStart + idx + 2;
+   256→   256→  
+   257→   257→  // Priority 3: newline
+   258→   258→  idx = window.lastIndexOf('\n');
+   259→   259→  if (idx > 10) return searchStart + idx + 1;
+   260→   260→  
+   261→   261→  // Priority 4: space near target
+   262→   262→  idx = window.lastIndexOf(' ', target - searchStart);
+   263→   263→  if (idx > 10) return searchStart + idx + 1;
+   264→   264→  
+   265→   265→  return Math.min(target, text.length);
+   266→   266→}
+   267→   267→
+   268→   268→// ─── Skill Tag Extraction ──────────────────────────────────────────
+   269→   269→
+   270→   270→function extractSkillTags(content: string): string[] {
+   271→   271→  const tags: string[] = [];
+   272→   272→  const lower = content.toLowerCase();
+   273→   273→  
+   274→   274→  for (const [tag, patterns] of Object.entries(SKILL_PATTERNS)) {
+   275→   275→    for (const pattern of patterns) {
+   276→   276→      if (pattern.test(lower)) {
+   277→   277→        if (!tags.includes(tag)) tags.push(tag);
+   278→   278→        break;
+   279→   279→      }
+   280→   280→    }
+   281→   281→  }
+   282→   282→  
+   283→   283→  return tags;
+   284→   284→}
+   285→   285→
+   286→   286→// ─── Title & Category (reuse from knowledge-search logic) ──────────
+   287→   287→
+   288→   288→function extractTitle(content: string, filename: string): string {
+   289→   289→  const fmMatch = content.match(/^---[\s\S]*?title:\s*(.+?)[\r\n]/);
+   290→   290→  if (fmMatch) return fmMatch[1].trim().replace(/^['"]|['"]$/g, '');
+   291→   291→  const h1Match = content.match(/^#\s+(.+)$/m);
+   292→   292→  if (h1Match) return h1Match[1].trim();
+   293→   293→  return filename.replace(/[-_]/g, ' ').replace(/\.(md|txt|json)$/i, '').replace(/\b\w/g, c => c.toUpperCase());
+   294→   294→}
+   295→   295→
+   296→   296→function extractCategory(content: string, filename: string): string {
+   297→   297→  const fmMatch = content.match(/^---[\s\S]*?Category:\s*(.+?)[\r\n]/);
+   298→   298→  if (fmMatch) return fmMatch[1].trim().toLowerCase();
+   299→   299→  const lower = filename.toLowerCase();
+   300→   300→  if (lower.includes('seo') || lower.includes('backlink') || lower.includes('keyword') || lower.includes('indexing')) return 'seo';
+   301→   301→  if (lower.includes('ai') || lower.includes('agent') || lower.includes('llm') || lower.includes('claude') || lower.includes('gemini')) return 'ai-agent';
+   302→   302→  if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('frontend')) return 'web-design';
+   303→   303→  if (lower.includes('saas') || lower.includes('ghl') || lower.includes('agency')) return 'saas';
+   304→   304→  if (lower.includes('google') || lower.includes('api') || lower.includes('oauth')) return 'google-api';
+   305→   305→  if (lower.includes('obsidian') || lower.includes('vault') || lower.includes('note')) return 'obsidian';
+   306→   306→  if (lower.includes('eli') || lower.includes('skill') || lower.includes('harness')) return 'eli-core';
+   307→   307→  if (lower.includes('automation') || lower.includes('workflow') || lower.includes('n8n')) return 'automation';
+   308→   308→  if (lower.includes('cloud') || lower.includes('vps') || lower.includes('hosting') || lower.includes('server')) return 'infra';
+   309→   309→  if (lower.includes('social') || lower.includes('instagram') || lower.includes('youtube')) return 'social';
+   310→   310→  if (lower.includes('copy') || lower.includes('content') || lower.includes('writing')) return 'content';
+   311→   311→  if (lower.includes('shopify') || lower.includes('ecommerce')) return 'ecommerce';
+   312→   312→  return 'knowledge';
+   313→   313→}
+   314→   314→
+   315→   315→// ─── Vault Manager ──────────────────────────────────────────────────
+   316→   316→
+   317→   317→export class ObsidianVault {
+   318→   318→  private vaultPath: string;
+   319→   319→  private activeDir: string;
+   320→   320→  private containmentDir: string;
+   321→   321→  private skillsDir: string;
+   322→   322→  private indexDir: string;
+   323→   323→  private chunkCache: Map<string, MicroChunk> = new Map();
+   324→   324→  private skillCache: Map<string, SkillRecord> = new Map();
+   325→   325→  private loaded = false;
+   326→   326→
+   327→   327→  constructor(vaultPath: string) {
+   328→   328→    this.vaultPath = vaultPath;
+   329→   329→    this.activeDir = join(vaultPath, '01-Active');
+   330→   330→    this.containmentDir = join(vaultPath, '00-Containment');
+   331→   331→    this.skillsDir = join(vaultPath, '02-Skills');
+   332→   332→    this.indexDir = join(vaultPath, '03-Index');
+   333→   333→  }
+   334→   334→
+   335→   335→  async init(): Promise<void> {
+   336→   336→    // Create vault structure
+   337→   337→    for (const dir of [this.activeDir, this.containmentDir, this.skillsDir, this.indexDir]) {
+   338→   338→      await mkdir(dir, { recursive: true });
+   339→   339→    }
+   340→   340→    
+   341→   341→    // Create vault metadata
+   342→   342→    const metaPath = join(this.vaultPath, '.vault-meta.json');
+   343→   343→    try {
+   344→   344→      await access(metaPath);
+   345→   345→    } catch {
+   346→   346→      await writeFile(metaPath, JSON.stringify({
+   347→   347→        name: 'Eli Skill Vault',
+   348→   348→        version: '2.0',
+   349→   349→        engine: 'micro-chunk-containment',
+   350→   350→        created: Date.now(),
+   351→   351→        lastUpdated: Date.now(),
+   352→   352→      }, null, 2));
+   353→   353→    }
+   354→   354→    
+   355→   355→    this.loaded = true;
+   356→   356→  }
+   357→   357→
+   358→   358→  // ─── Ingest: dissolve files into micro-chunks ──────────────────
+   359→   359→
+   360→   360→  async ingestDirectory(sourceDir: string, depth = 0, maxDepth = 3): Promise<number> {
+   361→   361→    if (!this.loaded) await this.init();
+   362→   362→    
+   363→   363→    let totalChunks = 0;
+   364→   364→    const entries = await readdir(sourceDir, { withFileTypes: true });
+   365→   365→    
+   366→   366→    for (const entry of entries) {
+   367→   367→      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+   368→   368→      const fullPath = join(sourceDir, entry.name);
+   369→   369→      
+   370→   370→      if (entry.isDirectory() && depth < maxDepth) {
+   371→   371→        totalChunks += await this.ingestDirectory(fullPath, depth + 1, maxDepth);
+   372→   372→      } else if (entry.isFile()) {
+   373→   373→        const ext = entry.name.split('.').pop()?.toLowerCase() ?? '';
+   374→   374→        if (!['.md', '.txt', '.json'].includes(ext)) continue;
+   375→   375→        
+   376→   376→        try {
+   377→   377→          const content = await readFile(fullPath, 'utf-8');
+   378→   378→          if (!content || content.length < 20) continue;
+   379→   379→          
+   380→   380→          let cleanContent = content;
+   381→   381→          if (ext === 'json') {
+   382→   382→            try {
+   383→   383→              const parsed = JSON.parse(content);
+   384→   384→              if (parsed.data?.html) {
+   385→   385→                cleanContent = parsed.data.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+   386→   386→              } else {
+   387→   387→                cleanContent = JSON.stringify(parsed, null, 2);
+   388→   388→              }
+   389→   389→            } catch { cleanContent = content; }
+   390→   390→            if (cleanContent.length > 50000) cleanContent = cleanContent.slice(0, 50000);
+   391→   391→          }
+   392→   392→          
+   393→   393→          const chunks = dissolveIntoChunks(cleanContent, entry.name, fullPath);
+   394→   394→          totalChunks += chunks.length;
+   395→   395→          
+   396→   396→          // Store chunks
+   397→   397→          for (const chunk of chunks) {
+   398→   398→            await this.storeChunk(chunk);
+   399→   399→          }
+   400→   400→          
+   401→   401→          // Extract and store skills
+   402→   402→          await this.extractAndStoreSkills(chunks);
+   403→   403→        } catch (err) {
+   404→   404→          console.error(`Failed to ingest ${entry.name}:`, err);
+   405→   405→        }
+   406→   406→      }
+   407→   407→    }
+   408→   408→    
+   409→   409→    // Update index
+   410→   410→    await this.rebuildIndex();
+   411→   411→    return totalChunks;
+   412→   412→  }
+   413→   413→
+   414→   414→  // ─── Store chunk to vault ─────────────────────────────────────
+   415→   415→
+   416→   416→  private async storeChunk(chunk: MicroChunk): Promise<void> {
+   417→   417→    this.chunkCache.set(chunk.id, chunk);
+   418→   418→    
+   419→   419→    // Active chunk stored as individual .md file
+   420→   420→    const chunkPath = join(this.activeDir, chunk.meta.category, `${chunk.id}.md`);
+   421→   421→    await mkdir(dirname(chunkPath), { recursive: true });
+   422→   422→    
+   423→   423→    const frontmatter = [
+   424→   424→      '---',
+   425→   425→      `id: ${chunk.id}`,
+   426→   426→      `source: "${chunk.meta.source}"`,
+   427→   427→      `category: ${chunk.meta.category}`,
+   428→   428→      `skillTags: [${chunk.meta.skillTags.map(t => `"${t}"`).join(', ')}]`,
+   429→   429→      `containmentHash: ${chunk.meta.containmentHash}`,
+   430→   430→      `createdAt: ${chunk.meta.createdAt}`,
+   431→   431→      `dissolved: false`,
+   432→   432→      `links: [${chunk.meta.links.map(l => `"${l}"`).join(', ')}]`,
+   433→   433→      `embeddingSig: "${chunk.meta.embeddingSig.replace(/"/g, '\\"')}"`,
+   434→   434→      '---',
+   435→   435→      '',
+   436→   436→    ].join('\n');
+   437→   437→    
+   438→   438→    await writeFile(chunkPath, frontmatter + chunk.content);
+   439→   439→    
+   440→   440→    // Containment copy (deletion-proof) — stored compressed as hash-named file
+   441→   441→    const containmentPath = join(this.containmentDir, `${chunk.meta.containmentHash}.md`);
+   442→   442→    await writeFile(containmentPath, frontmatter + chunk.content);
+   443→   443→  }
+   444→   444→
+   445→   445→  // ─── Skill Extraction ─────────────────────────────────────────
+   446→   446→
+   447→   447→  private async extractAndStoreSkills(chunks: MicroChunk[]): Promise<void> {
+   448→   448→    // Group chunks by skill tags to form skill records
+   449→   449→    const tagGroups: Record<string, MicroChunk[]> = {};
+   450→   450→    
+   451→   451→    for (const chunk of chunks) {
+   452→   452→      for (const tag of chunk.meta.skillTags) {
+   453→   453→        if (!tagGroups[tag]) tagGroups[tag] = [];
+   454→   454→        tagGroups[tag].push(chunk);
+   455→   455→      }
+   456→   456→    }
+   457→   457→    
+   458→   458→    for (const [tagName, tagChunks] of Object.entries(tagGroups)) {
+   459→   459→      if (tagChunks.length < 2) continue; // Need at least 2 chunks to form a skill
+   460→   460→      
+   461→   461→      // Merge content from top chunks to form skill pattern
+   462→   462→      const mergedContent = tagChunks
+   463→   463→        .slice(0, 5)
+   464→   464→        .map(c => c.content.slice(0, 200))
+   465→   465→        .join('\n---\n');
+   466→   466→      
+   467→   467→      const skillId = contentHash(`${tagName}:${tagChunks[0].meta.source}`);
+   468→   468→      const now = Date.now();
+   469→   469→      
+   470→   470→      const skill: SkillRecord = {
+   471→   471→        id: skillId,
+   472→   472→        name: `${tagName}: ${tagChunks[0].meta.title}`,
+   473→   473→        pattern: mergedContent.slice(0, 1000),
+   474→   474→        chunks: tagChunks.map(c => c.id),
+   475→   475→        category: tagChunks[0].meta.category,
+   476→   476→        strength: Math.min(1, tagChunks.length / 10),
+   477→   477→        lastUsed: now,
+   478→   478→        containmentProof: containmentHash(mergedContent, skillId, now),
+   479→   479→      };
+   480→   480→      
+   481→   481→      this.skillCache.set(skillId, skill);
+   482→   482→      
+   483→   483→      // Write skill file
+   484→   484→      const skillPath = join(this.skillsDir, tagName, `${skillId}.md`);
+   485→   485→      await mkdir(dirname(skillPath), { recursive: true });
+   486→   486→      
+   487→   487→      const skillContent = [
+   488→   488→        '---',
+   489→   489→        `id: ${skill.id}`,
+   490→   490→        `name: "${skill.name}"`,
+   491→   491→        `category: ${skill.category}`,
+   492→   492→        `strength: ${skill.strength}`,
+   493→   493→        `chunkCount: ${skill.chunks.length}`,
+   494→   494→        `containmentProof: ${skill.containmentProof}`,
+   495→   495→        '---',
+   496→   496→        '',
+   497→   497→        `# ${skill.name}`,
+   498→   498→        '',
+   499→   499→        `> Skill Type: ${tagName}`,
+   500→   500→        `> Source Chunks: ${skill.chunks.length}`,
+   501→   501→        `> Containment Proof: ${skill.containmentProof}`,
+   502→   502→        '',
+   503→   503→        '## Pattern',
+   504→   504→        '',
+   505→   505→        skill.pattern,
+   506→   506→        '',
+   507→   507→        '## Linked Chunks',
+   508→   508→        '',
+   509→   509→        ...skill.chunks.map(c => `- [[${c}]]`),
+   510→   510→        '',
+   511→   511→      ].join('\n');
+   512→   512→      
+   513→   513→      await writeFile(skillPath, skillContent);
+   514→   514→    }
+   515→   515→  }
+   516→   516→
+   517→   517→  // ─── Dissolve (soft delete — moves to containment only) ───────
+   518→   518→
+   519→   519→  async dissolveChunk(chunkId: string): Promise<void> {
+   520→   520→    const chunk = this.chunkCache.get(chunkId);
+   521→   521→    if (!chunk) return;
+   522→   522→    
+   523→   523→    // Mark as dissolved in active store
+   524→   524→    chunk.meta.dissolved = true;
+   525→   525→    
+   526→   526→    // Remove from active directory
+   527→   527→    const activePath = join(this.activeDir, chunk.meta.category, `${chunkId}.md`);
+   528→   528→    try { await rm(activePath); } catch {}
+   529→   529→    
+   530→   530→    // Containment copy ALREADY exists — it's never deleted
+   531→   531→    // Just update the index to track it as dissolved
+   532→   532→    await this.rebuildIndex();
+   533→   533→  }
+   534→   534→
+   535→   535→  // ─── Search (Air LLM-ready retrieval) ────────────────────────
+   536→   536→
+   537→   537→  async search(
+   538→   538→    query: string,
+   539→   539→    options?: { maxResults?: number; categories?: string[]; skillTags?: string[] }
+   540→   540→  ): Promise<Array<{ chunk: MicroChunk; score: number; matchedTerms: string[] }>> {
+   541→   541→    const { maxResults = 8, categories, skillTags } = options ?? {};
+   542→   542→    
+   543→   543→    // Ensure all chunks are loaded
+   544→   544→    if (this.chunkCache.size === 0) await this.loadAllChunks();
+   545→   545→    
+   546→   546→    const queryLower = query.toLowerCase();
+   547→   547→    const queryTerms = queryLower.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2);
+   548→   548→    const querySig = buildSemanticSig(query);
+   549→   549→    const queryTrigrams = new Set(querySig.split('|'));
+   550→   550→    
+   551→   551→    const results: Array<{ chunk: MicroChunk; score: number; matchedTerms: string[] }> = [];
+   552→   552→    
+   553→   553→    for (const [, chunk] of this.chunkCache) {
+   554→   554→      if (chunk.meta.dissolved) continue; // skip dissolved unless explicitly searching containment
+   555→   555→      if (categories && categories.length > 0 && !categories.includes(chunk.meta.category)) continue;
+   556→   556→      if (skillTags && skillTags.length > 0 && !skillTags.some(t => chunk.meta.skillTags.includes(t))) continue;
+   557→   557→      
+   558→   558→      const contentLower = chunk.content.toLowerCase();
+   559→   559→      let score = 0;
+   560→   560→      const matchedTerms: string[] = [];
+   561→   561→      
+   562→   562→      // Term matching (similar to old engine but on micro-chunks = more precise)
+   563→   563→      for (const term of queryTerms) {
+   564→   564→        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$');
+   565→   565→        const count = (contentLower.match(new RegExp(escaped, 'g')) || []).length;
+   566→   566→        if (count > 0) {
+   567→   567→          score += count * 3; // micro-chunks = higher density = lower multiplier
+   568→   568→          if (!matchedTerms.includes(term)) matchedTerms.push(term);
+   569→   569→        }
+   570→   570→      }
+   571→   571→      
+   572→   572→      // Semantic signature overlap (trigram similarity)
+   573→   573→      const chunkTrigrams = new Set(chunk.meta.embeddingSig.split('|'));
+   574→   574→      let sigOverlap = 0;
+   575→   575→      for (const tri of queryTrigrams) {
+   576→   576→        if (chunkTrigrams.has(tri)) sigOverlap++;
+   577→   577→      }
+   578→   578→      if (queryTrigrams.size > 0) {
+   579→   579→        score += (sigOverlap / queryTrigrams.size) * 10;
+   580→   580→      }
+   581→   581→      
+   582→   582→      // Skill tag boost
+   583→   583→      if (skillTags) {
+   584→   584→        for (const tag of skillTags) {
+   585→   585→          if (chunk.meta.skillTags.includes(tag)) score += 5;
+   586→   586→        }
+   587→   587→      }
+   588→   588→      
+   589→   589→      if (score > 0.5) {
+   590→   590→        results.push({ chunk, score, matchedTerms });
+   591→   591→      }
+   592→   592→    }
+   593→   593→    
+   594→   594→    results.sort((a, b) => b.score - a.score);
+   595→   595→    return results.slice(0, maxResults);
+   596→   596→  }
+   597→   597→
+   598→   598→  // ─── Containment Search (searches dissolved chunks too) ───────
+   599→   599→
+   600→   600→  async searchContainment(
+   601→   601→    query: string,
+   602→   602→    options?: { maxResults?: number }
+   603→   603→  ): Promise<Array<{ chunk: MicroChunk; score: number; dissolved: boolean }>> {
+   604→   604→    // Load ALL chunks including dissolved from containment dir
+   605→   605→    if (this.chunkCache.size === 0) await this.loadAllChunks(true);
+   606→   606→    
+   607→   607→    const { maxResults = 8 } = options ?? {};
+   608→   608→    const queryLower = query.toLowerCase();
+   609→   609→    const queryTerms = queryLower.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2);
+   610→   610→    
+   611→   611→    const results: Array<{ chunk: MicroChunk; score: number; dissolved: boolean }> = [];
+   612→   612→    
+   613→   613→    for (const [, chunk] of this.chunkCache) {
+   614→   614→      const contentLower = chunk.content.toLowerCase();
+   615→   615→      let score = 0;
+   616→   616→      
+   617→   617→      for (const term of queryTerms) {
+   618→   618→        if (contentLower.includes(term)) score += 2;
+   619→   619→      }
+   620→   620→      
+   621→   621→      if (score > 0) {
+   622→   622→        results.push({ chunk, score, dissolved: chunk.meta.dissolved });
+   623→   623→      }
+   624→   624→    }
+   625→   625→    
+   626→   626→    results.sort((a, b) => b.score - a.score);
+   627→   627→    return results.slice(0, maxResults);
+   628→   628→  }
+   629→   629→
+   630→   630→  // ─── Get Skills ───────────────────────────────────────────────
+   631→   631→
+   632→   632→  async getSkills(category?: string): Promise<SkillRecord[]> {
+   633→   633→    if (this.skillCache.size === 0) await this.loadAllSkills();
+   634→   634→    const skills = Array.from(this.skillCache.values());
+   635→   635→    if (category) return skills.filter(s => s.category === category);
+   636→   636→    return skills.sort((a, b) => b.strength - a.strength);
+   637→   637→  }
+   638→   638→
+   639→   639→  // ─── Build Context for LLM (Air LLM interface) ───────────────
+   640→   640→
+   641→   641→  async buildAirContext(query: string): Promise<{ context: string; sources: Array<{ title: string; source: string; category: string }> }> {
+   642→   642→    const results = await this.search(query, { maxResults: 10 });
+   643→   643→    
+   644→   644→    if (results.length === 0) {
+   645→   645→      return { context: '', sources: [] };
+   646→   646→    }
+   647→   647→    
+   648→   648→    // Build compact context from micro-chunks
+   649→   649→    const sources: Array<{ title: string; source: string; category: string }> = [];
+   650→   650→    const seenSources = new Set<string>();
+   651→   651→    
+   652→   652→    const contextParts = results.map((r, i) => {
+   653→   653→      const { chunk } = r;
+   654→   654→      if (!seenSources.has(chunk.meta.source)) {
+   655→   655→        seenSources.add(chunk.meta.source);
+   656→   656→        sources.push({
+   657→   657→          title: chunk.meta.title,
+   658→   658→          source: chunk.meta.source,
+   659→   659→          category: chunk.meta.category,
+   660→   660→        });
+   661→   661→      }
+   662→   662→      
+   663→   663→      const tags = chunk.meta.skillTags.length > 0 
+   664→   664→        ? ` [${chunk.meta.skillTags.join(', ')}]` 
+   665→   665→        : '';
+   666→   666→      return `[${chunk.meta.category}${tags}] ${chunk.content.slice(0, 400)}`;
+   667→   667→    });
+   668→   668→    
+   669→   669→    const skillContext = await this.buildSkillContext(query);
+   670→   670→    
+   671→   671→    const context = `
+   672→   672→---
+   673→   673→MICRO-CHUNK RETRIEVAL (${results.length} chunks from ${seenSources.size} sources):
+   674→   674→${contextParts.join('\n\n')}
+   675→   675→${skillContext ? '\n---\nACTIVE SKILLS:\n' + skillContext : ''}
+   676→   676→---
+   677→   677→Use the above micro-chunk data and skill patterns to inform your response.`;
+   678→   678→
+   679→   679→    return { context, sources };
+   680→   680→  }
+   681→   681→
+   682→   682→  private async buildSkillContext(query: string): Promise<string> {
+   683→   683→    const skills = await this.getSkills();
+   684→   684→    const queryLower = query.toLowerCase();
+   685→   685→    
+   686→   686→    // Find skills relevant to query
+   687→   687→    const relevant = skills.filter(s => {
+   688→   688→      const nameLower = s.name.toLowerCase();
+   689→   689→      const patternLower = s.pattern.toLowerCase();
+   690→   690→      return queryLower.split(/\s+/).some(term => 
+   691→   691→        term.length > 3 && (nameLower.includes(term) || patternLower.includes(term))
+   692→   692→      );
+   693→   693→    }).slice(0, 3);
+   694→   694→    
+   695→   695→    if (relevant.length === 0) return '';
+   696→   696→    return relevant.map(s => 
+   697→   697→      `**${s.name}** (strength: ${(s.strength * 100).toFixed(0)}%)\n${s.pattern.slice(0, 300)}`
+   698→   698→    ).join('\n\n');
+   699→   699→  }
+   700→   700→
+   701→   701→  // ─── Index Management ─────────────────────────────────────────
+   702→   702→
+   703→   703→  async rebuildIndex(): Promise<ContainmentIndex> {
+   704→   704→    let activeChunks = 0;
+   705→   705→    let dissolvedChunks = 0;
+   706→   706→    const categories: Record<string, number> = {};
+   707→   707→    
+   708→   708→    for (const [, chunk] of this.chunkCache) {
+   709→   709→      if (chunk.meta.dissolved) {
+   710→   710→        dissolvedChunks++;
+   711→   711→      } else {
+   712→   712→        activeChunks++;
+   713→   713→      }
+   714→   714→      categories[chunk.meta.category] = (categories[chunk.meta.category] || 0) + 1;
+   715→   715→    }
+   716→   716→    
+   717→   717→    const index: ContainmentIndex = {
+   718→   718→      totalChunks: this.chunkCache.size,
+   719→   719→      activeChunks,
+   720→   720→      dissolvedChunks,
+   721→   721→      skills: this.skillCache.size,
+   722→   722→      categories,
+   723→   723→      lastIngestion: Date.now(),
+   724→   724→      vaultPath: this.vaultPath,
+   725→   725→    };
+   726→   726→    
+   727→   727→    await writeFile(
+   728→   728→      join(this.indexDir, 'vault-index.json'),
+   729→   729→      JSON.stringify(index, null, 2)
+   730→   730→    );
+   731→   731→    
+   732→   732→    return index;
+   733→   733→  }
+   734→   734→
+   735→   735→  // ─── Load from disk ───────────────────────────────────────────
+   736→   736→
+   737→   737→  async loadAllChunks(includeDissolved = false): Promise<void> {
+   738→   738→    // Load from active directory
+   739→   739→    await this.loadChunksFromDir(this.activeDir, includeDissolved);
+   740→   740→    
+   741→   741→    // If includeDissolved, also load from containment
+   742→   742→    if (includeDissolved) {
+   743→   743→      await this.loadChunksFromDir(this.containmentDir, true);
+   744→   744→    }
+   745→   745→  }
+   746→   746→
+   747→   747→  private async loadChunksFromDir(dir: string, markAsDissolved: boolean): Promise<void> {
+   748→   748→    try {
+   749→   749→      await access(dir);
+   750→   750→    } catch { return; }
+   751→   751→    
+   752→   752→    const entries = await readdir(dir, { withFileTypes: true });
+   753→   753→    for (const entry of entries) {
+   754→   754→      const fullPath = join(dir, entry.name);
+   755→   755→      if (entry.isDirectory()) {
+   756→   756→        await this.loadChunksFromDir(fullPath, markAsDissolved);
+   757→   757→      } else if (entry.name.endsWith('.md') && !entry.name.startsWith('.')) {
+   758→   758→        try {
+   759→   759→          const content = await readFile(fullPath, 'utf-8');
+   760→   760→          const parsed = this.parseChunkFile(content);
+   761→   761→          if (parsed) {
+   762→   762→            if (markAsDissolved) parsed.meta.dissolved = true;
+   763→   763→            this.chunkCache.set(parsed.id, parsed);
+   764→   764→          }
+   765→   765→        } catch {}
+   766→   766→      }
+   767→   767→    }
+   768→   768→  }
+   769→   769→
+   770→   770→  private parseChunkFile(content: string): MicroChunk | null {
+   771→   771→    const fmMatch = content.match(/^---([\s\S]*?)---/);
+   772→   772→    if (!fmMatch) return null;
+   773→   773→    
+   774→   774→    const body = content.slice(fmMatch[0].length).trim();
+   775→   775→    const fm = fmMatch[1];
+   776→   776→    
+   777→   777→    const get = (field: string): string => {
+   778→   778→      const match = fm.match(new RegExp(`${field}:\s*(.+?)$`, 'm'));
+   779→   779→      return match ? match[1].trim().replace(/^"|"$/g, '') : '';
+   780→   780→    };
+   781→   781→    
+   782→   782→    const getList = (field: string): string[] => {
+   783→   783→      const match = fm.match(new RegExp(`${field}:\s*\[([\s\S]*?)\]`, 'm'));
+   784→   784→      if (!match) return [];
+   785→   785→      return match[1].match(/"([^"]+)"/g)?.map(s => s.replace(/"/g, '')) || [];
+   786→   786→    };
+   787→   787→    
+   788→   788→    const id = get('id');
+   789→   789→    if (!id) return null;
+   790→   790→    
+   791→   791→    return {
+   792→   792→      id,
+   793→   793→      content: body,
+   794→   794→      meta: {
+   795→   795→        source: get('source'),
+   796→   796→        sourcePath: '',
+   797→   797→        title: get('source'), // fallback to source name
+   798→   798→        category: get('category'),
+   799→   799→        skillTags: getList('skillTags'),
+   800→   800→        containmentHash: get('containmentHash'),
+   801→   801→        createdAt: parseInt(get('createdAt')) || Date.now(),
+   802→   802→        dissolved: get('dissolved') === 'true',
+   803→   803→        links: getList('links'),
+   804→   804→        embeddingSig: get('embeddingSig'),
+   805→   805→      },
+   806→   806→    };
+   807→   807→  }
+   808→   808→
+   809→   809→  async loadAllSkills(): Promise<void> {
+   810→   810→    try {
+   811→   811→      await access(this.skillsDir);
+   812→   812→    } catch { return; }
+   813→   813→    
+   814→   814→    const entries = await readdir(this.skillsDir, { withFileTypes: true });
+   815→   815→    for (const entry of entries) {
+   816→   816→      const fullPath = join(this.skillsDir, entry.name);
+   817→   817→      if (entry.isDirectory()) {
+   818→   818→        await this.loadSkillsFromDir(fullPath);
+   819→   819→      }
+   820→   820→    }
+   821→   821→  }
+   822→   822→
+   823→   823→  private async loadSkillsFromDir(dir: string): Promise<void> {
+   824→   824→    const entries = await readdir(dir, { withFileTypes: true });
+   825→   825→    for (const entry of entries) {
+   826→   826→      if (entry.isFile() && entry.name.endsWith('.md')) {
+   827→   827→        try {
+   828→   828→          const content = await readFile(join(dir, entry.name), 'utf-8');
+   829→   829→          const parsed = this.parseSkillFile(content);
+   830→   830→          if (parsed) this.skillCache.set(parsed.id, parsed);
+   831→   831→        } catch {}
+   832→   832→      }
+   833→   833→    }
+   834→   834→  }
+   835→   835→
+   836→   836→  private parseSkillFile(content: string): SkillRecord | null {
+   837→   837→    const fmMatch = content.match(/^---([\s\S]*?)---/);
+   838→   838→    if (!fmMatch) return null;
+   839→   839→    
+   840→   840→    const body = content.slice(fmMatch[0].length);
+   841→   841→    const fm = fmMatch[1];
+   842→   842→    
+   843→   843→    const get = (field: string): string => {
+   844→   844→      const match = fm.match(new RegExp(`${field}:\s*(.+?)$`, 'm'));
+   845→   845→      return match ? match[1].trim().replace(/^"|"$/g, '') : '';
+   846→   846→    };
+   847→   847→    
+   848→   848→    const id = get('id');
+   849→   849→    if (!id) return null;
+   850→   850→    
+   851→   851→    // Extract pattern from body
+   852→   852→    const patternMatch = body.match(/## Pattern\s*\n([\s\S]*?)(?=##|$)/);
+   853→   853→    
+   854→   854→    return {
+   855→   855→      id,
+   856→   856→      name: get('name'),
+   857→   857→      pattern: patternMatch ? patternMatch[1].trim().slice(0, 1000) : body.slice(0, 500),
+   858→   858→      chunks: [], // loaded separately if needed
+   859→   859→      category: get('category'),
+   860→   860→      strength: parseFloat(get('strength')) || 0.5,
+   861→   861→      lastUsed: Date.now(),
+   862→   862→      containmentProof: get('containmentProof'),
+   863→   863→    };
+   864→   864→  }
+   865→   865→
+   866→   866→  // ─── Stats ────────────────────────────────────────────────────
+   867→   867→
+   868→   868→  async getIndex(): Promise<ContainmentIndex | null> {
+   869→   869→    try {
+   870→   870→      const content = await readFile(join(this.indexDir, 'vault-index.json'), 'utf-8');
+   871→   871→      return JSON.parse(content);
+   872→   872→    } catch {
+   873→   873→      return null;
+   874→   874→    }
+   875→   875→  }
+   876→   876→}
+   877→   877→
+   878→   878→// ─── Singleton ──────────────────────────────────────────────────────
+   879→   879→
+   880→   880→let vaultInstance: ObsidianVault | null = null;
+   881→   881→
+   882→   882→export function getVault(vaultPath?: string): ObsidianVault {
+   883→   883→  if (!vaultInstance) {
+   884→   884→    const path = vaultPath || process.env.OBSIDIAN_VAULT_PATH || '/home/z/my-project/data/eli-vault';
+   885→   885→    vaultInstance = new ObsidianVault(path);
+   886→   886→  }
+   887→   887→  return vaultInstance;
+   888→   888→}
+   889→   889→

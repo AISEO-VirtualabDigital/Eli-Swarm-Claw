@@ -111,7 +111,11 @@ WorkingDirectory=/opt/eli/app
 Environment=NODE_ENV=production
 Environment=DATABASE_URL=file:/opt/eli/data/custom.db
 Environment=KNOWLEDGE_DIR=/opt/eli/data/uploads/knowledge-sources
+Environment=KEYWORD_DIR=/opt/eli/data/keyword-research
+Environment=OBSIDIAN_VAULT_PATH=/opt/eli/data/eli-vault
 Environment=PORT=3000
+Environment=GEMINI_API_KEY=${GEMINI_API_KEY:-}
+Environment=ELI_INTRO_VIDEO_URL=${ELI_INTRO_VIDEO_URL:-}
 ExecStart=/root/.bun/bin/bun .next/standalone/server.js
 Restart=always
 RestartSec=5
@@ -150,28 +154,28 @@ fi
 mkdir -p /etc/caddy
 cat > /etc/caddy/Caddyfile <<'CADDYFILE'
 {
-	# Global options
-	email admin@virtuabaldigital.com
+        # Global options
+        email admin@virtuabaldigital.com
 }
 
 eli.virtuabaldigital.com {
-	reverse_proxy localhost:3000 {
-		header_up Host {host}
-		header_up X-Forwarded-For {remote_host}
-		header_up X-Forwarded-Proto {scheme}
-		header_up X-Real-IP {remote_host}
-	}
+        reverse_proxy localhost:3000 {
+                header_up Host {host}
+                header_up X-Forwarded-For {remote_host}
+                header_up X-Forwarded-Proto {scheme}
+                header_up X-Real-IP {remote_host}
+        }
 
-	# Static files cache
-	@static path /logo.svg /robots.txt
-	header @static Cache-Control "public, max-age=86400"
+        # Static files cache
+        @static path /logo.svg /robots.txt
+        header @static Cache-Control "public, max-age=86400"
 
-	# Security headers (Caddy adds HSTS automatically)
-	header {
-		X-Frame-Options "DENY"
-		X-Content-Type-Options "nosniff"
-		Referrer-Policy "strict-origin-when-cross-origin"
-	}
+        # Security headers (Caddy adds HSTS automatically)
+        header {
+                X-Frame-Options "DENY"
+                X-Content-Type-Options "nosniff"
+                Referrer-Policy "strict-origin-when-cross-origin"
+        }
 }
 CADDYFILE
 

@@ -881,7 +881,7 @@ let vaultInstance: ObsidianVault | null = null;
 
 export function getVault(vaultPath?: string): ObsidianVault {
   if (!vaultInstance) {
-    const path = vaultPath || process.env.OBSIDIAN_VAULT_PATH || '/home/z/my-project/data/eli-vault';
+    const path = vaultPath || process.env.OBSIDIAN_VAULT_PATH || join(process.cwd(), 'data', 'eli-vault');
     vaultInstance = new ObsidianVault(path);
   }
   return vaultInstance;
