@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
                 ttlMinutes: Math.max(0, Math.round((i.expiresAt - Date.now()) / 60000)),
               })),
               providerStats: state.clawState.providerStats,
+              providerHealth: state.clawState.providerHealth,
             }
           : null,
         totalRotations: state.totalRotations,
@@ -168,10 +169,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ action: 'claw-state', ...claw.getState() });
     }
 
+    // ── Probe: health-check all email providers (Agent-Reach) ──
+    if (action === 'probe') {
+      const { getOpenClaw } = await import('@/lib/open-claw');
+      const clawProbe = getOpenClaw();
+      await clawProbe.probeAllProviders();
+      const state = clawProbe.getState();
+      return NextResponse.json({
+        action: 'probe',
+        providerHealth: state.providerHealth,
+        bestProvider: await clawProbe.getBestProvider(),
+      });
+    }
+
     // ── Browser task: get browser-use instructions for a service signup ──
     if (action === 'browser-task') {
+      const { getOpenClaw } = await import('@/lib/open-claw');
+      const clawBt = getOpenClaw();
       const service = searchParams.get('service') || 'gemini';
-      const task = await claw.generateBrowserTask(service);
+      const task = await clawBt.generateBrowserTask(service);
       if (!task) {
         return NextResponse.json({ error: `No browser task for service: ${service}` }, { status: 400 });
       }
@@ -179,12 +195,12 @@ export async function GET(request: NextRequest) {
         action: 'browser-task',
         ...task,
         note: 'Execute these steps with browser-use/Playwright. After completion, the claw will auto-poll the inbox for the API key.',
-        supportedServices: claw.getSupportedBrowserServices(),
+        supportedServices: clawBt.getSupportedBrowserServices(),
       });
     }
 
     return NextResponse.json(
-      { error: 'Unknown action. Use: state, key, test, signup, claw, browser-task' },
+      { error: 'Unknown action. Use: state, key, test, signup, claw, probe, browser-task' },
       { status: 400 }
     );
   } catch (err: any) {

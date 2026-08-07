@@ -100,3 +100,27 @@ Stage Summary:
 - browser-use integration designed: Claw generates task instructions → browser-use executes → Claw polls for key
 - Cloudflare OS gatekeeper pattern adopted for Open Claw action validation
 - 8 chunks in vault covering: omniroute (2), cloudflare-os (2), agent-reach (1), browser-use (1), kos (1), synthesis (1)
+
+---
+Task ID: 2
+Agent: Main Agent (Z - Senior Advisor)
+Task: Deep research + absorb 6 new repos + somnusai.net SEO, wire patterns into codebase
+
+Work Log:
+- **OmniKey AI Research** (Felix-au/OmniKey-AI-Unified-Key-Manager): 17 free-tier LLM providers, dual OpenAI+Gemini proxy, parametric provider registration, dynamic penalty system (+3/-1, max 10), round-robin key selection, AES-256-GCM encryption, Zod validation, sticky sessions, health checking
+- **OmniMail Research** (mibgb65-cloud/OmniMail): Cloudflare Workers webmail, queue-based async processing (parse/outbound/index), idempotent sends, cursor-based pagination with version sync, provider abstraction with domain-based routing
+- **OmniDash Research** (lalitdotdev/omnidash): Next.js 13 App Router + shadcn/ui, server component data fetching, generic DataTable (TanStack), cmdk command palette, cookie-persisted resizable panels, KPI cards + Recharts
+- **LoopX Research** (huangruiteng/loopx): Zero-dep Python control plane for agent orchestration, 6 durable layers, typed turn enums, handler-chain dispatch, declarative capability catalog, dry-run safety, TOML extension manifests
+- **Agent-Reach Deep Research** (Panniantong/Agent-Reach): 15+ platform capability layer, ordered multi-backend routing, probe-don't-guess health checking, symlink-hardened credential storage, URL SSRF protection, SKILL.md agent interface, two-phase backend selection, sensitive redaction
+- **SomnusAI SEO Audit** (somnusai.net): Full meta tag stack, SoftwareApplication schema, clean heading hierarchy, 14 internal feature links, 5 CTAs, Next.js 15+Turbopack+Tailwind. Critical issues: missing og:image, zero analytics, PHP currency, no blog, no FAQ schema
+- **Vault Absorption**: Created 7 chunks in eli-vault/01-Active/absorbed-repos-v2/ covering 60 patterns + 10 anti-patterns
+- **Open Claw v2 Upgrade**: Added ProviderHealth type with penalty/tier/consecutiveFailures, probe functions for all 3 providers (guerrilla/mailtm/openinbox), two-phase provider selection (probe all → select by penalty+latency → round-robin tiebreak), recordProviderResult() for penalty scoring, sensitive key redaction in getState()
+- **Omni API Upgrade**: Added GET ?action=probe endpoint for health-checking all providers, exposed providerHealth in state response
+
+Stage Summary:
+- 7 new vault chunks (60 patterns absorbed from 6 sources)
+- Open Claw v2: two-phase provider selection replaces sequential failover
+- New API: GET /api/omni?action=probe → provider health scores
+- Penalty system: providers auto-demoted on failure, auto-recovered on success
+- Sensitive redaction: keys masked in all state responses
+- Pending: full rebuild + deploy to VPS
