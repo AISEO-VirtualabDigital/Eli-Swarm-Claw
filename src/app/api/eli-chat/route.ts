@@ -41,14 +41,30 @@ Your job: Make VirtuaLab grow. Every conversation should leave the person with s
 type LLMProvider = 'gemini' | 'fallback';
 
 function getProvider(): LLMProvider {
-  const key = process.env.GEMINI_API_KEY;
-  if (key && key.length > 10) return 'gemini';
+  // 1. Check Omni Route for auto-rotated key
+  const omniKey = process.env.GEMINI_API_KEY;
+  if (omniKey && omniKey.startsWith('AIza') && omniKey.length > 20) return 'gemini';
+  // 2. Check direct env var (manual/injected)
+  const envKey = process.env.GEMINI_API_KEY;
+  if (envKey && envKey.length > 10) return 'gemini';
   return 'fallback';
 }
 
 async function callGemini(messages: Array<{ role: string; content: string }>): Promise<string> {
   const { GoogleGenerativeAI } = await import('@google/generative-ai');
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+  let key = process.env.GEMINI_API_KEY;
+
+  // Try Omni Route key if direct key fails
+  if (!key || key.length < 20 || !key.startsWith('AIza')) {
+    try {
+      const { getOmniRoute } = await import('@/lib/omni-route');
+      key = getOmniRoute().getActiveKey('gemini');
+    } catch {}
+  }
+
+  if (!key) throw new Error('No Gemini API key available');
+
+  const genAI = new GoogleGenerativeAI(key);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
   const systemMsg = messages.find(m => m.role === 'system');
@@ -63,6 +79,12 @@ async function callGemini(messages: Array<{ role: string; content: string }>): P
     systemInstruction: systemMsg?.content || '',
     contents: conversationMessages,
   });
+
+  // Record usage for rotation tracking
+  try {
+    const { getOmniRoute } = await import('@/lib/omni-route');
+    getOmniRoute().recordUsage();
+  } catch {}
 
   return result.response.text();
 }

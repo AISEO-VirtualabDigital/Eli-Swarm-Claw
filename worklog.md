@@ -58,3 +58,23 @@ Stage Summary:
 - GEMINI_API_KEY: Set in local .env as `Astralform1//-` (likely a password, not a standard AIza... key — needs proper key from Google AI Studio)
 - Production: Eli is ACTIVE, vault stats working, provider=fallback (no valid Gemini key)
 - Next: Full rebuild + redeploy needed for vault-sync endpoint; proper Gemini API key needed for LLM generation
+
+---
+Task ID: 7
+Agent: Main Agent (Z - Senior Advisor)
+Task: Build Omni Route — self-healing API key rotation via OpenInbox
+
+Work Log:
+- **OpenInbox API Research**: Discovered full API spec from official n8n node README (openinbox-io/n8n-nodes-openinbox). Key endpoints: POST /api/inbox (no auth), GET /api/inbox/:id, GET /api/v1/inboxes/:id/emails (requires X-API-Key header), GET /api/v1/emails/:id
+- **Omni Route Engine** (`src/lib/omni-route.ts`): 280-line self-healing key rotation system. Creates temp inboxes via OpenInbox, polls for API keys in emails, extracts keys via regex patterns (AIza... for Gemini, sk-... for OpenAI, sk-ant-... for Anthropic), auto-rotates before inbox expiry (10min buffer), tracks usage counts, supports manual key injection
+- **Omni API Endpoint** (`src/app/api/omni/route.ts`): 6 actions — GET state (masked keys + history), POST rotate (force new key cycle), POST inject (manual key), POST inbox (create temp inbox), POST check (poll inbox for keys), GET test (validate key against Gemini)
+- **Eli Chat Integration**: Modified eli-chat/route.ts to check Omni Route for keys before falling back. Every Gemini call records usage for rotation tracking. Key validation now checks for `AIza` prefix (rejects password-style keys)
+- **Production Deploy**: Uploaded omni-route.ts, /api/omni/route.ts, updated eli-chat/route.ts. Eli restarted successfully, health check passes.
+
+Stage Summary:
+- Omni Route: LIVE at `/api/omni` — creates temp inboxes, auto-rotates, tracks usage
+- Eli Chat: Now checks Omni Route for keys before env vars
+- Key extraction: Regex patterns for Gemini (AIza...), OpenAI (sk-...), Anthropic (sk-ant-...)
+- Temp inbox lifecycle: Create → Use email for signup → Poll for API key → Extract → Inject → Auto-rotate before expiry
+- To use: POST /api/omni/inject { service: 'gemini', key: 'AIza...' } to give Eli a real key, or POST /api/omni to auto-create an inbox
+- OpenInbox API key (OPENINBOX_API_KEY env var) needed for email reading — creation works without it
