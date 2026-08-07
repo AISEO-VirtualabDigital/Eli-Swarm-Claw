@@ -108,45 +108,50 @@ async function loadIndexes(): Promise<void> {
 
 // ─── Chunk File Parsing ────────────────────────────────────────────
 
-async function parseChunkFile(filePath: string): Promise<VaultChunk | null> {
+export async function parseChunkFile(filePath: string): Promise<VaultChunk | null> {
   try {
     const content = await readFile(filePath, 'utf-8');
-    const fmEnd = content.indexOf('---', 3);
-    if (fmEnd === -1) return null;
-
-    const fmRaw = content.slice(3, fmEnd).trim();
-    const body = content.slice(fmEnd + 3).trim();
-
-    // Handle optional leading quote (chunk engine bug) and standard fields
-    const getField = (field: string): string => {
-      const regex = new RegExp(`^"?${field}:\s*"?([^"(\n)]*)"?$`, 'm');
-      const m = fmRaw.match(regex);
-      return m ? m[1].trim() : '';
-    };
-
-    const getArrayField = (field: string): string[] => {
-      const escaped = field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`^${escaped}:\\s*\\[([^\\]]*)\\]`, 'm');
-      const m = fmRaw.match(regex);
-      if (!m) return [];
-      return m[1].match(/"([^"]+)"/g)?.map(s => s.replace(/"/g, '')) || [];
-    };
-
-    const id = getField('id');
-    const source = getField('source');
-    const title = getField('title');
-    const category = getField('category');
-    const skillTags = getArrayField('skillTags');
-    const containmentHash = getField('containmentHash');
-    const embeddingSig = getField('embeddingSig');
-
-    if (!id || !body) return null;
-
-    return { id, content: body, source, title, category, skillTags, containmentHash, embeddingSig };
+    return parseChunkContent(content);
   } catch (err) {
     console.error('[VAULT-SEARCH] parseChunkFile error:', (err as Error).message);
     return null;
   }
+}
+
+/**
+ * Parse a chunk's frontmatter + body from raw markdown string.
+ * Shared by vault-search and vault-sync to avoid duplication.
+ */
+export function parseChunkContent(content: string): VaultChunk | null {
+  const fmEnd = content.indexOf('---', 3);
+  if (fmEnd === -1) return null;
+  const fmRaw = content.slice(3, fmEnd).trim();
+  const body = content.slice(fmEnd + 3).trim();
+
+  const getField = (field: string): string => {
+    const regex = new RegExp(`^"?${field}:\s*"?([^"(\n)]*)"?$`, 'm');
+    const m = fmRaw.match(regex);
+    return m ? m[1].trim() : '';
+  };
+
+  const getArrayField = (field: string): string[] => {
+    const escaped = field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`^${escaped}:\\s*\\[([^\\]]*)\\]`, 'm');
+    const m = fmRaw.match(regex);
+    if (!m) return [];
+    return m[1].match(/"([^"]+)"/g)?.map(s => s.replace(/"/g, '')) || [];
+  };
+
+  const id = getField('id');
+  const source = getField('source');
+  const title = getField('title');
+  const category = getField('category');
+  const skillTags = getArrayField('skillTags');
+  const containmentHash = getField('containmentHash');
+  const embeddingSig = getField('embeddingSig');
+
+  if (!id || !body) return null;
+  return { id, content: body, source, title, category, skillTags, containmentHash, embeddingSig };
 }
 
 // ─── Core Search ────────────────────────────────────────────────────

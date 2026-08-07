@@ -110,7 +110,7 @@ class PenaltyTracker {
     const entry = this.entries.get(provider);
     if (!entry) return;
     const elapsed = Date.now() - entry.lastUpdated;
- const decaySteps = Math.floor(elapsed / PENALTY_DECAY_INTERVAL_MS);
+    const decaySteps = Math.floor(elapsed / PENALTY_DECAY_INTERVAL_MS);
     if (decaySteps > 0) {
       entry.penalty = Math.max(0, entry.penalty - (decaySteps * PENALTY_DECAY_AMOUNT));
       entry.lastUpdated += decaySteps * PENALTY_DECAY_INTERVAL_MS;
@@ -159,7 +159,6 @@ export class OmniRoute {
   private state: OmniState;
   private penalties: PenaltyTracker;
   private rotationTimer: ReturnType<typeof setInterval> | null = null;
-  private penaltyDecayTimer: ReturnType<typeof setInterval> | null = null;
   private checkInterval: number;
   private preRotateMinutes: number;
   private skipProviders = new Set<string>(); // OmniKey: skip set for failed providers
@@ -180,8 +179,7 @@ export class OmniRoute {
     this.claw.onKey((service, key, envVar) => {
       console.log(`[OMNI] Claw delivered key [${service}] → injecting`);
       this.injectKey(service, key, `${envVar}`);
-      this.penalties.recordSuccess(this.state.activeKey?.provider || 'unknown');
-      this.skipProviders.delete(this.state.activeKey?.provider || '');
+      this.skipProviders.clear();
     });
 
     this.state = {
@@ -218,16 +216,13 @@ export class OmniRoute {
     if (this.rotationTimer) return;
     console.log('[OMNI] Auto-rotation started (Open Claw + Penalty Tracker)');
     this.rotationTimer = setInterval(() => this.checkAndRotate(), this.checkInterval);
-    // OmniKey: periodic penalty decay
-    this.penaltyDecayTimer = setInterval(() => {
-      for (const p of ['guerrilla', 'mailtm', 'openinbox']) this.penalties.decay(p);
-    }, PENALTY_DECAY_INTERVAL_MS);
+    // Note: PenaltyTracker.decay() runs automatically on every getPenalty() call.
+    // No separate decay timer needed — it's time-based and self-healing.
     this.checkAndRotate();
   }
 
   stopAutoRotation() {
     if (this.rotationTimer) { clearInterval(this.rotationTimer); this.rotationTimer = null; }
-    if (this.penaltyDecayTimer) { clearInterval(this.penaltyDecayTimer); this.penaltyDecayTimer = null; }
     this.claw.stopPolling();
     console.log('[OMNI] Stopped');
   }

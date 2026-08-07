@@ -723,7 +723,7 @@ export class OpenClaw {
           { action: 'goto', url: 'https://aistudio.google.com/apikey' },
           { action: 'wait', selector: 'input[type="email"]', timeout: 10000 },
           { action: 'fill', selector: 'input[type="email"]', value: inbox.email },
-          { action: 'click', selector: 'button:has-text("Create API key"), button:has-text("Get API key"), [aria-label*="API key"]' },
+          { action: 'click', selector: 'button[type="submit"]' },
           { action: 'wait', ms: 5000 },
         ],
         postAction: `poll-inbox:${inbox.id}:30`,

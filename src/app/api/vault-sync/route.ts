@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile, readdir, stat } from 'fs/promises';
 import { join } from 'path';
+import { parseChunkFile } from '@/lib/vault-search';
 
 const VAULT_PATH = process.env.OBSIDIAN_VAULT_PATH || join(process.cwd(), 'data', 'eli-vault');
 const ACTIVE_DIR = join(VAULT_PATH, '01-Active');
@@ -13,33 +14,6 @@ const CATEGORY_EMOJI: Record<string, string> = {
   ecommerce: '🛒', crm: '👥', security: '🔒', database: '🗄️',
   knowledge: '📚', 'project-mgmt': '📋',
 };
-
-async function parseChunkFile(filePath: string): Promise<Record<string, any> | null> {
-  try {
-    const content = await readFile(filePath, 'utf-8');
-    const fmEnd = content.indexOf('---', 3);
-    if (fmEnd === -1) return null;
-    const fmRaw = content.slice(3, fmEnd).trim();
-    const body = content.slice(fmEnd + 3).trim();
-    const getField = (field: string): string => {
-      const regex = new RegExp(`^"?${field}:\s*"?([^"(\n)]*)"?$`, 'm');
-      const m = fmRaw.match(regex);
-      return m ? m[1].trim() : '';
-    };
-    const getArrayField = (field: string): string[] => {
-      const escaped = field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`^${escaped}:\\s*\\[([^\\]]*)\\]`, 'm');
-      const m = fmRaw.match(regex);
-      if (!m) return [];
-      return m[1].match(/"([^"]+)"/g)?.map(s => s.replace(/"/g, '')) || [];
-    };
-    return {
-      id: getField('id'), source: getField('source'), title: getField('title'),
-      category: getField('category'), skillTags: getArrayField('skillTags'),
-      containmentHash: getField('containmentHash'), content: body,
-    };
-  } catch { return null; }
-}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -62,7 +36,7 @@ export async function GET(request: NextRequest) {
       const format = searchParams.get('format') || 'obsidian';
 
       const targetDir = category ? join(ACTIVE_DIR, category) : ACTIVE_DIR;
-      const chunks: Record<string, any>[] = [];
+      const chunks: Array<Record<string, any>> = [];
 
       async function walkDir(dir: string) {
         const entries = await readdir(dir);

@@ -41,12 +41,9 @@ Your job: Make VirtuaLab grow. Every conversation should leave the person with s
 type LLMProvider = 'gemini' | 'fallback';
 
 function getProvider(): LLMProvider {
-  // 1. Check Omni Route for auto-rotated key
-  const omniKey = process.env.GEMINI_API_KEY;
-  if (omniKey && omniKey.startsWith('AIza') && omniKey.length > 20) return 'gemini';
-  // 2. Check direct env var (manual/injected)
-  const envKey = process.env.GEMINI_API_KEY;
-  if (envKey && envKey.length > 10) return 'gemini';
+  const key = process.env.GEMINI_API_KEY;
+  if (key && (key.startsWith('AIza') || key.startsWith('AQ.')) && key.length > 20) return 'gemini';
+  if (key && key.length > 10) return 'gemini';
   return 'fallback';
 }
 
@@ -55,7 +52,7 @@ async function callGemini(messages: Array<{ role: string; content: string }>): P
   let key = process.env.GEMINI_API_KEY;
 
   // Try Omni Route key if direct key fails
-  if (!key || key.length < 20 || !key.startsWith('AIza')) {
+  if (!key || key.length < 20) {
     try {
       const { getOmniRoute } = await import('@/lib/omni-route');
       key = getOmniRoute().getActiveKey('gemini');
@@ -164,8 +161,15 @@ export async function POST(request: NextRequest) {
     if (provider === 'gemini') {
       try {
         response = await callGemini(messages);
-      } catch (llmError) {
-        console.error('Gemini call failed:', llmError);
+      } catch (llmError: any) {
+        console.error('Gemini call failed:', llmError?.message || llmError);
+        // Feed result back to OmniRoute for penalty tracking
+        try {
+          const { getOmniRoute } = await import('@/lib/omni-route');
+          const retryable = [429, 500, 502, 503, 504].some(c => (llmError?.message || '').includes(String(c)))
+            || /timeout|quota|rate.?limit/i.test(llmError?.message || '');
+          getOmniRoute().recordResult(retryable ? 'repair_required' : 'replan_required', llmError);
+        } catch {}
         response = '';
       }
     }
@@ -184,12 +188,11 @@ ${containmentHits > 0 ? `Also recovered ${containmentHits} pattern memories from
     }
 
     // OmniKey/OmniRoute: attach decision headers for routing transparency
-    const omniHeaders = (() => {
-      try {
-        const { getOmniRoute } = require('@/lib/omni-route');
-        return getOmniRoute().getDecisionHeaders();
-      } catch { return {}; }
-    })();
+    let omniHeaders: Record<string, string> = {};
+    try {
+      const { getOmniRoute } = await import('@/lib/omni-route');
+      omniHeaders = getOmniRoute().getDecisionHeaders();
+    } catch {}
 
     return NextResponse.json({
       response: response || 'I hit a wall. Try again.',
