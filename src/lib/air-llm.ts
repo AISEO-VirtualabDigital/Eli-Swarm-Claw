@@ -13,6 +13,7 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getVault, ObsidianVault } from './obsidian-chunk-engine';
+import { getOmniRoute } from './omni-route';
 
 export interface AirLLMResponse {
   response: string;
@@ -199,17 +200,33 @@ function buildFallbackResponse(
 
 let airInstance: AirLLM | null = null;
 
-export function getAirLLM(systemPrompt?: string): AirLLM {
-  if (!airInstance) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY environment variable is required for Air LLM');
-    }
+/**
+ * Create or recreate the AirLLM instance with the current omni key.
+ * Called when omni injects a new key so AirLLM picks it up.
+ */
+export function resetAirLLM(systemPrompt?: string): AirLLM {
+  const omni = getOmniRoute();
+  const apiKey = omni.getGeminiKey();
+  if (!apiKey || apiKey.startsWith('Astralform')) {
+    console.warn('[AirLLM] No valid Gemini key from omni — will operate in fallback mode');
     airInstance = new AirLLM({
-      apiKey,
+      apiKey: 'fallback',
       systemPrompt: systemPrompt || '',
       vaultPath: process.env.OBSIDIAN_VAULT_PATH,
     });
-    }
+    return airInstance;
+  }
+  airInstance = new AirLLM({
+    apiKey,
+    systemPrompt: systemPrompt || '',
+    vaultPath: process.env.OBSIDIAN_VAULT_PATH,
+  });
+  return airInstance;
+}
+
+export function getAirLLM(systemPrompt?: string): AirLLM {
+  if (!airInstance) {
+    return resetAirLLM(systemPrompt);
+  }
   return airInstance;
 }
