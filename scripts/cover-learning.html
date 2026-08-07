@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 794px; height: 1123px; }
+  @page { size: 794px 1123px; margin: 0; }
+  body { position: relative; background: #f4f4f3; font-family: 'Inter', sans-serif; }
+  .cover-bg { position: absolute; inset: 0; background: #f4f4f3; z-index: 0; }
+  .cover-bg-layer { position: absolute; inset: 0; z-index: 1; }
+  .grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(98,62,205,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(98,62,205,0.04) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+  .anchor-line {
+    position: absolute;
+    left: 95px; top: 112px;
+    width: 6px; height: 898px;
+    background: #623ecd;
+    border-radius: 3px;
+  }
+  .cover-structure { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .cover-content { position: absolute; inset: 0; z-index: 3; }
+  .content-left { position: absolute; left: 150px; top: 0; width: 560px; }
+  .kicker {
+    position: absolute; top: 168px;
+    font-size: 14px; font-weight: 400; letter-spacing: 3px;
+    color: rgba(98,62,205,0.6); text-transform: uppercase;
+  }
+  .hero-title {
+    position: absolute; top: 337px;
+    font-size: 52px; font-weight: 900; line-height: 1.1;
+    color: #1a1a18; max-width: 560px;
+  }
+  .summary {
+    position: absolute; top: 561px;
+    font-size: 16px; font-weight: 400; line-height: 1.6;
+    color: rgba(26,26,24,0.75); max-width: 480px;
+  }
+  .meta {
+    position: absolute; top: 842px;
+    font-size: 14px; font-weight: 400; line-height: 1.5;
+    color: rgba(129,126,119,0.85);
+  }
+  .meta strong { color: #1a1a18; font-weight: 600; }
+  .footer {
+    position: absolute; bottom: 50px; left: 150px;
+    font-size: 12px; font-weight: 400; letter-spacing: 2px;
+    color: rgba(129,126,119,0.5); text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="cover-bg"></div>
+  <div class="cover-bg-layer">
+    <div class="grid"></div>
+    <div class="anchor-line"></div>
+  </div>
+  <div class="cover-structure"></div>
+  <div class="cover-content">
+    <div class="content-left">
+      <div class="kicker">VirtuaLab Digital &middot; Hands-On Practice</div>
+      <div class="hero-title">Safety<br>Parameter<br>Learning Guide</div>
+      <div class="summary">
+        Step-by-step implementation guide for seven core API safety patterns. Copy the code, follow the exercises, and build production-ready security into your own projects. Framework-agnostic examples in Node.js and Python.
+      </div>
+      <div class="meta">
+        <strong>Author:</strong> Z.ai &nbsp;&middot;&nbsp; <strong>Date:</strong> August 2026<br>
+        <strong>Patterns:</strong> 7 &nbsp;&middot;&nbsp; <strong>Exercises:</strong> 6 &nbsp;&middot;&nbsp; <strong>Level:</strong> Beginner to Intermediate
+      </div>
+    </div>
+    <div class="footer">Practice &middot; Build &middot; Deploy</div>
+  </div>
+</body>
+</html>

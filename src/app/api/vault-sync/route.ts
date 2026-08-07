@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile, readdir, stat } from 'fs/promises';
 import { join } from 'path';
 import { parseChunkFile } from '@/lib/vault-search';
+import { audit } from '@/lib/audit-log';
+import {
+  checkAuth, checkRateLimit, RATE_LIMIT_VAULT,
+} from '@/lib/safety-gate';
 
 const VAULT_PATH = process.env.OBSIDIAN_VAULT_PATH || join(process.cwd(), 'data', 'eli-vault');
 const ACTIVE_DIR = join(VAULT_PATH, '01-Active');
@@ -15,7 +19,23 @@ const CATEGORY_EMOJI: Record<string, string> = {
   knowledge: '📚', 'project-mgmt': '📋',
 };
 
+function getClientIp(request: NextRequest): string {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+}
+
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request);
+
+  // ─── Auth + Rate limit (Tier 1) ──────────────────────────────
+  if (!checkAuth(request)) {
+    audit('auth.blocked', `Vault-sync auth failed from ${ip}`, { ip });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!checkRateLimit(ip, RATE_LIMIT_VAULT)) {
+    audit('vault.ratelimited', `Vault rate limited from ${ip}`, { ip });
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const { searchParams } = new URL(request.url);
   const action = searchParams.get('action') || 'stats';
 

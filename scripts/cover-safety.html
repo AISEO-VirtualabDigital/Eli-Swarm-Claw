@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 794px; height: 1123px; }
+  @page { size: 794px 1123px; margin: 0; }
+  body { position: relative; background: #f4f4f3; font-family: 'Inter', sans-serif; }
+
+  /* Layer 0: Background fill */
+  .cover-bg { position: absolute; inset: 0; background: #f4f4f3; z-index: 0; }
+
+  /* Layer 1: Grid + anchor line */
+  .cover-bg-layer { position: absolute; inset: 0; z-index: 1; }
+  .grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(129,115,73,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(129,115,73,0.04) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+  .anchor-line {
+    position: absolute;
+    left: 95px; /* 0.12 * 794 */
+    top: 112px;  /* 0.10 * 1123 */
+    width: 6px;
+    height: 898px; /* 0.9 * 1123 - 0.1 * 1123 */
+    background: #817349;
+    border-radius: 3px;
+  }
+
+  /* Layer 2: Structure */
+  .cover-structure { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+
+  /* Layer 3: Content */
+  .cover-content { position: absolute; inset: 0; z-index: 3; }
+  .content-left { position: absolute; left: 150px; top: 0; width: 560px; }
+
+  /* Drawer A: Kicker */
+  .kicker {
+    position: absolute; top: 168px; /* 0.15 * 1123 */
+    font-size: 14px; font-weight: 400; letter-spacing: 3px;
+    color: rgba(129,115,73,0.6); text-transform: uppercase;
+  }
+
+  /* Drawer B: Hero Title */
+  .hero-title {
+    position: absolute; top: 337px; /* 0.30 * 1123 */
+    font-size: 52px; font-weight: 900; line-height: 1.1;
+    color: #1a1a18; max-width: 560px;
+  }
+
+  /* Drawer C: Summary */
+  .summary {
+    position: absolute; top: 561px; /* 0.50 * 1123 */
+    font-size: 16px; font-weight: 400; line-height: 1.6;
+    color: rgba(26,26,24,0.75); max-width: 480px;
+  }
+
+  /* Drawer D: Meta */
+  .meta {
+    position: absolute; top: 842px; /* 0.75 * 1123 */
+    font-size: 14px; font-weight: 400; line-height: 1.5;
+    color: rgba(129,126,119,0.85);
+  }
+  .meta strong { color: #1a1a18; font-weight: 600; }
+
+  /* Footer */
+  .footer {
+    position: absolute; bottom: 50px; left: 135px;
+    font-size: 12px; font-weight: 400; letter-spacing: 2px;
+    color: rgba(129,126,119,0.5); text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="cover-bg"></div>
+  <div class="cover-bg-layer">
+    <div class="grid"></div>
+    <div class="anchor-line"></div>
+  </div>
+  <div class="cover-structure"></div>
+  <div class="cover-content">
+    <div class="content-left">
+      <div class="kicker">VirtuaLab Digital &middot; Security Reference</div>
+      <div class="hero-title">Eli Safety<br>Parameter<br>Guidebook</div>
+      <div class="summary">
+        Complete reference for every Tier 1 safety parameter implemented in the Eli API system. Covers authentication, rate limiting, payload limits, input sanitization, prompt injection blocking, key validation, and audit logging for a limited-key LLM architecture.
+      </div>
+      <div class="meta">
+        <strong>Author:</strong> Z.ai &nbsp;&middot;&nbsp; <strong>Date:</strong> August 2026<br>
+        <strong>Version:</strong> Tier 1 &nbsp;&middot;&nbsp; <strong>Scope:</strong> 4 Routes, 9 Chapters
+      </div>
+    </div>
+    <div class="footer">Confidential &middot; Internal Use</div>
+  </div>
+</body>
+</html>

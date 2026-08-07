@@ -22,6 +22,9 @@ import { getOpenClaw } from '@/lib/open-claw';
 import { audit } from '@/lib/audit-log';
 import {
   MAX_PAYLOAD_OMNI, validateKeyFormat,
+  checkAuth, checkRateLimit,
+  RATE_LIMIT_OMNI_GET, RATE_LIMIT_OMNI_POST,
+  OMNI_CAPABILITIES, hasCapability, CapabilityLevel,
 } from '@/lib/safety-gate';
 
 const MAX_PAYLOAD_SIZE = MAX_PAYLOAD_OMNI;
@@ -46,8 +49,22 @@ function maskKey(key: string): string {
 // ─── GET ────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request);
   const { searchParams } = new URL(request.url);
   const action = searchParams.get('action') || 'state';
+
+  // ─── Auth + Rate limit (Tier 1) ──────────────────────────────
+  const cap = OMNI_CAPABILITIES.find(c => c.method === 'GET' && c.action === action);
+  const requiredLevel = (cap?.level || 'user') as CapabilityLevel;
+  if (!checkCapability(request, requiredLevel)) {
+    audit('auth.blocked', `Omni GET ${action} auth failed from ${ip}`, { ip, action });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!checkRateLimit(ip, RATE_LIMIT_OMNI_GET)) {
+    audit('omni.ratelimited', `Omni GET rate limited from ${ip}`, { ip });
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const omni = getOmniRoute();
 
   try {
@@ -228,14 +245,33 @@ export async function GET(request: NextRequest) {
 // ─── POST ───────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+
+  // ─── Auth + Rate limit (Tier 1) ──────────────────────────────
+  if (!checkAuth(request)) {
+    audit('auth.blocked', `Omni POST auth failed from ${ip}`, { ip });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!checkRateLimit(ip, RATE_LIMIT_OMNI_POST)) {
+    audit('omni.ratelimited', `Omni POST rate limited from ${ip}`, { ip });
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   if (!enforcePayloadLimit(request)) {
     return NextResponse.json({ error: 'Payload too large (max 10KB)' }, { status: 413 });
   }
 
   const body = await request.json().catch(() => ({}));
   const { action } = body as { action?: string };
+
+  // Per-action capability check
+  const cap = OMNI_CAPABILITIES.find(c => c.method === 'POST' && c.action === action);
+  if (cap && !hasCapability('admin', cap.level)) {
+    audit('auth.blocked', `Omni POST ${action} capability denied from ${ip}`, { ip, action, required: cap.level });
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+  }
+
   const omni = getOmniRoute();
-  const ip = getClientIp(request);
 
   try {
     // ── Force rotation ──

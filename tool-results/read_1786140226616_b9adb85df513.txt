@@ -1,0 +1,913 @@
+     1→/**
+     2→ * Open Claw Engine v2 — Infinite Email Generator + Autonomous Reader
+     3→ * 
+     4→ * "Open Claw" = self-sufficient, zero-cost, multi-provider email system.
+     5→ * 
+     6→ * Wired patterns:
+     7→ *   OmniKey — penalty tracker with decay, round-robin, skip-set on failure
+     8→ *   OmniMail — provider resolution chain, retryable error classification
+     9→ *   Agent-Reach — probe-don't-guess health checks
+    10→ *   OmniRoute (diegosouzapw) — provider adapter abstraction
+    11→ *   browser-use — decoupled browser task generation
+    12→ * 
+    13→ * Providers:
+    14→ *   1. Guerrilla Mail (primary) — session-based, instant, 1hr TTL, no registration
+    15→ *   2. mail.tm (secondary) — account-based, JWT auth, @web-library.net
+    16→ *   3. OpenInbox (tertiary) — creation-only (free), can't read without paid key
+    17→ * 
+    18→ * Provider resolution chain (OmniMail pattern):
+    19→ *   probe all → filter by skip-set → sort by penalty+latency → round-robin tiebreak
+    20→ */
+    21→
+    22→import { audit } from './audit-log';
+    23→import { KEY_PATTERNS as CENTRALIZED_KEY_PATTERNS, MAX_PENDING_KEYS, INBOX_TTL_MS } from './safety-gate';
+    24→
+    25→// ─── Types ────────────────────────────────────────────────────────
+    26→
+    27→export interface ClawInbox {
+    28→  id: string;
+    29→  email: string;
+    30→  provider: 'guerrilla' | 'mailtm' | 'openinbox';
+    31→  expiresAt: number;        // epoch ms
+    32→  createdAt: number;
+    33→  sessionData: any;         // provider-specific session (sid_token, jwt, etc.)
+    34→  emailCount: number;
+    35→  status: 'fresh' | 'polling' | 'expired' | 'error';
+    36→}
+    37→
+    38→export interface ClawEmail {
+    39→  id: string;
+    40→  from: string;
+    41→  subject: string;
+    42→  bodyText: string;
+    43→  bodyHtml: string;
+    44→  receivedAt: number;
+    45→}
+    46→
+    47→export interface ClawConfig {
+    48→  pollIntervalMs: number;
+    49→  maxInboxes: number;
+    50→  maxPollAttempts: number;
+    51→  pollDelayMs: number;
+    52→  inboxTtlMs: number;
+    53→}
+    54→
+    55→export type ProviderName = 'guerrilla' | 'mailtm' | 'openinbox';
+    56→
+    57→// Agent-Reach: probe-don't-guess + OmniKey: penalty system
+    58→export interface ProviderHealth {
+    59→  status: 'ok' | 'missing' | 'broken' | 'timeout' | 'error';
+    60→  latencyMs: number;
+    61→  lastProbeAt: number;
+    62→  consecutiveFailures: number;
+    63→  penalty: number;       // OmniKey: +3 per failure, -1 per success, max 10
+    64→  tier: 0 | 1 | 2;     // Agent-Reach: zero-config / free-key / complex
+    65→}
+    66→
+    67→export interface PendingKey {
+    68→  id: string;
+    69→  service: string;
+    70→  key: string;
+    71→  envVar: string;
+    72→  extractedAt: number;
+    73→  inboxId: string;
+    74→  inboxEmail: string;
+    75→  status: 'pending' | 'approved' | 'rejected';
+    76→  validatedAt?: number;
+    77→  validationError?: string;
+    78→}
+    79→
+    80→export interface ClawState {
+    81→  inboxes: ClawInbox[];
+    82→  totalGenerated: number;
+    83→  totalEmailsRead: number;
+    84→  totalKeysExtracted: number;
+    85→  lastKeyExtracted: string | null;
+    86→  providerStats: Record<string, { generated: number; errors: number; emailsRead: number }>;
+    87→  providerHealth: Record<ProviderName, ProviderHealth>;  // from Agent-Reach: probe-don't-guess
+    88→  pendingKeys: PendingKey[];
+    89→}
+    90→
+    91→// ─── Browser Automation Types (browser-use pattern) ─────────────
+    92→
+    93→export interface ClawBrowserStep {
+    94→  action: 'goto' | 'click' | 'fill' | 'wait' | 'screenshot';
+    95→  url?: string;
+    96→  selector?: string;
+    97→  value?: string;
+    98→  ms?: number;
+    99→  timeout?: number;
+   100→}
+   101→
+   102→export interface ClawBrowserTask {
+   103→  service: string;
+   104→  email: string;
+   105→  inboxId: string;
+   106→  steps: ClawBrowserStep[];
+   107→  postAction: string;    // e.g. "poll-inbox:gm-xxx:30" = poll inbox 30 times
+   108→  keyPattern: string | null;  // regex to extract from email, null if no key
+   109→}
+   110→
+   111→// ─── Default Config ──────────────────────────────────────────────
+   112→
+   113→const DEFAULT_CONFIG: ClawConfig = {
+   114→  pollIntervalMs: 5000,
+   115→  maxInboxes: 10,
+   116→  maxPollAttempts: 12,
+   117→  pollDelayMs: 5000,
+   118→  inboxTtlMs: INBOX_TTL_MS,
+   119→};
+   120→
+   121→// ─── Provider Base URLs (must be before probes) ──────────────────
+   122→
+   123→const GM_BASE = 'https://api.guerrillamail.com';
+   124→const MT_BASE = 'https://api.mail.tm';
+   125→const OI_BASE = 'https://api.openinbox.io';
+   126→
+   127→// ─── Provider Health Probes (Agent-Reach: probe-don't-guess) ──────
+   128→// Actually test each provider before using it. Catches stale endpoints.
+   129→
+   130→const PROBE_TIMEOUT = 10_000;
+   131→
+   132→// Service patterns — use centralized patterns from safety-gate for consistency
+   133→const SERVICES_MAP: Record<string, { pattern: RegExp }> = {
+   134→  gemini:    { pattern: CENTRALIZED_KEY_PATTERNS.gemini.pattern },
+   135→  openai:    { pattern: CENTRALIZED_KEY_PATTERNS.openai.pattern },
+   136→  anthropic: { pattern: CENTRALIZED_KEY_PATTERNS.anthropic.pattern },
+   137→};
+   138→
+   139→async function probeGuerrilla(): Promise<ProviderHealth> {
+   140→  const start = Date.now();
+   141→  try {
+   142→    const res = await fetch(`${GM_BASE}/ajax.php?f=get_email_address&lang=en`, {
+   143→      signal: AbortSignal.timeout(PROBE_TIMEOUT),
+   144→    });
+   145→    const latency = Date.now() - start;
+   146→    return { status: res.ok ? 'ok' : 'error', latencyMs: latency, lastProbeAt: Date.now(), consecutiveFailures: 0, penalty: 0, tier: 0 };
+   147→  } catch (err) {
+   148→    return { status: (err as Error).name === 'TimeoutError' ? 'timeout' : 'broken', latencyMs: Date.now() - start, lastProbeAt: Date.now(), consecutiveFailures: 1, penalty: 3, tier: 0 };
+   149→  }
+   150→}
+   151→
+   152→async function probeMailTm(): Promise<ProviderHealth> {
+   153→  const start = Date.now();
+   154→  try {
+   155→    const res = await fetch(`${MT_BASE}/domains`, { signal: AbortSignal.timeout(PROBE_TIMEOUT) });
+   156→    const latency = Date.now() - start;
+   157→    return { status: res.ok ? 'ok' : 'error', latencyMs: latency, lastProbeAt: Date.now(), consecutiveFailures: 0, penalty: 0, tier: 0 };
+   158→  } catch (err) {
+   159→    return { status: (err as Error).name === 'TimeoutError' ? 'timeout' : 'broken', latencyMs: Date.now() - start, lastProbeAt: Date.now(), consecutiveFailures: 1, penalty: 3, tier: 0 };
+   160→  }
+   161→}
+   162→
+   163→async function probeOpenInbox(): Promise<ProviderHealth> {
+   164→  const start = Date.now();
+   165→  try {
+   166→    const res = await fetch(OI_BASE, { signal: AbortSignal.timeout(PROBE_TIMEOUT) });
+   167→    const latency = Date.now() - start;
+   168→    return { status: res.ok ? 'ok' : 'error', latencyMs: latency, lastProbeAt: Date.now(), consecutiveFailures: 0, penalty: 0, tier: 1 };
+   169→  } catch (err) {
+   170→    return { status: (err as Error).name === 'TimeoutError' ? 'timeout' : 'broken', latencyMs: Date.now() - start, lastProbeAt: Date.now(), consecutiveFailures: 1, penalty: 3, tier: 1 };
+   171→  }
+   172→}
+   173→
+   174→// ─── Provider: Guerrilla Mail ─────────────────────────────────────
+   175→
+   176→async function gmCreate(): Promise<ClawInbox> {
+   177→  const res = await fetch(`${GM_BASE}/ajax.php?f=get_email_address&lang=en`);
+   178→  if (!res.ok) throw new Error(`Guerrilla create failed: ${res.status}`);
+   179→  const data = await res.json();
+   180→  return {
+   181→    id: `gm-${data.alias || Date.now()}`,
+   182→    email: data.email_addr,
+   183→    provider: 'guerrilla',
+   184→    expiresAt: Date.now() + DEFAULT_CONFIG.inboxTtlMs,
+   185→    createdAt: Date.now(),
+   186→    sessionData: { sidToken: data.sid_token, alias: data.alias },
+   187→    emailCount: 0,
+   188→    status: 'fresh',
+   189→  };
+   190→}
+   191→
+   192→async function gmCheck(inbox: ClawInbox): Promise<ClawEmail[]> {
+   193→  const { sidToken } = inbox.sessionData;
+   194→  const res = await fetch(
+   195→    `${GM_BASE}/ajax.php?f=check_email&lang=en&sid_token=${sidToken}&seq=0`
+   196→  );
+   197→  if (!res.ok) throw new Error(`Guerrilla check failed: ${res.status}`);
+   198→  const data = await res.json();
+   199→  const list = data.list || [];
+   200→  return list.map((m: any) => ({
+   201→    id: `gm-${m.mail_id}`,
+   202→    from: m.mail_from,
+   203→    subject: m.mail_subject || '',
+   204→    bodyText: m.mail_body || m.mail_excerpt || '',
+   205→    bodyHtml: m.mail_body || '',
+   206→    receivedAt: (m.mail_timestamp || Date.now() / 1000) * 1000,
+   207→  }));
+   208→}
+   209→
+   210→async function gmFetchEmail(inbox: ClawInbox, emailId: string): Promise<ClawEmail | null> {
+   211→  const { sidToken } = inbox.sessionData;
+   212→  const numericId = emailId.replace('gm-', '');
+   213→  const res = await fetch(
+   214→    `${GM_BASE}/ajax.php?f=fetch_email&lang=en&sid_token=${sidToken}&email_id=${numericId}`
+   215→  );
+   216→  if (!res.ok) return null;
+   217→  const data = await res.json();
+   218→  return {
+   219→    id: emailId,
+   220→    from: data.mail_from || '',
+   221→    subject: data.mail_subject || '',
+   222→    bodyText: data.mail_body || '',
+   223→    bodyHtml: data.mail_body || '',
+   224→    receivedAt: (data.mail_timestamp || Date.now() / 1000) * 1000,
+   225→  };
+   226→}
+   227→
+   228→// ─── Provider: mail.tm ─────────────────────────────────────────────
+   229→
+   230→let mtDomains: string[] = [];
+   231→
+   232→async function mtGetDomains(): Promise<string[]> {
+   233→  if (mtDomains.length > 0) return mtDomains;
+   234→  const res = await fetch(`${MT_BASE}/domains`);
+   235→  if (!res.ok) return ['web-library.net']; // fallback
+   236→  const data = await res.json();
+   237→  mtDomains = (data['hydra:member'] || []).map((d: any) => d.domain);
+   238→  return mtDomains;
+   239→}
+   240→
+   241→async function mtCreate(): Promise<ClawInbox> {
+   242→  const domains = await mtGetDomains();
+   243→  const domain = domains[0] || 'web-library.net';
+   244→  const localPart = `eli-claw-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+   245→  const address = `${localPart}@${domain}`;
+   246→  const password = `Claw${Date.now().toString(36)}!X${Math.random().toString(36).slice(2, 8)}`;
+   247→
+   248→  // Create account
+   249→  const accRes = await fetch(`${MT_BASE}/accounts`, {
+   250→    method: 'POST',
+   251→    headers: { 'Content-Type': 'application/json' },
+   252→    body: JSON.stringify({ address, password }),
+   253→  });
+   254→  if (!accRes.ok) throw new Error(`mail.tm create account failed: ${accRes.status}`);
+   255→  const accData = await accRes.json();
+   256→
+   257→  // Get JWT
+   258→  const tokRes = await fetch(`${MT_BASE}/token`, {
+   259→    method: 'POST',
+   260→    headers: { 'Content-Type': 'application/json' },
+   261→    body: JSON.stringify({ address, password }),
+   262→  });
+   263→  if (!tokRes.ok) throw new Error(`mail.tm get token failed: ${tokRes.status}`);
+   264→  const tokData = await tokRes.json();
+   265→
+   266→  return {
+   267→    id: `mt-${accData.id}`,
+   268→    email: address,
+   269→    provider: 'mailtm',
+   270→    expiresAt: Date.now() + DEFAULT_CONFIG.inboxTtlMs,
+   271→    createdAt: Date.now(),
+   272→    sessionData: { token: tokData.token, accountId: accData.id, password },
+   273→    emailCount: 0,
+   274→    status: 'fresh',
+   275→  };
+   276→}
+   277→
+   278→async function mtCheck(inbox: ClawInbox): Promise<ClawEmail[]> {
+   279→  const { token } = inbox.sessionData;
+   280→  const res = await fetch(`${MT_BASE}/messages`, {
+   281→    headers: { Authorization: `Bearer ${token}` },
+   282→  });
+   283→  if (!res.ok) throw new Error(`mail.tm check failed: ${res.status}`);
+   284→  const data = await res.json();
+   285→  const members = data['hydra:member'] || [];
+   286→  return members.map((m: any) => ({
+   287→    id: `mt-${m.id}`,
+   288→    from: m.from?.address || m.from?.name || '',
+   289→    subject: m.subject || '',
+   290→    bodyText: m.intro || '',
+   291→    bodyHtml: '',
+   292→    receivedAt: new Date(m.createdAt).getTime(),
+   293→  }));
+   294→}
+   295→
+   296→async function mtFetchEmail(inbox: ClawInbox, emailId: string): Promise<ClawEmail | null> {
+   297→  const { token } = inbox.sessionData;
+   298→  const numericId = emailId.replace('mt-', '');
+   299→  const res = await fetch(`${MT_BASE}/messages/${numericId}`, {
+   300→    headers: { Authorization: `Bearer ${token}` },
+   301→  });
+   302→  if (!res.ok) return null;
+   303→  const data = await res.json();
+   304→  // mail.tm returns HTML in data.html[].content
+   305→  const htmlParts = data.html || [];
+   306→  const textParts = data.text || [];
+   307→  return {
+   308→    id: emailId,
+   309→    from: data.from?.address || '',
+   310→    subject: data.subject || '',
+   311→    bodyText: textParts.map((p: any) => p.content).join('\n'),
+   312→    bodyHtml: htmlParts.map((p: any) => p.content).join('\n'),
+   313→    receivedAt: new Date(data.createdAt).getTime(),
+   314→  };
+   315→}
+   316→
+   317→// ─── Provider: OpenInbox (creation-only) ───────────────────────────
+   318→
+   319→async function oiCreate(): Promise<ClawInbox> {
+   320→  const res = await fetch(`${OI_BASE}/api/inbox`, {
+   321→    method: 'POST',
+   322→    headers: { 'Content-Type': 'application/json' },
+   323→    body: JSON.stringify({}),
+   324→  });
+   325→  if (!res.ok) throw new Error(`OpenInbox create failed: ${res.status}`);
+   326→  const data = await res.json();
+   327→  return {
+   328→    id: data.id,
+   329→    email: data.email,
+   330→    provider: 'openinbox',
+   331→    expiresAt: new Date(data.expiresAt).getTime(),
+   332→    createdAt: Date.now(),
+   333→    sessionData: {},
+   334→    emailCount: 0,
+   335→    status: 'fresh',
+   336→  };
+   337→}
+   338→
+   339→// Can't read emails from OpenInbox without API key, but can check count
+   340→async function oiCheck(inbox: ClawInbox): Promise<ClawEmail[]> {
+   341→  const res = await fetch(`${OI_BASE}/api/inbox/${inbox.id}`);
+   342→  if (!res.ok) throw new Error(`OpenInbox check failed: ${res.status}`);
+   343→  const data = await res.json();
+   344→  inbox.emailCount = data.emailCount || 0;
+   345→  // Can't return actual emails — just update count
+   346→  return [];
+   347→}
+   348→
+   349→// ─── Key Extraction ──────────────────────────────────────────────
+   350→
+   351→const KEY_PATTERNS: Array<{ name: string; pattern: RegExp; envVar: string }> = [
+   352→  { name: 'gemini', pattern: /AIza[0-9A-Za-z_-]{35}/, envVar: 'GEMINI_API_KEY' },
+   353→  { name: 'openai', pattern: /sk-[a-zA-Z0-9]{20,}/, envVar: 'OPENAI_API_KEY' },
+   354→  { name: 'anthropic', pattern: /sk-ant-[a-zA-Z0-9-]{20,}/, envVar: 'ANTHROPIC_API_KEY' },
+   355→  { name: 'google-generic', pattern: /AQ\.[a-zA-Z0-9_-]{30,}/, envVar: 'GEMINI_API_KEY' },
+   356→];
+   357→
+   358→function stripHtml(html: string): string {
+   359→  return html
+   360→    .replace(/<pre[^>]*>/gi, '')
+   361→    .replace(/<[^>]+>/g, ' ')
+   362→    .replace(/&amp;/g, '&')
+   363→    .replace(/&lt;/g, '<')
+   364→    .replace(/&gt;/g, '>')
+   365→    .replace(/&quot;/g, '"')
+   366→    .replace(/&#039;/g, "'")
+   367→    .replace(/\s+/g, ' ')
+   368→    .trim();
+   369→}
+   370→
+   371→function extractKeysFromEmail(email: ClawEmail): Array<{ service: string; key: string; envVar: string }> {
+   372→  const plainText = `${email.subject} ${email.bodyText} ${stripHtml(email.bodyHtml)}`;
+   373→  const results: Array<{ service: string; key: string; envVar: string }> = [];
+   374→
+   375→  for (const kp of KEY_PATTERNS) {
+   376→    const matches = plainText.match(new RegExp(kp.pattern.source, 'g'));
+   377→    if (matches) {
+   378→      for (const match of matches) {
+   379→        results.push({ service: kp.name, key: match, envVar: kp.envVar });
+   380→      }
+   381→    }
+   382→  }
+   383→
+   384→  return results;
+   385→}
+   386→
+   387→// ─── Open Claw Engine ─────────────────────────────────────────────
+   388→
+   389→export class OpenClaw {
+   390→  private config: ClawConfig;
+   391→  private inboxes: ClawInbox[] = [];
+   392→  private stats: ClawState['providerStats'];
+   393→  private totalGenerated = 0;
+   394→  private totalEmailsRead = 0;
+   395→  private totalKeysExtracted = 0;
+   396→  private lastKeyExtracted: string | null = null;
+   397→  private pollTimer: ReturnType<typeof setInterval> | null = null;
+   398→  private keyCallback: ((service: string, key: string, envVar: string, pendingId: string) => void) | null = null;
+   399→  private providerHealth: Record<ProviderName, ProviderHealth>;
+   400→  private roundRobinIdx = 0;
+   401→  private pendingKeys: PendingKey[] = [];
+   402→  private autoApproveKeys = false; // Tier 1: default OFF — keys require manual approval
+   403→
+   404→  /**
+   405→   * Enable/disable auto-approval of extracted keys.
+   406→   * When OFF (default): keys go to pending queue, require POST /api/omni?action=approve
+   407→   * When ON: keys are validated and auto-injected (legacy behavior)
+   408→   */
+   409→  setAutoApprove(enabled: boolean) {
+   410→    this.autoApproveKeys = enabled;
+   411→    console.log(`[CLAW] Auto-approve ${enabled ? 'ENABLED' : 'DISABLED'} — keys will ${enabled ? 'auto-inject' : 'require approval'}`);
+   412→  }
+   413→
+   414→  constructor(config: Partial<ClawConfig> = {}) {
+   415→    this.config = { ...DEFAULT_CONFIG, ...config };
+   416→    this.stats = {
+   417→      guerrilla: { generated: 0, errors: 0, emailsRead: 0 },
+   418→      mailtm: { generated: 0, errors: 0, emailsRead: 0 },
+   419→      openinbox: { generated: 0, errors: 0, emailsRead: 0 },
+   420→    };
+   421→    this.providerHealth = {
+   422→      guerrilla: { status: 'ok', latencyMs: 0, lastProbeAt: 0, consecutiveFailures: 0, penalty: 0, tier: 0 },
+   423→      mailtm: { status: 'ok', latencyMs: 0, lastProbeAt: 0, consecutiveFailures: 0, penalty: 0, tier: 0 },
+   424→      openinbox: { status: 'ok', latencyMs: 0, lastProbeAt: 0, consecutiveFailures: 0, penalty: 0, tier: 1 },
+   425→    };
+   426→  }
+   427→
+   428→  // ─── Two-Phase Provider Selection (Agent-Reach + OmniKey) ──────
+   429→  // Phase 1: Probe ALL providers in parallel
+   430→  // Phase 2: Select best by ok → penalty asc → latency asc, round-robin tiebreak
+   431→
+   432→  async probeAllProviders(): Promise<void> {
+   433→    const [gm, mt, oi] = await Promise.all([probeGuerrilla(), probeMailTm(), probeOpenInbox()]);
+   434→
+   435→    // Penalty decay (OmniKey: -1 per 2 min)
+   436→    for (const [name, fresh] of [['guerrilla', gm], ['mailtm', mt], ['openinbox', oi]] as const) {
+   437→      const prev = this.providerHealth[name[0] as ProviderName];
+   438→      const minsSinceProbe = prev.lastProbeAt > 0 ? (Date.now() - prev.lastProbeAt) / 120_000 : 0;
+   439→      const decay = Math.floor(minsSinceProbe);
+   440→      const decayedPenalty = Math.max(0, prev.penalty - decay);
+   441→
+   442→      if (fresh.status !== 'ok') {
+   443→        fresh.consecutiveFailures = prev.consecutiveFailures + 1;
+   444→        fresh.penalty = Math.min(decayedPenalty + 3, 10);
+   445→      } else {
+   446→        fresh.consecutiveFailures = 0;
+   447→        fresh.penalty = Math.max(decayedPenalty - 1, 0);
+   448→      }
+   449→    }
+   450→
+   451→    this.providerHealth = { guerrilla: gm, mailtm: mt, openinbox: oi };
+   452→    console.log(`[CLAW] Probed:`, Object.entries(this.providerHealth).map(
+   453→      ([n, h]) => `${n}=${h.status}(${h.latencyMs}ms,p${h.penalty})`
+   454→    ).join(' | '));
+   455→  }
+   456→
+   457→  async getBestProvider(skipProviders?: Set<string>): Promise<ProviderName> {
+   458→    const stale = Object.values(this.providerHealth).every(h => Date.now() - h.lastProbeAt > 120_000);
+   459→    if (stale) await this.probeAllProviders();
+   460→
+   461→    // OmniMail: provider resolution chain — filter by skip-set, then sort
+   462→    const candidates = Object.entries(this.providerHealth)
+   463→      .filter(([name, h]) => h.status === 'ok' && h.consecutiveFailures < 3)
+   464→      .filter(([name]) => !skipProviders?.has(name))
+   465→      .sort(([, a], [, b]) => a.penalty - b.penalty || a.latencyMs - b.latencyMs);
+   466→
+   467→    if (candidates.length > 0) {
+   468→      const bestPenalty = candidates[0][1].penalty;
+   469→      const topTier = candidates.filter(([, h]) => h.penalty === bestPenalty);
+   470→      const idx = this.roundRobinIdx % topTier.length;
+   471→      this.roundRobinIdx++;
+   472→      return topTier[idx][0] as ProviderName;
+   473→    }
+   474→
+   475→    // OmniMail: fallback — ignore skip-set, use lowest consecutive failures
+   476→    if (skipProviders?.size) {
+   477→      console.warn(`[CLAW] All providers in skip-set, falling back to best available`);
+   478→      return this.getBestProvider();
+   479→    }
+   480→
+   481→    const fallback = Object.entries(this.providerHealth)
+   482→      .sort(([, a], [, b]) => a.consecutiveFailures - b.consecutiveFailures);
+   483→    return (fallback[0]?.[0] || 'guerrilla') as ProviderName;
+   484→  }
+   485→
+   486→  /**
+   487→   * Record provider success/failure for penalty scoring (OmniKey pattern)
+   488→   */
+   489→  recordProviderResult(provider: ProviderName, success: boolean) {
+   490→    const h = this.providerHealth[provider];
+   491→    if (!h) return;
+   492→    if (success) {
+   493→      h.penalty = Math.max(0, h.penalty - 1);
+   494→      h.consecutiveFailures = 0;
+   495→    } else {
+   496→      h.penalty = Math.min(h.penalty + 3, 10);
+   497→      h.consecutiveFailures++;
+   498→    }
+   499→  }
+   500→
+   501→  /**
+   502→   * Register a callback for when a key is extracted
+   503→   */
+   504→  onKey(callback: (service: string, key: string, envVar: string, pendingId: string) => void) {
+   505→    this.keyCallback = callback;
+   506→  }
+   507→
+   508→  /**
+   509→   * Generate a new inbox. Two-phase selection (Agent-Reach):
+   510→   * Probe all providers → select best by penalty + latency + round-robin
+   511→   */
+   512→  async generate(provider?: ProviderName): Promise<ClawInbox> {
+   513→    const targetProvider = provider || await this.getBestProvider();
+   514→
+   515→    try {
+   516→      let inbox: ClawInbox;
+   517→      switch (targetProvider) {
+   518→        case 'guerrilla': inbox = await gmCreate(); break;
+   519→        case 'mailtm':   inbox = await mtCreate(); break;
+   520→        case 'openinbox': inbox = await oiCreate(); break;
+   521→      }
+   522→
+   523→      this.recordProviderResult(targetProvider, true);
+   524→      this.inboxes.push(inbox);
+   525→      this.totalGenerated++;
+   526→      this.stats[targetProvider].generated++;
+   527→
+   528→      // Trim pool
+   529→      if (this.inboxes.length > this.config.maxInboxes) {
+   530→        this.inboxes = this.inboxes.slice(-this.config.maxInboxes);
+   531→      }
+   532→
+   533→      console.log(`[CLAW] Generated ${targetProvider} inbox: ${inbox.email} (expires in ${Math.round((inbox.expiresAt - Date.now()) / 60000)}min)`);
+   534→      return inbox;
+   535→    } catch (err) {
+   536→      this.recordProviderResult(targetProvider, false);
+   537→      this.stats[targetProvider].errors++;
+   538→      // OmniMail: classify error for upstream handling
+   539→      const errMsg = (err as Error).message || '';
+   540→      const retryable = [429, 408, 500, 502, 503, 504].some(c => errMsg.includes(String(c)))
+   541→        || /timeout|econnrefused|econnreset/i.test(errMsg);
+   542→      console.warn(`[CLAW] ${targetProvider} generation failed (${retryable ? 'retryable' : 'non-retryable'}):`, errMsg);
+   543→      (err as any)._clawRetryable = retryable;
+   544→      throw err;
+   545→    }
+   546→  }
+   547→
+   548→  /**
+   549→   * Check a specific inbox for new emails
+   550→   */
+   551→  async checkInbox(inbox: ClawInbox): Promise<ClawEmail[]> {
+   552→    // Skip expired
+   553→    if (Date.now() > inbox.expiresAt) {
+   554→      inbox.status = 'expired';
+   555→      return [];
+   556→    }
+   557→
+   558→    inbox.status = 'polling';
+   559→
+   560→    try {
+   561→      let emails: ClawEmail[];
+   562→      switch (inbox.provider) {
+   563→        case 'guerrilla': emails = await gmCheck(inbox); break;
+   564→        case 'mailtm':   emails = await mtCheck(inbox); break;
+   565→        case 'openinbox': emails = await oiCheck(inbox); break;
+   566→        default: return [];
+   567→      }
+   568→
+   569→      inbox.emailCount = emails.length;
+   570→      this.totalEmailsRead += emails.length;
+   571→      this.stats[inbox.provider].emailsRead += emails.length;
+   572→
+   573→      // Auto-extract keys from new emails — Tier 1: pending queue + validation
+   574→      for (const email of emails) {
+   575→        const keys = extractKeysFromEmail(email);
+   576→        for (const k of keys) {
+   577→          console.log(`[CLAW] KEY EXTRACTED [${k.service}]: ${k.key.slice(0, 12)}... from ${inbox.email}`);
+   578→          this.totalKeysExtracted++;
+   579→          this.lastKeyExtracted = k.key;
+   580→
+   581→          const pendingId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+   582→          const pending: PendingKey = {
+   583→            id: pendingId,
+   584→            service: k.service,
+   585→            key: k.key,
+   586→            envVar: k.envVar,
+   587→            extractedAt: Date.now(),
+   588→            inboxId: inbox.id,
+   589→            inboxEmail: inbox.email,
+   590→            status: 'pending',
+   591→          };
+   592→          this.pendingKeys.push(pending);
+   593→          if (this.pendingKeys.length > MAX_PENDING_KEYS) this.pendingKeys = this.pendingKeys.slice(-MAX_PENDING_KEYS);
+   594→
+   595→          audit('key.extracted', `${k.service} key from ${inbox.email}`, {
+   596→            pendingId, keyPreview: k.key.slice(0, 12) + '...', inboxId: inbox.id,
+   597→          });
+   598→
+   599→          if (this.autoApproveKeys) {
+   600→            // Auto-approve: validate then inject
+   601→            await this.validateAndInject(pending);
+   602→          }
+   603→
+   604→          // Notify callback (with pendingId so caller can approve/reject)
+   605→          this.keyCallback?.(k.service, k.key, k.envVar, pendingId);
+   606→        }
+   607→      }
+   608→
+   609→      return emails;
+   610→    } catch (err) {
+   611→      inbox.status = 'error';
+   612→      this.stats[inbox.provider].errors++;
+   613→      console.warn(`[CLAW] Check error [${inbox.provider}]:`, (err as Error).message);
+   614→      return [];
+   615→    }
+   616→  }
+   617→
+   618→  /**
+   619→   * Fetch full email body for a specific email
+   620→   */
+   621→  async fetchEmail(inbox: ClawInbox, emailId: string): Promise<ClawEmail | null> {
+   622→    try {
+   623→      switch (inbox.provider) {
+   624→        case 'guerrilla': return gmFetchEmail(inbox, emailId);
+   625→        case 'mailtm':   return mtFetchEmail(inbox, emailId);
+   626→        default: return null; // OpenInbox can't fetch without API key
+   627→      }
+   628→    } catch (err) {
+   629→      console.warn(`[CLAW] Fetch email error:`, (err as Error).message);
+   630→      return null;
+   631→    }
+   632→  }
+   633→
+   634→  /**
+   635→   * Poll ALL active inboxes for new emails
+   636→   */
+   637→  async pollAll(): Promise<Map<string, ClawEmail[]>> {
+   638→    const results = new Map<string, ClawEmail[]>();
+   639→    const now = Date.now();
+   640→
+   641→    for (const inbox of this.inboxes) {
+   642→      if (inbox.status === 'expired' || now > inbox.expiresAt) {
+   643→        inbox.status = 'expired';
+   644→        continue;
+   645→      }
+   646→      const emails = await this.checkInbox(inbox);
+   647→      if (emails.length > 0) {
+   648→        results.set(inbox.email, emails);
+   649→      }
+   650→    }
+   651→
+   652→    return results;
+   653→  }
+   654→
+   655→  /**
+   656→   * Start background polling loop
+   657→   */
+   658→  startPolling() {
+   659→    if (this.pollTimer) return;
+   660→    console.log(`[CLAW] Polling started (every ${this.config.pollIntervalMs / 1000}s, ${this.inboxes.length} inboxes)`);
+   661→    this.pollTimer = setInterval(() => {
+   662→      this.pollAll().then(results => {
+   663→        if (results.size > 0) {
+   664→          console.log(`[CLAW] Poll: ${results.size} inbox(es) have new emails`);
+   665→        }
+   666→      }).catch(err => {
+   667→        console.error('[CLAW] Poll error:', (err as Error).message);
+   668→      });
+   669→    }, this.config.pollIntervalMs);
+   670→  }
+   671→
+   672→  stopPolling() {
+   673→    if (this.pollTimer) {
+   674→      clearInterval(this.pollTimer);
+   675→      this.pollTimer = null;
+   676→    }
+   677→  }
+   678→
+   679→  /**
+   680→   * Generate + immediately start polling a new inbox
+   681→   */
+   682→  async spawn(provider?: 'guerrilla' | 'mailtm' | 'openinbox'): Promise<ClawInbox> {
+   683→    const inbox = await this.generate(provider);
+   684→    // If this is the first inbox, start the poll loop
+   685→    if (!this.pollTimer) {
+   686→      this.startPolling();
+   687→    }
+   688→    return inbox;
+   689→  }
+   690→
+   691→  /**
+   692→   * Get fresh (non-expired) inbox — generates one if none available
+   693→   */
+   694→  async getFreshInbox(): Promise<ClawInbox> {
+   695→    const fresh = this.inboxes.find(
+   696→      i => i.status !== 'expired' && Date.now() < i.expiresAt - 5 * 60 * 1000
+   697→    );
+   698→    if (fresh) return fresh;
+   699→    return this.spawn();
+   700→  }
+   701→
+   702→  /**
+   703→   * Get signup instructions for a fresh inbox
+   704→   */
+   705→  async getSignupInstructions(service?: string): Promise<{
+   706→    email: string;
+   707→    url: string;
+   708→    provider: string;
+   709→    service: string;
+   710→  } | null> {
+   711→    const inbox = await this.getFreshInbox();
+   712→    if (!inbox) return null;
+   713→
+   714→    const urls: Record<string, string> = {
+   715→      gemini: 'https://aistudio.google.com/apikey',
+   716→      openai: 'https://platform.openai.com/api-keys',
+   717→      anthropic: 'https://console.anthropic.com/settings/keys',
+   718→    };
+   719→
+   720→    return {
+   721→      email: inbox.email,
+   722→      url: urls[service || 'gemini'] || urls.gemini,
+   723→      provider: inbox.provider,
+   724→      service: service || 'gemini',
+   725→    };
+   726→  }
+   727→
+   728→  /**
+   729→   * Validate a key by making a test API call, then inject into process.env.
+   730→   * Returns true if valid, false if rejected.
+   731→   */
+   732→  async validateAndInject(pending: PendingKey): Promise<boolean> {
+   733→    try {
+   734→      // Quick format check first (cheaper than API call)
+   735→      const svc = SERVICES_MAP[pending.service];
+   736→      if (svc?.pattern && !svc.pattern.test(pending.key)) {
+   737→        pending.status = 'rejected';
+   738→        pending.validationError = 'Format mismatch';
+   739→        pending.validatedAt = Date.now();
+   740→        audit('key.rejected', `${pending.service} key failed format check`, { pendingId: pending.id });
+   741→        return false;
+   742→      }
+   743→
+   744→      // For Gemini keys, make a test call
+   745→      if (pending.service === 'gemini' || pending.envVar === 'GEMINI_API_KEY') {
+   746→        try {
+   747→          const { GoogleGenerativeAI } = await import('@google/generative-ai');
+   748→          const genAI = new GoogleGenerativeAI(pending.key);
+   749→          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+   750→          const result = await model.generateContent({
+   751→            contents: [{ role: 'user', parts: [{ text: 'Say OK' }] }],
+   752→          });
+   753→          const text = result?.response?.text();
+   754→          if (!text || text.length === 0) throw new Error('Empty response');
+   755→        } catch (err) {
+   756→          pending.status = 'rejected';
+   757→          pending.validationError = (err as Error).message?.slice(0, 200);
+   758→          pending.validatedAt = Date.now();
+   759→          audit('key.rejected', `${pending.service} key failed validation: ${(err as Error).message?.slice(0, 100)}`, {
+   760→            pendingId: pending.id,
+   761→          });
+   762→          return false;
+   763→        }
+   764→      }
+   765→
+   766→      // Passed validation — inject
+   767→      pending.status = 'approved';
+   768→      pending.validatedAt = Date.now();
+   769→      process.env[pending.envVar] = pending.key;
+   770→      audit('key.approved', `${pending.service} key validated and injected`, { pendingId: pending.id });
+   771→      return true;
+   772→    } catch (err) {
+   773→      pending.status = 'rejected';
+   774→      pending.validationError = (err as Error).message;
+   775→      pending.validatedAt = Date.now();
+   776→      audit('key.rejected', `${pending.service} key validation error: ${(err as Error).message?.slice(0, 100)}`, {
+   777→        pendingId: pending.id,
+   778→      });
+   779→      return false;
+   780→    }
+   781→  }
+   782→
+   783→  /** Manually approve a pending key (validates first) */
+   784→  async approvePendingKey(pendingId: string): Promise<boolean> {
+   785→    const pending = this.pendingKeys.find(k => k.id === pendingId && k.status === 'pending');
+   786→    if (!pending) return false;
+   787→    return this.validateAndInject(pending);
+   788→  }
+   789→
+   790→  /** Manually reject a pending key */
+   791→  rejectPendingKey(pendingId: string): boolean {
+   792→    const pending = this.pendingKeys.find(k => k.id === pendingId && k.status === 'pending');
+   793→    if (!pending) return false;
+   794→    pending.status = 'rejected';
+   795→    pending.validatedAt = Date.now();
+   796→    pending.validationError = 'Manual rejection';
+   797→    audit('key.rejected', `${pending.service} key manually rejected`, { pendingId });
+   798→    return true;
+   799→  }
+   800→
+   801→  /** Get all pending keys */
+   802→  getPendingKeys(): PendingKey[] {
+   803→    return this.pendingKeys.filter(k => k.status === 'pending');
+   804→  }
+   805→
+   806→  /**
+   807→   * Get full state (Agent-Reach: sensitive key redaction)
+   808→   */
+   809→  getState(): ClawState {
+   810→    return {
+   811→      inboxes: this.inboxes.map(i => ({
+   812→        ...i,
+   813→        sessionData: { /* stripped */ },
+   814→      })),
+   815→      totalGenerated: this.totalGenerated,
+   816→      totalEmailsRead: this.totalEmailsRead,
+   817→      totalKeysExtracted: this.totalKeysExtracted,
+   818→      lastKeyExtracted: this.lastKeyExtracted
+   819→        ? `${this.lastKeyExtracted.slice(0, 8)}...${this.lastKeyExtracted.slice(-4)}`
+   820→        : null,
+   821→      providerStats: { ...this.stats },
+   822→      providerHealth: { ...this.providerHealth },
+   823→      pendingKeys: this.pendingKeys.map(k => ({
+   824→        ...k,
+   825→        key: `${k.key.slice(0, 8)}...${k.key.slice(-4)}`, // redact in state
+   826→      })),
+   827→    };
+   828→  }
+   829→
+   830→  /**
+   831→   * Purge expired inboxes
+   832→   */
+   833→  purgeExpired(): number {
+   834→    const before = this.inboxes.length;
+   835→    const now = Date.now();
+   836→    this.inboxes = this.inboxes.filter(i => i.status !== 'expired' && now < i.expiresAt);
+   837→    return before - this.inboxes.length;
+   838→  }
+   839→
+   840→  // ─── Browser Automation Actions (inspired by browser-use) ──────
+   841→  //
+   842→  // These methods generate the INSTRUCTIONS for browser automation.
+   843→  // The actual Playwright/browser-use execution happens on a Python
+   844→  // subprocess or a separate microservice.
+   845→  //
+   846→  // This keeps the claw (TypeScript/Next.js) decoupled from the browser
+   847→  // automation layer (Python/Playwright), following OmniRoute's provider
+   848→  // abstraction pattern.
+   849→  //
+   850→
+   851→  /**
+   852→   * Generate a browser automation task for signing up at a service.
+   853→   * Returns instructions that a browser-use agent can execute.
+   854→   */
+   855→  async generateBrowserTask(service: string): Promise<ClawBrowserTask | null> {
+   856→    const inbox = await this.getFreshInbox();
+   857→    if (!inbox) return null;
+   858→
+   859→    const tasks: Record<string, ClawBrowserTask> = {
+   860→      gemini: {
+   861→        service,
+   862→        email: inbox.email,
+   863→        inboxId: inbox.id,
+   864→        steps: [
+   865→          { action: 'goto', url: 'https://aistudio.google.com/apikey' },
+   866→          { action: 'wait', selector: 'input[type="email"]', timeout: 10000 },
+   867→          { action: 'fill', selector: 'input[type="email"]', value: inbox.email },
+   868→          { action: 'click', selector: 'button[type="submit"]' },
+   869→          { action: 'wait', ms: 5000 },
+   870→        ],
+   871→        postAction: `poll-inbox:${inbox.id}:30`,
+   872→        keyPattern: 'AIza[0-9A-Za-z_-]{35}',
+   873→      },
+   874→      cloudflare: {
+   875→        service,
+   876→        email: inbox.email,
+   877→        inboxId: inbox.id,
+   878→        steps: [
+   879→          { action: 'goto', url: 'https://dash.cloudflare.com/sign-up' },
+   880→          { action: 'wait', selector: 'input[name="email"]', timeout: 10000 },
+   881→          { action: 'fill', selector: 'input[name="email"]', value: inbox.email },
+   882→          { action: 'fill', selector: 'input[name="password"]', value: `Claw${Date.now().toString(36)}!S${Math.random().toString(36).slice(2, 8)}` },
+   883→          { action: 'click', selector: 'button[type="submit"]' },
+   884→          { action: 'wait', ms: 3000 },
+   885→        ],
+   886→        postAction: `poll-inbox:${inbox.id}:60`,
+   887→        keyPattern: null,
+   888→      },
+   889→    };
+   890→
+   891→    return tasks[service] || null;
+   892→  }
+   893→
+   894→  /**
+   895→   * Get all browser automation tasks for available services
+   896→   */
+   897→  getSupportedBrowserServices(): string[] {
+   898→    return ['gemini', 'cloudflare'];
+   899→  }
+   900→}
+   901→
+   902→// ─── Singleton ──────────────────────────────────────────────────────
+   903→
+   904→let clawInstance: OpenClaw | null = null;
+   905→
+   906→export function getOpenClaw(): OpenClaw {
+   907→  if (!clawInstance) {
+   908→    clawInstance = new OpenClaw();
+   909→    console.log('[CLAW] Open Claw Engine initialized');
+   910→  }
+   911→  return clawInstance;
+   912→}
+   913→

@@ -4,6 +4,7 @@ import { audit } from '@/lib/audit-log';
 import {
   MAX_PAYLOAD_CHAT, MAX_MESSAGE_LENGTH, MAX_HISTORY_MESSAGES,
   sanitizeInput, sanitizePromptInjection, checkRateLimit, RATE_LIMIT_CHAT,
+  checkAuth,
 } from '@/lib/safety-gate';
 
 const MAX_PAYLOAD_SIZE = MAX_PAYLOAD_CHAT;
@@ -102,6 +103,18 @@ function getClientIp(request: NextRequest): string {
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
 
+  // ─── Auth gate (Tier 1) ────────────────────────────────────────
+  if (!checkAuth(request)) {
+    audit('auth.blocked', `Chat auth failed from ${ip}`, { ip });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // ─── Rate limit (Tier 1) ───────────────────────────────────────
+  if (!checkRateLimit(ip, RATE_LIMIT_CHAT)) {
+    audit('chat.ratelimited', `Rate limited from ${ip}`, { ip });
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   try {
     // ─── Payload size check ──────────────────────────────────────
     const contentLen = parseInt(request.headers.get('content-length') || '0', 10);
@@ -126,10 +139,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Message is empty after sanitization' }, { status: 400 });
     }
 
-    // ─── Prompt injection detection (Tier 1) ────────────────────
+    // ─── Prompt injection detection + block (Tier 1) ────────────
     const { clean, detected } = sanitizePromptInjection(cleanMessage);
     if (detected) {
-      audit('prompt.injection.detected', `Possible prompt injection from ${ip}: ${cleanMessage.slice(0, 100)}`, { ip, messagePreview: cleanMessage.slice(0, 100) });
+      audit('prompt.injection.blocked', `Prompt injection blocked from ${ip}: ${cleanMessage.slice(0, 100)}`, { ip, messagePreview: cleanMessage.slice(0, 100) });
+      return NextResponse.json({
+        error: 'Message contains patterns that look like prompt injection. Please rephrase.',
+        injectionDetected: true,
+      }, { status: 400 });
     }
 
     // ─── History sanitization ───────────────────────────────────

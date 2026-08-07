@@ -340,7 +340,58 @@ export const MAX_AUDIT_MEMORY = 500;
 /** How long to keep claw inboxes alive (ms) */
 export const INBOX_TTL_MS = 55 * 60 * 1000; // 55 minutes
 
-// ─── 7. Safety Summary (for /api/health and debugging) ───────────
+// ─── 7. API Auth Gate ────────────────────────────────────────────
+// WHAT: Simple bearer-token auth check for API routes
+// WHY: Without auth, anyone who discovers the API URL can drain LLM keys,
+//      inject their own keys, read audit logs, or force rotations.
+// WHERE: Called at the very top of every route handler (before rate limit).
+//      Enabled only when ELI_API_KEY env var is set.
+
+/**
+ * Check if a request is authenticated.
+ * Looks for: Authorization: Bearer <key> header
+ *            OR  ?key=<key> query param (for simple curl usage)
+ *
+ * Returns true if:
+ *   - No ELI_API_KEY is set in env (auth disabled, open access)
+ *   - ELI_API_KEY is set AND the request provides a matching key
+ *
+ * Returns false if auth is enabled but the request has no/invalid key.
+ */
+export function checkAuth(request: { headers: Headers; url?: string }): boolean {
+  const masterKey = process.env.ELI_API_KEY;
+  if (!masterKey) return true; // Auth disabled — open access
+
+  // Check Authorization header: "Bearer <key>"
+  const authHeader = request.headers.get('authorization');
+  if (authHeader === `Bearer ${masterKey}`) return true;
+
+  // Check query param: ?key=<key> (for curl / simple tools)
+  if (request.url) {
+    const url = new URL(request.url, 'http://localhost');
+    const queryKey = url.searchParams.get('key');
+    if (queryKey === masterKey) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Capability-gated auth: checks both auth AND capability level.
+ * For Tier 1, we treat all authenticated users as 'admin' (full access).
+ * Tier 2 will introduce per-session keys with actual level scoping.
+ */
+export function checkCapability(
+  request: { headers: Headers; url?: string },
+  requiredLevel: CapabilityLevel = 'public'
+): boolean {
+  // Public routes need no auth
+  if (requiredLevel === 'public') return true;
+  // Everything else needs auth (and auth check = admin in Tier 1)
+  return checkAuth(request);
+}
+
+// ─── 8. Safety Summary (for /api/health and debugging) ───────────
 
 export function getSafetySummary() {
   return {
@@ -363,6 +414,9 @@ export function getSafetySummary() {
       maxPendingKeys: MAX_PENDING_KEYS,
     },
     authEnabled: !!process.env.ELI_API_KEY,
+    authMode: process.env.ELI_API_KEY ? 'bearer-token' : 'open',
     autoApproveEnabled: false, // default OFF
+    rateLimitingActive: true,
+    promptInjectionBlocking: true,
   };
 }
