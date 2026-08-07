@@ -1,21 +1,25 @@
 /**
- * Omni Route — Self-healing API key rotation via OpenInbox
+ * Omni Route — Self-healing API key rotation via Open Claw
  * 
- * OpenInbox API (tested 2026-08-07):
- *   POST /api/inbox              → Create inbox (NO auth needed)
- *   GET  /api/inbox/:id          → Get inbox status (NO auth needed)
- *   GET  /api/v1/inboxes/:id/emails  → List emails (REQUIRES X-API-Key)
- *   GET  /api/v1/emails/:id      → Get email body (REQUIRES X-API-Key)
+ * Architecture:
+ *   Open Claw Engine (primary) — multi-provider infinite email gen + reader
+ *     ├─ Guerrilla Mail (session, 1hr TTL, free read)
+ *     ├─ mail.tm (account, JWT, @web-library.net, free read)
+ *     └─ OpenInbox (creation-only free, read needs paid key)
+ *   
+ *   Omni Route (coordinator) — key lifecycle management
+ *     ├─ Tracks active key, history, usage
+ *     ├─ Auto-rotates before inbox expiry
+ *     ├─ Extracts keys from email content
+ *     └─ Injects keys into process.env + notifies Air LLM
  * 
- * Two modes:
- *   1. CREATION-ONLY (no OPENINBOX_API_KEY): Can create inboxes, monitor expiry,
- *      track keys. User manually injects keys or reads emails externally.
- *   2. FULL AUTO (with OPENINBOX_API_KEY): Can also read emails and auto-extract keys.
- * 
- * Flow:
- *   create inbox → use email to signup for API service → poll/read inbox
- *   → extract API key from email → inject into process.env → Eli is LIVE
+ * Modes:
+ *   CLAW-AUTO  — Open Claw generates + reads emails, extracts keys automatically
+ *   MANUAL     — User injects keys manually via POST /api/omni?action=inject
+ *   OI-PAID    — If OPENINBOX_API_KEY set, also uses OpenInbox v1 for reading
  */
+
+import { getOpenClaw, OpenClaw, ClawInbox } from './open-claw';
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -25,6 +29,7 @@ export interface OmniKey {
   key: string;
   inboxId: string;
   inboxEmail: string;
+  provider: string;         // which claw provider generated the inbox
   createdAt: number;
   expiresAt: number;
   inboxExpiresAt: number;
@@ -33,143 +38,40 @@ export interface OmniKey {
   status: 'active' | 'warm' | 'expired' | 'drained';
 }
 
-export interface OmniInbox {
-  id: string;
-  email: string;
-  expiresAt: string;
-  createdAt: string;
-  emailCount: number;
-  isExisting: boolean;
-  registeredAt?: number;  // when omni became aware of it
-}
-
-export interface OmniServiceConfig {
-  service: string;
-  signupUrl: string;
-  keyPattern: RegExp;
-  keyHeader: string;
-  usageLimit: number;
-  modelName: string;
-  // How to extract key from various email formats
-  keyExtractFrom: 'body' | 'subject' | 'both';
-}
-
 export interface OmniState {
   activeKey: OmniKey | null;
   keyHistory: OmniKey[];
   totalRotations: number;
   lastRotationAt: number;
   lastError: string | null;
-  inboxPool: OmniInbox[];
-  mode: 'full-auto' | 'creation-only';
-  openInboxApiKeySet: boolean;
+  mode: 'claw-auto' | 'manual' | 'oi-paid';
+  clawState: any;
 }
 
-// ─── Config ──────────────────────────────────────────────────────
+// ─── Service Config ──────────────────────────────────────────────
 
-const OI_BASE = 'https://api.openinbox.io';
-const INBOX_TTL_MS = 10 * 60 * 1000;  // OpenInbox inboxes last ~10 min
-
-const SERVICES: OmniServiceConfig[] = [
-  {
-    service: 'gemini',
+const SERVICES = {
+  gemini: {
     signupUrl: 'https://aistudio.google.com/apikey',
-    keyPattern: /AIza[0-9A-Za-z_-]{35}/,
     keyHeader: 'GEMINI_API_KEY',
-    usageLimit: -1,
     modelName: 'gemini-2.0-flash',
-    keyExtractFrom: 'both',
   },
-  {
-    service: 'openai',
+  openai: {
     signupUrl: 'https://platform.openai.com/api-keys',
-    keyPattern: /sk-[a-zA-Z0-9]{20,}/,
     keyHeader: 'OPENAI_API_KEY',
-    usageLimit: -1,
     modelName: 'gpt-4o-mini',
-    keyExtractFrom: 'both',
   },
-  {
-    service: 'anthropic',
+  anthropic: {
     signupUrl: 'https://console.anthropic.com/settings/keys',
-    keyPattern: /sk-ant-[a-zA-Z0-9-]{20,}/,
     keyHeader: 'ANTHROPIC_API_KEY',
-    usageLimit: -1,
     modelName: 'claude-sonnet-4-20250514',
-    keyExtractFrom: 'both',
   },
-];
-
-// ─── OpenInbox API Client ────────────────────────────────────────
-
-async function oiCreateInbox(prefix?: string): Promise<OmniInbox> {
-  const body = prefix ? { prefix } : {};
-  const res = await fetch(`${OI_BASE}/api/inbox`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`OpenInbox create failed (${res.status}): ${text}`);
-  }
-  const data = await res.json();
-  return {
-    id: data.id,
-    email: data.email,
-    expiresAt: data.expiresAt,
-    createdAt: data.createdAt,
-    emailCount: data.emailCount || 0,
-    isExisting: data.isExisting || false,
-  };
-}
-
-async function oiGetInbox(inboxId: string): Promise<OmniInbox> {
-  const res = await fetch(`${OI_BASE}/api/inbox/${inboxId}`);
-  if (!res.ok) throw new Error(`OpenInbox get failed: ${res.status}`);
-  const data = await res.json();
-  return {
-    id: data.id,
-    email: data.email,
-    expiresAt: data.expiresAt,
-    createdAt: data.createdAt,
-    emailCount: data.emailCount || 0,
-    isExisting: false,
-  };
-}
-
-async function oiListEmails(inboxId: string, apiKey: string): Promise<any[]> {
-  const res = await fetch(`${OI_BASE}/api/v1/inboxes/${inboxId}/emails`, {
-    headers: { 'X-API-Key': apiKey },
-  });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return Array.isArray(data) ? data : (data.emails || data.data || []);
-}
-
-async function oiGetEmail(emailId: string, apiKey: string): Promise<any> {
-  const res = await fetch(`${OI_BASE}/api/v1/emails/${emailId}`, {
-    headers: { 'X-API-Key': apiKey },
-  });
-  if (!res.ok) throw new Error(`OpenInbox get email failed: ${res.status}`);
-  return res.json();
-}
-
-// ─── Key Extraction ──────────────────────────────────────────────
-
-function extractKeyFromText(text: string, pattern: RegExp): string | null {
-  const match = text.match(pattern);
-  return match ? match[0] : null;
-}
-
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-}
+};
 
 // ─── Omni Route Engine ───────────────────────────────────────────
 
 export class OmniRoute {
-  private oiApiKey: string;
+  private claw: OpenClaw;
   private state: OmniState;
   private rotationTimer: ReturnType<typeof setInterval> | null = null;
   private checkInterval: number;
@@ -179,11 +81,19 @@ export class OmniRoute {
     openInboxApiKey?: string;
     checkIntervalMs?: number;
     preRotateMinutes?: number;
-    seedInbox?: string;  // pre-existing inbox email to register
+    seedInbox?: string;
   } = {}) {
-    this.oiApiKey = opts.openInboxApiKey || process.env.OPENINBOX_API_KEY || '';
     this.checkInterval = opts.checkIntervalMs || 60_000;
-    this.preRotateMinutes = opts.preRotateMinutes || 2;  // rotate 2min before inbox dies
+    this.preRotateMinutes = opts.preRotateMinutes || 5;
+
+    // Initialize the Claw
+    this.claw = getOpenClaw();
+
+    // When the claw extracts a key, auto-inject it into omni
+    this.claw.onKey((service, key, envVar) => {
+      console.log(`[OMNI] Claw delivered key [${service}] → injecting into omni`);
+      this.injectKey(service, key, `${envVar}`);
+    });
 
     this.state = {
       activeKey: null,
@@ -191,33 +101,20 @@ export class OmniRoute {
       totalRotations: 0,
       lastRotationAt: 0,
       lastError: null,
-      inboxPool: [],
-      mode: this.oiApiKey ? 'full-auto' : 'creation-only',
-      openInboxApiKeySet: !!this.oiApiKey,
+      mode: 'claw-auto',
+      clawState: null,
     };
 
-    // Register seed inbox if provided
-    if (opts.seedInbox) {
-      this.state.inboxPool.push({
-        id: 'seed',
-        email: opts.seedInbox,
-        expiresAt: new Date(Date.now() + INBOX_TTL_MS).toISOString(),
-        createdAt: new Date().toISOString(),
-        emailCount: 0,
-        isExisting: true,
-        registeredAt: Date.now(),
-      });
-    }
-
-    // Try to bootstrap with existing env key
+    // Bootstrap with env key if valid
     const envKey = process.env.GEMINI_API_KEY || '';
-    if (envKey && !envKey.startsWith('Astralform') && envKey.match(/AIza/)) {
+    if (envKey && !envKey.startsWith('Astralform') && (envKey.match(/AIza/) || envKey.match(/^AQ\./))) {
       this.state.activeKey = {
         id: `env-${Date.now()}`,
         service: 'gemini',
         key: envKey,
         inboxId: 'env',
         inboxEmail: 'env-injection',
+        provider: 'env',
         createdAt: Date.now(),
         expiresAt: Date.now() + 24 * 60 * 60 * 1000,
         inboxExpiresAt: Date.now() + 24 * 60 * 60 * 1000,
@@ -229,14 +126,11 @@ export class OmniRoute {
   }
 
   /**
-   * Start the auto-rotation background loop
+   * Start auto-rotation
    */
   startAutoRotation() {
     if (this.rotationTimer) return;
-    console.log(
-      `[OMNI] Auto-rotation started | mode=${this.state.mode} | interval=${this.checkInterval / 1000}s | ` +
-      `seed inbox=${this.state.inboxPool.length > 0 ? this.state.inboxPool[0].email : 'none'}`
-    );
+    console.log('[OMNI] Auto-rotation started (Open Claw powered)');
     this.rotationTimer = setInterval(() => this.checkAndRotate(), this.checkInterval);
     this.checkAndRotate();
   }
@@ -246,52 +140,39 @@ export class OmniRoute {
       clearInterval(this.rotationTimer);
       this.rotationTimer = null;
     }
-    console.log('[OMNI] Auto-rotation stopped');
+    this.claw.stopPolling();
+    console.log('[OMNI] Stopped');
   }
 
   /**
-   * Main rotation check — called periodically
+   * Main rotation loop
    */
   async checkAndRotate(): Promise<void> {
     try {
       const key = this.state.activeKey;
 
-      // No active key → create inbox + prepare for rotation
+      // No active key → spawn claw inbox
       if (!key || !key.key) {
-        console.log('[OMNI] No active key — ensuring fresh inbox exists...');
-        await this.ensureFreshInbox();
+        console.log('[OMNI] No active key — spawning claw inbox...');
+        await this.rotate();
         return;
       }
 
       const now = Date.now();
-      const inboxExpiryMs = key.inboxExpiresAt;
-      const timeUntilExpiry = inboxExpiryMs - now;
+      const timeLeft = key.inboxExpiresAt - now;
       const preRotateMs = this.preRotateMinutes * 60_000;
 
-      // Check if inbox is about to expire → pre-rotate
-      if (timeUntilExpiry < preRotateMs && timeUntilExpiry > 0) {
-        console.log(`[OMNI] Inbox expires in ${Math.round(timeUntilExpiry / 60000)}min, pre-rotating...`);
+      if (timeLeft < preRotateMs) {
+        console.log(`[OMNI] Inbox expires in ${Math.round(timeLeft / 60000)}min — pre-rotating`);
         await this.rotate();
         return;
       }
 
-      // Inbox already expired
-      if (timeUntilExpiry <= 0) {
-        console.log('[OMNI] Inbox expired, rotating...');
-        await this.rotate();
-        return;
-      }
-
-      // If we have an API key, poll the active inbox for new keys
-      if (this.oiApiKey && key.inboxId !== 'env' && key.inboxId !== 'manual') {
-        await this.pollInboxForKeys(key.inboxId, key.service);
-      }
-
-      // Check usage threshold (if limit is known)
+      // Usage threshold check
       if (key.usageLimit > 0) {
-        const usagePct = key.usageEstimate / key.usageLimit;
-        if (usagePct >= 0.7) {
-          console.log(`[OMNI] Usage at ${Math.round(usagePct * 100)}%, rotating...`);
+        const pct = key.usageEstimate / key.usageLimit;
+        if (pct >= 0.7) {
+          console.log(`[OMNI] Usage at ${Math.round(pct * 100)}% — rotating`);
           await this.rotate();
         }
       }
@@ -302,64 +183,33 @@ export class OmniRoute {
   }
 
   /**
-   * Ensure at least one fresh (non-expired) inbox exists in the pool
-   */
-  async ensureFreshInbox(): Promise<OmniInbox | null> {
-    const now = Date.now();
-    const fresh = this.state.inboxPool.find(
-      inbox => new Date(inbox.expiresAt).getTime() - now > 3 * 60_000
-    );
-    if (fresh) return fresh;
-
-    console.log('[OMNI] No fresh inbox — creating new one...');
-    return this.createInbox();
-  }
-
-  /**
-   * Full rotation: create inbox → prepare signup → poll for key → swap
+   * Full rotation: claw generates inbox → return signup info
    */
   async rotate(service?: string): Promise<OmniKey | null> {
     const targetService = service || 'gemini';
-    const svcConfig = SERVICES.find(s => s.service === targetService);
-    if (!svcConfig) {
-      this.state.lastError = `Unknown service: ${targetService}`;
-      return null;
-    }
-
-    console.log(`[OMNI] Rotating ${targetService} key...`);
+    console.log(`[OMNI] Rotating ${targetService} via Open Claw...`);
 
     try {
-      // 1. Create temp inbox
-      const prefix = `eli-${targetService}-${Date.now().toString(36)}`;
-      const inbox = await oiCreateInbox(prefix);
-      console.log(`[OMNI] Inbox created: ${inbox.email} (expires ${inbox.expiresAt})`);
+      // 1. Claw spawns a new inbox (auto-picks best provider)
+      const clawInbox = await this.claw.spawn();
 
-      // 2. Add to pool
-      this.addToPool(inbox);
-
-      // 3. If full-auto mode, poll for existing emails that might contain a key
-      let extractedKey: string | null = null;
-      if (this.oiApiKey) {
-        console.log('[OMNI] Polling inbox for API key emails...');
-        extractedKey = await this.pollInboxForKeys(inbox.id, targetService);
-      }
-
-      // 4. Create the key record
+      // 2. Create the omni key record (warm — waiting for email)
       const newKey: OmniKey = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: `claw-${Date.now()}`,
         service: targetService,
-        key: extractedKey || '',
-        inboxId: inbox.id,
-        inboxEmail: inbox.email,
+        key: '',
+        inboxId: clawInbox.id,
+        inboxEmail: clawInbox.email,
+        provider: clawInbox.provider,
         createdAt: Date.now(),
-        expiresAt: new Date(inbox.expiresAt).getTime(),
-        inboxExpiresAt: new Date(inbox.expiresAt).getTime(),
+        expiresAt: clawInbox.expiresAt,
+        inboxExpiresAt: clawInbox.expiresAt,
         usageEstimate: 0,
-        usageLimit: svcConfig.usageLimit,
-        status: extractedKey ? 'active' : 'warm',
+        usageLimit: -1,
+        status: 'warm',
       };
 
-      // 5. Archive old key
+      // 3. Archive old key
       if (this.state.activeKey) {
         this.state.activeKey.status = this.state.activeKey.key ? 'expired' : 'drained';
         this.state.keyHistory.push(this.state.activeKey);
@@ -368,19 +218,13 @@ export class OmniRoute {
         }
       }
 
-      // 6. Set as active
+      // 4. Set active
       this.state.activeKey = newKey;
       this.state.totalRotations++;
       this.state.lastRotationAt = Date.now();
       this.state.lastError = null;
 
-      // 7. Inject into process.env if key was extracted
-      if (extractedKey && svcConfig.keyHeader) {
-        process.env[svcConfig.keyHeader] = extractedKey;
-        console.log(`[OMNI] Injected ${svcConfig.keyHeader} into process.env`);
-      }
-
-      console.log(`[OMNI] Rotation complete | status=${newKey.status} | email=${inbox.email}`);
+      console.log(`[OMNI] Rotation done | inbox=${clawInbox.email} | provider=${clawInbox.provider}`);
       return newKey;
     } catch (err) {
       this.state.lastError = (err as Error).message;
@@ -390,76 +234,28 @@ export class OmniRoute {
   }
 
   /**
-   * Poll an inbox for emails containing API keys
-   * Returns extracted key or null
-   */
-  async pollInboxForKeys(inboxId: string, service: string, maxAttempts = 6): Promise<string | null> {
-    if (!this.oiApiKey) return null;
-
-    const svcConfig = SERVICES.find(s => s.service === service);
-    if (!svcConfig) return null;
-
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      try {
-        await new Promise(r => setTimeout(r, 5000)); // 5s between polls
-        const emails = await oiListEmails(inboxId, this.oiApiKey);
-        console.log(`[OMNI] Poll ${attempt + 1}: ${emails.length} email(s) in ${inboxId.slice(0, 8)}`);
-
-        for (const email of emails) {
-          try {
-            const fullEmail = await oiGetEmail(email.id, this.oiApiKey);
-            const subject = fullEmail.subject || '';
-            const textBody = fullEmail.textBody || fullEmail.text || '';
-            const htmlBody = fullEmail.htmlBody || fullEmail.html || '';
-            const plainText = stripHtml(htmlBody);
-
-            let searchText = '';
-            if (svcConfig.keyExtractFrom === 'body') searchText = `${textBody} ${plainText}`;
-            else if (svcConfig.keyExtractFrom === 'subject') searchText = subject;
-            else searchText = `${subject} ${textBody} ${plainText}`;
-
-            const key = extractKeyFromText(searchText, svcConfig.keyPattern);
-            if (key) {
-              console.log(`[OMNI] KEY EXTRACTED from email "${subject.slice(0, 50)}": ${key.slice(0, 10)}...`);
-
-              // Auto-inject
-              this.injectKey(service, key);
-              return key;
-            }
-          } catch (emailErr) {
-            console.warn(`[OMNI] Error reading email ${email.id}:`, (emailErr as Error).message);
-          }
-        }
-      } catch (err) {
-        console.warn(`[OMNI] Poll attempt ${attempt + 1} error:`, (err as Error).message);
-      }
-    }
-
-    return null;
-  }
-
-  /**
    * Manually inject a key
    */
-  injectKey(service: string, key: string): OmniKey {
-    const svcConfig = SERVICES.find(s => s.service === service);
+  injectKey(service: string, key: string, source?: string): OmniKey {
+    const svc = SERVICES[service as keyof typeof SERVICES];
     const now = Date.now();
 
     const newKey: OmniKey = {
-      id: `manual-${now}`,
+      id: `${source || 'manual'}-${now}`,
       service,
       key,
-      inboxId: 'manual',
-      inboxEmail: 'manual-injection',
+      inboxId: source || 'manual',
+      inboxEmail: source ? `via-claw-${source}` : 'manual-injection',
+      provider: source || 'manual',
       createdAt: now,
       expiresAt: now + 24 * 60 * 60 * 1000,
       inboxExpiresAt: now + 24 * 60 * 60 * 1000,
       usageEstimate: 0,
-      usageLimit: svcConfig?.usageLimit || -1,
+      usageLimit: -1,
       status: 'active',
     };
 
-    // Archive old key
+    // Archive old
     if (this.state.activeKey) {
       this.state.activeKey.status = this.state.activeKey.key ? 'expired' : 'drained';
       this.state.keyHistory.push(this.state.activeKey);
@@ -472,35 +268,42 @@ export class OmniRoute {
     this.state.lastRotationAt = now;
     this.state.lastError = null;
 
-    // Inject into process.env
-    if (svcConfig?.keyHeader) {
-      process.env[svcConfig.keyHeader] = key;
-      console.log(`[OMNI] Injected ${svcConfig.keyHeader} into process.env`);
+    // Inject into env
+    if (svc?.keyHeader) {
+      process.env[svc.keyHeader] = key;
+      console.log(`[OMNI] Injected ${svc.keyHeader} into process.env`);
     }
 
     return newKey;
   }
 
   /**
-   * Create a fresh inbox (without full rotation)
+   * Create a standalone inbox via claw (no rotation)
    */
-  async createInbox(prefix?: string): Promise<OmniInbox> {
-    const p = prefix || `eli-omni-${Date.now().toString(36)}`;
-    const inbox = await oiCreateInbox(p);
-    this.addToPool(inbox);
-    return inbox;
+  async createInbox(provider?: 'guerrilla' | 'mailtm' | 'openinbox') {
+    return this.claw.spawn(provider);
   }
 
   /**
-   * Check a specific inbox for keys (manual trigger)
+   * Check a specific claw inbox for keys
    */
   async checkInboxForKeys(inboxId: string, service?: string): Promise<string | null> {
-    return this.pollInboxForKeys(inboxId, service || 'gemini', 1);
+    const inbox = this.claw.getState().inboxes.find(i => i.id === inboxId);
+    if (!inbox) return null;
+
+    const emails = await this.claw.checkInbox(inbox as ClawInbox);
+    if (emails.length > 0) {
+      // Keys are auto-extracted by the claw's checkInbox method
+      // Check if the active key was updated
+      if (this.state.activeKey?.key) {
+        return this.state.activeKey.key;
+      }
+    }
+    return null;
   }
 
   /**
-   * Get the active API key for a service.
-   * This is what air-llm.ts calls.
+   * Get active key for a service
    */
   getActiveKey(service?: string): string {
     const target = service || 'gemini';
@@ -508,34 +311,25 @@ export class OmniRoute {
       return this.state.activeKey.key;
     }
     // Fallback to env
-    if (target === 'gemini') return process.env.GEMINI_API_KEY || '';
-    if (target === 'openai') return process.env.OPENAI_API_KEY || '';
-    if (target === 'anthropic') return process.env.ANTHROPIC_API_KEY || '';
+    const svc = SERVICES[target as keyof typeof SERVICES];
+    if (svc?.keyHeader) return process.env[svc.keyHeader] || '';
     return '';
   }
 
-  /**
-   * Get the Gemini key specifically (for air-llm compatibility)
-   */
   getGeminiKey(): string {
     return this.getActiveKey('gemini');
   }
 
-  /**
-   * Check if we have a valid (non-placeholder) key
-   */
   hasValidKey(service?: string): boolean {
     const key = this.getActiveKey(service);
     if (!key) return false;
-    if (service === 'gemini' || !service) return key.startsWith('AIza');
-    if (service === 'openai') return key.startsWith('sk-');
-    if (service === 'anthropic') return key.startsWith('sk-ant-');
+    const s = service || 'gemini';
+    if (s === 'gemini') return key.match(/AIza|AQ\./) ? true : false;
+    if (s === 'openai') return key.startsWith('sk-');
+    if (s === 'anthropic') return key.startsWith('sk-ant-');
     return true;
   }
 
-  /**
-   * Record usage
-   */
   recordUsage(calls: number = 1) {
     if (this.state.activeKey) {
       this.state.activeKey.usageEstimate += calls;
@@ -543,51 +337,27 @@ export class OmniRoute {
   }
 
   /**
-   * Get full state (for dashboard)
+   * Get full state for dashboard
    */
   getState(): OmniState {
     return {
       ...this.state,
-      inboxPool: this.state.inboxPool.map(inbox => ({
-        ...inbox,
-        // Check if expired
-        _expired: new Date(inbox.expiresAt).getTime() < Date.now(),
-      })) as any,
+      clawState: this.claw.getState(),
     };
   }
 
   /**
-   * Get signup instructions for a service
+   * Get signup instructions for the freshest claw inbox
    */
-  getSignupInstructions(service?: string): { email: string; url: string; service: string } | null {
-    const target = service || 'gemini';
-    const svc = SERVICES.find(s => s.service === target);
-    const freshInbox = this.state.inboxPool.find(
-      i => new Date(i.expiresAt).getTime() - Date.now() > 3 * 60_000
-    );
-    if (!svc || !freshInbox) return null;
-    return {
-      email: freshInbox.email,
-      url: svc.signupUrl,
-      service: target,
-    };
+  async getSignupInstructions(service?: string): Promise<{ email: string; url: string; provider: string; service: string } | null> {
+    return this.claw.getSignupInstructions(service);
   }
 
-  // ─── Private ──────────────────────────────────────────────
-
-  private addToPool(inbox: OmniInbox) {
-    // Avoid duplicates
-    const exists = this.state.inboxPool.find(i => i.id === inbox.id);
-    if (!exists) {
-      this.state.inboxPool.push({
-        ...inbox,
-        registeredAt: Date.now(),
-      });
-    }
-    // Keep pool manageable
-    if (this.state.inboxPool.length > 15) {
-      this.state.inboxPool = this.state.inboxPool.slice(-15);
-    }
+  /**
+   * Purge expired claw inboxes
+   */
+  purgeExpired(): number {
+    return this.claw.purgeExpired();
   }
 }
 
@@ -598,9 +368,7 @@ let omniInstance: OmniRoute | null = null;
 export function getOmniRoute(): OmniRoute {
   if (!omniInstance) {
     omniInstance = new OmniRoute({
-      openInboxApiKey: process.env.OPENINBOX_API_KEY || '',
-      seedInbox: '70ew6zebmoxg@inboxfly.space',
-      preRotateMinutes: 2,
+      preRotateMinutes: 5,
     });
     omniInstance.startAutoRotation();
   }
@@ -608,8 +376,7 @@ export function getOmniRoute(): OmniRoute {
 }
 
 /**
- * Convenience: get the current Gemini key from omni.
- * Use this in air-llm.ts instead of reading process.env directly.
+ * Convenience: get current Gemini key from omni.
  */
 export function getOmniGeminiKey(): string {
   return getOmniRoute().getGeminiKey();

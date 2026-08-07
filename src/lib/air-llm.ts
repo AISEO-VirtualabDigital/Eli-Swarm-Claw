@@ -207,7 +207,7 @@ let airInstance: AirLLM | null = null;
 export function resetAirLLM(systemPrompt?: string): AirLLM {
   const omni = getOmniRoute();
   const apiKey = omni.getGeminiKey();
-  if (!apiKey || apiKey.startsWith('Astralform')) {
+  if (!apiKey || (apiKey.startsWith('Astralform') && !apiKey.startsWith('AQ.'))) {
     console.warn('[AirLLM] No valid Gemini key from omni — will operate in fallback mode');
     airInstance = new AirLLM({
       apiKey: 'fallback',

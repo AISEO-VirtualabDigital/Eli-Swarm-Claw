@@ -45,13 +45,25 @@ export async function GET(request: NextRequest) {
           ? { ...state.activeKey, key: maskKey(state.activeKey.key) }
           : null,
         keyHistory: state.keyHistory.map(k => ({ ...k, key: maskKey(k.key) })),
-        inboxPool: state.inboxPool.map(i => ({
-          id: i.id,
-          email: i.email,
-          expiresAt: i.expiresAt,
-          emailCount: (i as any).emailCount || 0,
-          _expired: (i as any)._expired || false,
-        })),
+        claw: state.clawState
+          ? {
+              totalGenerated: state.clawState.totalGenerated,
+              totalEmailsRead: state.clawState.totalEmailsRead,
+              totalKeysExtracted: state.clawState.totalKeysExtracted,
+              lastKeyExtracted: state.clawState.lastKeyExtracted
+                ? maskKey(state.clawState.lastKeyExtracted) : null,
+              inboxes: (state.clawState.inboxes || []).map((i: any) => ({
+                id: i.id,
+                email: i.email,
+                provider: i.provider,
+                status: i.status,
+                emailCount: i.emailCount,
+                expiresAt: i.expiresAt,
+                ttlMinutes: Math.max(0, Math.round((i.expiresAt - Date.now()) / 60000)),
+              })),
+              providerStats: state.clawState.providerStats,
+            }
+          : null,
         totalRotations: state.totalRotations,
         lastRotationAt: state.lastRotationAt,
         lastError: state.lastError,
@@ -69,7 +81,7 @@ export async function GET(request: NextRequest) {
       const service = searchParams.get('service') || 'gemini';
       const key = omni.getActiveKey(service);
 
-      if (!key || (service === 'gemini' && !key.startsWith('AIza'))) {
+      if (!key || (service === 'gemini' && !key.match(/AIza|^AQ\./))) {
         return NextResponse.json({
           action: 'test', service, status: 'invalid',
           message: key ? 'Key format invalid — not a standard API key' : 'No active key',
@@ -119,8 +131,45 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // ── Claw: direct claw operations ──
+    if (action === 'claw') {
+      const { getOpenClaw } = await import('@/lib/open-claw');
+      const claw = getOpenClaw();
+      const sub = searchParams.get('sub') || 'state';
+
+      if (sub === 'generate') {
+        const provider = (searchParams.get('provider') as any) || undefined;
+        const inbox = await claw.generate(provider);
+        return NextResponse.json({
+          action: 'claw-generate',
+          id: inbox.id,
+          email: inbox.email,
+          provider: inbox.provider,
+          ttlMinutes: Math.round((inbox.expiresAt - Date.now()) / 60000),
+        });
+      }
+
+      if (sub === 'poll') {
+        const purged = claw.purgeExpired();
+        const results = await claw.pollAll();
+        const summary: Record<string, number> = {};
+        for (const [email, emails] of results) {
+          summary[email] = emails.length;
+        }
+        return NextResponse.json({
+          action: 'claw-poll',
+          purgedExpired: purged,
+          inboxesWithMail: summary,
+          clawState: claw.getState(),
+        });
+      }
+
+      // Default: claw state
+      return NextResponse.json({ action: 'claw-state', ...claw.getState() });
+    }
+
     return NextResponse.json(
-      { error: 'Unknown action. Use: state, key, test, signup' },
+      { error: 'Unknown action. Use: state, key, test, signup, claw' },
       { status: 400 }
     );
   } catch (err: any) {
