@@ -1,0 +1,1215 @@
+=== BASE CHANNEL ===
+# -*- coding: utf-8 -*-
+"""
+Channel base class — platform availability checking.
+
+Each channel represents a platform (YouTube, Twitter, GitHub, etc.)
+and provides:
+  - can_handle(url) → does this URL belong to this platform?
+  - check(config) → is the upstream tool installed and configured?
+
+After installation, agents call upstream tools directly.
+
+Backend routing semantics:
+  - `backends` is an ORDERED candidate list: backends[0] is the preferred
+    backend, the rest are fallbacks. "Switching backends" for a platform
+    means reordering this list (or a user override) — not rewriting code.
+  - check() must set `self.active_backend` to the backend that is actually
+    serving the channel right now (None when nothing usable is found).
+    shutil.which() alone is NOT proof of health — a stale venv shim passes
+    which() but cannot execute (see agent_reach.probe). Channels should
+    really execute a lightweight command before claiming a backend active.
+  - Users can force a backend with config key `_backend`
+    (or env var `_BACKEND`); ordered_backends() applies it.
+"""
+
+from abc import ABC, abstractmethod
+from typing import List, Optional, Tuple
+
+
+class Channel(ABC):
+    """Base class for all channels."""
+
+    name: str = ""                    # e.g. "youtube"
+    description: str = ""             # e.g. "YouTube 视频和字幕"
+    backends: List[str] = []          # ordered candidates — backends[0] = preferred
+    tier: int = 0                     # 0=zero-config, 1=needs free key, 2=needs setup
+
+    #: Backend currently serving this channel; set by check(), None = unavailable.
+    active_backend: Optional[str] = None
+
+    @abstractmethod
+    def can_handle(self, url: str) -> bool:
+        """Check if this channel can handle this URL."""
+        ...
+
+    def ordered_backends(self, config=None) -> List[str]:
+        """Candidate backends in probe order, honoring the user override.
+
+        The config key `_backend` (env `_BACKEND`) moves the
+        named backend to the front of the list; unknown values are ignored so
+        a stale override can never hide working backends.
+        """
+        candidates = list(self.backends)
+        override = config.get(f"{self.name}_backend") if config else None
+        if override:
+            for i, b in enumerate(candidates):
+                if b == override or b.startswith(override):
+                    candidates.insert(0, candidates.pop(i))
+                    break
+        return candidates
+
+    def check(self, config=None) -> Tuple[str, str]:
+        """
+        Check if this channel's upstream tool is available.
+        Returns (status, message) where status is 'ok'/'warn'/'off'/'error'.
+
+        Subclasses with external backends must really probe them (see
+        agent_reach.probe.probe_command) and set self.active_backend.
+        """
+        self.active_backend = self.backends[0] if self.backends else "内置"
+        return "ok", f"{'、'.join(self.backends) if self.backends else '内置'}"
+
+
+=== CORE.PY ===
+# -*- coding: utf-8 -*-
+"""
+AgentReach — installer, doctor, and configuration tool.
+
+Agent Reach helps AI agents install and configure upstream platform tools
+(twitter-cli, yt-dlp, mcporter, gh CLI, etc.). After installation, agents
+call the upstream tools directly — no wrapper layer needed.
+
+Usage:
+    from agent_reach.doctor import check_all, format_report
+    from agent_reach.config import Config
+
+    config = Config()
+    results = check_all(config)
+    print(format_report(results))
+"""
+
+from typing import Dict, Optional
+
+from agent_reach.config import Config
+
+
+class AgentReach:
+    """Give your AI Agent eyes to see the entire internet.
+
+    This class provides health-check functionality.
+    For reading/searching, use the upstream tools directly
+    (see SKILL.md for commands).
+    """
+
+    def __init__(self, config: Optional[Config] = None):
+        self.config = config or Config()
+
+    def doctor(self) -> Dict[str, dict]:
+        """Check all channel availability."""
+        from agent_reach.doctor import check_all
+        return check_all(self.config)
+
+    def doctor_report(self) -> str:
+        """Get formatted health report."""
+        from agent_reach.doctor import check_all, format_report
+        return format_report(check_all(self.config))
+
+
+=== WEB CHANNEL ===
+# -*- coding: utf-8 -*-
+"""Web — any URL via Jina Reader. Always available."""
+
+import urllib.request
+
+from agent_reach.utils.url import normalize_public_http_url
+
+from .base import Channel
+
+_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+_MAX_RESPONSE_BYTES = 5 * 1024 * 1024
+_ANTIBOT_SCAN_BYTES = 4096
+
+
+def _is_antibot_page(body: bytes) -> bool:
+    """Recognize high-confidence Jina/Cloudflare challenge responses."""
+    sample = body[:_ANTIBOT_SCAN_BYTES].decode("utf-8", errors="ignore").casefold()
+
+    jina_captcha_warning = "warning:" in sample and "requiring captcha" in sample
+    challenge_structure = any(
+        marker in sample
+        for marker in (
+            "title: just a moment...",
+            "## performing security verification",
+            "title: attention required! | cloudflare",
+        )
+    )
+    cloudflare_block = "title: attention required! | cloudflare" in sample and (
+        "ray id" in sample or "/cdn-cgi/challenge-platform/" in sample
+    )
+    return (jina_captcha_warning and challenge_structure) or cloudflare_block
+
+
+class WebChannel(Channel):
+    name = "web"
+    description = "任意网页"
+    backends = ["Jina Reader"]
+    tier = 0
+
+    def can_handle(self, url: str) -> bool:
+        return True  # Fallback — handles any URL
+
+    def check(self, config=None):
+        # 恒可用兜底渠道：无本地命令、不做网络探测（doctor 已有多个渠道触网），保持零开销
+        self.active_backend = self.backends[0]
+        return "ok", "通过 Jina Reader 读取任意网页（curl https://r.jina.ai/URL）"
+
+    def read(self, url: str) -> str:
+        """通过 Jina Reader 读取网页，返回 Markdown 全文。"""
+        url = normalize_public_http_url(url)
+        jina_url = f"https://r.jina.ai/{url}"
+        req = urllib.request.Request(
+            jina_url,
+            headers={"User-Agent": _UA, "Accept": "text/plain"},
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            body = resp.read(_MAX_RESPONSE_BYTES + 1)
+        if len(body) > _MAX_RESPONSE_BYTES:
+            raise ValueError(
+                f"Jina Reader response exceeds {_MAX_RESPONSE_BYTES} byte limit"
+            )
+        if _is_antibot_page(body):
+            raise RuntimeError(
+                "Jina Reader 返回了反爬验证页，未获取到目标内容；"
+                "请改用站点专用工具或浏览器读取"
+            )
+        return body.decode("utf-8")
+
+
+=== TWITTER CHANNEL ===
+# -*- coding: utf-8 -*-
+"""Twitter/X — check if twitter-cli or bird CLI is available."""
+
+import os
+import shutil
+
+from agent_reach.utils.url import host_matches
+
+from .base import Channel
+
+
+def twitter_cli_child_env(config=None) -> dict[str, str]:
+    """Return saved credentials missing from the current process environment.
+
+    The returned mapping is meant for a single child process.  Existing shell
+    variables remain authoritative and ``os.environ`` is never mutated.
+    """
+    if config is None:
+        return {}
+
+    child_env = {}
+    for env_name, config_key in (
+        ("TWITTER_AUTH_TOKEN", "twitter_auth_token"),
+        ("TWITTER_CT0", "twitter_ct0"),
+    ):
+        if env_name in os.environ:
+            continue
+        value = config.get(config_key)
+        if value:
+            child_env[env_name] = str(value)
+    return child_env
+
+
+class TwitterChannel(Channel):
+    name = "twitter"
+    description = "Twitter/X 推文"
+    backends = ["twitter-cli", "OpenCLI", "bird CLI (legacy)"]
+    tier = 1
+
+    def can_handle(self, url: str) -> bool:
+        return host_matches(url, "x.com", "twitter.com")
+
+    def check(self, config=None):
+        """Probe candidates in order; first fully-usable backend wins.
+
+        与其他多后端渠道同一套两段式：先收集全部候选状态，第一个 ok 获胜；
+        没有 ok 才轮到第一个 warn——否则「装了但未登录」的 twitter-cli
+        会把排在后面、完整可用的 OpenCLI 挡在门外。
+        """
+        self.active_backend = None
+        findings = []
+
+        for backend in self.ordered_backends(config):
+            if backend == "twitter-cli":
+                result = self._check_twitter_cli(config)
+            elif backend == "OpenCLI":
+                result = self._check_opencli()
+            elif backend == "bird CLI (legacy)":
+                result = self._check_bird()
+            else:
+                continue
+
+            if result is None:
+                continue  # 未安装——不参与候选
+            findings.append((backend, *result))
+
+        for wanted in ("ok", "warn"):
+            for backend, status, message in findings:
+                if status == wanted:
+                    self.active_backend = backend if status == "ok" else None
+                    return status, message
+
+        if findings:  # 只剩 broken/timeout 候选
+            return "error", "\n".join(m for _, _, m in findings)
+
+        return "warn", (
+            "Twitter CLI 未安装。安装方式：\n"
+            "  pipx install twitter-cli\n"
+            "或：\n"
+            "  uv tool install twitter-cli"
+        )
+
+    def _check_twitter_cli(self, config=None):
+        """Inspect explicit credentials without starting twitter-cli.
+
+        Upstream ``twitter status`` automatically reads browser cookies when
+        credentials are missing *or invalid*. Doctor cannot disable that
+        fallback, so executing it would violate the Cookie-Editor-only policy.
+        """
+        if not shutil.which("twitter"):
+            return None
+
+        child_env = twitter_cli_child_env(config)
+        auth_token = os.environ.get("TWITTER_AUTH_TOKEN") or child_env.get(
+            "TWITTER_AUTH_TOKEN"
+        )
+        ct0 = os.environ.get("TWITTER_CT0") or child_env.get("TWITTER_CT0")
+        if auth_token and ct0:
+            return "warn", (
+                "twitter-cli 已安装，且 Cookie-Editor 凭据已配置；"
+                "Doctor 不会执行 `twitter status`，因为上游在验证失败时会"
+                "自动读取浏览器 Cookie。请在你明确同意时手动验证。"
+            )
+        return "warn", (
+            "twitter-cli 已安装但没有完整的显式凭据。请用 Cookie-Editor "
+            "从 x.com 导出后运行：\n"
+            "  agent-reach configure twitter-cookies\n"
+            "Doctor 不会自动读取浏览器 Cookie。"
+        )
+
+    def _check_opencli(self):
+        """OpenCLI candidate. None = not installed."""
+        from agent_reach.backends import opencli_status
+
+        st = opencli_status()
+        if not st.installed:
+            return None
+        if st.broken:
+            return "error", st.hint
+        if st.ready:
+            return "warn", (
+                "OpenCLI 桥接已连接，但 Twitter/X 登录态和实际命令未实时验证；"
+                "Doctor 不执行平台命令，因此当前不标记为可用。"
+            )
+        return "warn", st.hint
+
+    def _check_bird(self):
+        """Inspect legacy bird credentials without launching browser fallback."""
+        for cmd in ("bird", "birdx"):
+            if not shutil.which(cmd):
+                continue
+            if os.environ.get("AUTH_TOKEN") and os.environ.get("CT0"):
+                return (
+                    "warn",
+                    f"{cmd} 已安装且显式环境凭据存在；Doctor 为避免上游"
+                    "浏览器 Cookie 回退，不执行 `check`，未实时验证。",
+                )
+            return "warn", (
+                f"{cmd} 已安装但未检测到显式 AUTH_TOKEN/CT0；"
+                "仅使用 Cookie-Editor 手动导出的凭据。"
+            )
+        return None
+
+
+=== YOUTUBE CHANNEL ===
+# -*- coding: utf-8 -*-
+"""YouTube — check if yt-dlp is available with JS runtime."""
+
+import re
+import shutil
+
+from agent_reach.probe import probe_command
+from agent_reach.utils.paths import (
+    PrivatePathError,
+    get_ytdlp_config_path,
+    read_small_text_no_follow,
+    render_ytdlp_fix_command,
+)
+
+from .base import Channel
+
+_JS_RUNTIMES_SUPPORTED_FROM = (2025, 11, 12)
+_YTDLP_UPGRADE_COMMAND = 'python -m pip install -U "yt-dlp[default]"'
+
+
+def _parse_ytdlp_version(version: str):
+    """Return a comparable stable yt-dlp release tuple, if recognised."""
+    match = re.fullmatch(r"\s*(\d{4})\.(\d{1,2})\.(\d{1,2})\s*", version)
+    return tuple(map(int, match.groups())) if match else None
+
+
+def _has_js_runtime_config(config_path) -> bool:
+    """Return whether yt-dlp config explicitly enables a JS runtime."""
+    try:
+        payload = read_small_text_no_follow(
+            config_path,
+            max_bytes=1024 * 1024,
+        )
+        return payload is not None and "--js-runtimes" in payload
+    except (OSError, UnicodeError, PrivatePathError):
+        return False
+
+
+class YouTubeChannel(Channel):
+    name = "youtube"
+    description = "YouTube 视频和字幕"
+    backends = ["yt-dlp"]
+    tier = 0
+
+    def can_handle(self, url: str) -> bool:
+        from agent_reach.utils.url import host_matches
+
+        return host_matches(url, "youtube.com", "youtu.be")
+
+    def check(self, config=None):
+        # 真跑 yt-dlp --version 探活，区分未装 / venv 断链 / 跑不动
+        probe = probe_command("yt-dlp", ["--version"], timeout=10, package="yt-dlp")
+        if probe.status == "missing":
+            self.active_backend = None
+            return "off", f"yt-dlp 未安装。安装：{_YTDLP_UPGRADE_COMMAND}"
+        if probe.status == "broken":
+            self.active_backend = None
+            return "error", (
+                "yt-dlp 已安装但无法执行。重装（含 JS 支持）：\n"
+                f"  {_YTDLP_UPGRADE_COMMAND}\n{probe.hint}"
+            )
+        if not probe.ok:  # timeout / error：装了但跑不动
+            self.active_backend = None
+            detail = probe.hint or probe.output or probe.status
+            return "error", f"yt-dlp 无法正常运行：{detail}"
+        # yt-dlp 本体是活的；后面的 JS runtime/转写检查只影响 ok/warn，不影响后端归属
+        self.active_backend = "yt-dlp"
+        # Check JS runtime
+        has_js = shutil.which("deno") or shutil.which("node")
+        if not has_js:
+            return "warn", (
+                "yt-dlp 已安装但缺少 JS runtime（YouTube 必须）。\n"
+                "  安装 Node.js 或 deno，然后运行：agent-reach install --system"
+            )
+        # Check yt-dlp config for --js-runtimes
+        # Deno works out of the box; Node.js requires explicit config
+        has_deno = shutil.which("deno")
+        if not has_deno:
+            ytdlp_config = get_ytdlp_config_path()
+            if not _has_js_runtime_config(ytdlp_config):
+                version = _parse_ytdlp_version(probe.output)
+                if version is None:
+                    return "warn", (
+                        "无法确认 yt-dlp 版本是否支持 JS runtime 配置。"
+                        "请先升级并重新运行 doctor：\n"
+                        f"  {_YTDLP_UPGRADE_COMMAND}"
+                    )
+                if version  str:
+        """Download a YouTube video's audio and return its transcript.
+
+        Delegates to :func:`agent_reach.transcribe.transcribe`. Imported lazily
+        so the channel module stays cheap to import for users who never
+        transcribe.
+        """
+        from agent_reach.transcribe import transcribe as _transcribe
+
+        return _transcribe(
+            url,
+            provider=provider,
+            config=config,
+            allow_provider_fallback=allow_provider_fallback,
+        )
+
+
+=== BILIBILI CHANNEL ===
+# -*- coding: utf-8 -*-
+"""Bilibili — multi-backend: bili-cli / OpenCLI / search API.
+
+yt-dlp was REMOVED from this channel (live-verified 2026-06): bilibili's
+risk control 412-blocks yt-dlp's requests in every configuration we
+tried — latest version, direct, proxied, with warmed cookies — while
+bili-cli keeps working (search/hot/video detail without login) and
+OpenCLI covers subtitles through the browser session. yt-dlp remains the
+YouTube backend; it just no longer serves bilibili.
+"""
+
+import json
+import urllib.request
+
+from agent_reach.probe import probe_command
+
+from .base import Channel
+
+_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+_TIMEOUT = 10
+_SEARCH_API = "https://api.bilibili.com/x/web-interface/search/all/v2?keyword=test&page=1"
+
+
+def _search_api_ok() -> bool:
+    """Return True if Bilibili search API responds with code 0."""
+    req = urllib.request.Request(_SEARCH_API, headers={"User-Agent": _UA})
+    try:
+        with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
+            data = json.loads(resp.read())
+            return data.get("code") == 0
+    except Exception:
+        return False
+
+
+class BilibiliChannel(Channel):
+    name = "bilibili"
+    description = "B站视频、字幕和搜索"
+    backends = ["bili-cli", "OpenCLI", "B站搜索 API"]
+    tier = 1
+
+    def can_handle(self, url: str) -> bool:
+        from agent_reach.utils.url import host_matches
+
+        return host_matches(url, "bilibili.com", "b23.tv")
+
+    def check(self, config=None):
+        """Probe candidates in order; first fully-usable backend wins."""
+        self.active_backend = None
+        findings = []
+
+        for backend in self.ordered_backends(config):
+            if backend == "bili-cli":
+                result = self._check_bili_cli()
+            elif backend == "OpenCLI":
+                result = self._check_opencli()
+            else:
+                result = self._check_search_api()
+            if result is None:
+                continue
+            findings.append((backend, *result))
+
+        # 有后端断链时，即使别的候选兜底成功也要把处方带出来
+        broken_notes =  for _, s, m in findings if s == "error"]
+
+        for wanted in ("ok", "warn"):
+            for backend, status, message in findings:
+                if status == wanted:
+                    self.active_backend = backend if status == "ok" else None
+                    if broken_notes:
+                        message += "\n[备选后端异常] " + "；".join(broken_notes)
+                    return status, message
+
+        if findings:
+            return "error", "\n".join(m for _, _, m in findings)
+
+        return "off", (
+            "没有可用的 B站后端（搜索 API 也不可达，可能是网络问题）。推荐：\n"
+            "  pipx install bilibili-cli（搜索/热门/视频详情，无需登录）\n"
+            "  或桌面装 OpenCLI（额外解锁字幕）：agent-reach install --system --channels opencli"
+        )
+
+    def _check_bili_cli(self):
+        """bili-cli candidate. None = not installed."""
+        probe = probe_command("bili", ["--version"], timeout=10, package="bilibili-cli")
+        if probe.status == "missing":
+            return None
+        if probe.status == "broken":
+            return "error", "bili 命令存在但无法执行\n" + probe.hint
+        if not probe.ok:
+            return "warn", f"bili-cli 探测失败（{probe.status}），运行 `bili status` 查看详情"
+        return "ok", (
+            "bili-cli 可用（搜索/热门/排行/视频详情/音频，无需登录；"
+            "字幕需 OpenCLI。上游 2026-03 起停更）"
+        )
+
+    def _check_opencli(self):
+        """OpenCLI candidate. None = not installed."""
+        from agent_reach.backends import opencli_status
+
+        st = opencli_status()
+        if not st.installed:
+            return None
+        if st.broken:
+            return "error", st.hint
+        if st.ready:
+            return "warn", (
+                "OpenCLI 桥接已连接，但 Bilibili 页面、登录态和实际命令"
+                "未实时验证；Doctor 不执行平台命令，因此当前不标记为可用。"
+            )
+        return "warn", st.hint
+
+    def _check_search_api(self):
+        """Zero-dependency search API fallback. None = unreachable."""
+        if not _search_api_ok():
+            return None
+        return "ok", (
+            "B站搜索 API 可达（仅搜索，curl 直连）。"
+            "完整功能建议安装 bili-cli：pipx install bilibili-cli"
+        )
+
+
+=== EXA SEARCH CHANNEL ===
+# -*- coding: utf-8 -*-
+"""Exa Search — check if mcporter + Exa MCP is available."""
+
+import shutil
+
+from .base import Channel
+from .mcporter import McporterConfigError, inspect_mcporter_config
+
+
+class ExaSearchChannel(Channel):
+    name = "exa_search"
+    description = "全网语义搜索"
+    backends = ["Exa via mcporter"]
+    tier = 0
+
+    def can_handle(self, url: str) -> bool:
+        return False  # Search-only channel
+
+    def check(self, config=None):
+        self.active_backend = None
+        if not shutil.which("mcporter"):
+            return "off", (
+                "需要 mcporter + Exa MCP。安装：\n"
+                "  npm install -g mcporter\n"
+                "  mcporter config add exa https://mcp.exa.ai/mcp --scope home"
+            )
+        try:
+            inspection = inspect_mcporter_config()
+        except McporterConfigError as exc:
+            return "error", f"mcporter 配置检查失败：{exc}"
+        if "exa" in inspection.server_names:
+            return "warn", (
+                "Exa 已写入 mcporter 配置，但 Doctor 未启动远端服务做"
+                "连通验证，不能仅凭配置宣称可用。"
+            )
+        if inspection.imports_unchecked:
+            return "warn", (
+                "mcporter 本地配置未发现 Exa；配置还启用了 editor imports，"
+                "Doctor 为避免扩大凭据读取范围没有展开，当前未验证。"
+            )
+        return "off", (
+            "mcporter 已装但 Exa 未配置。运行：\n"
+            "  mcporter config add exa https://mcp.exa.ai/mcp --scope home"
+        )
+
+
+=== REDDIT CHANNEL ===
+# -*- coding: utf-8 -*-
+"""Reddit — multi-backend: OpenCLI / rdt-cli. Login is mandatory.
+
+Honest tiering (live-verified 2026-06): there is NO zero-config path.
+Anonymous .json endpoints are blocked (403 anti-bot, all variants), and
+the official API closed self-service registration in 2025-11 (manual
+approval, individual scripts rarely granted — PRAW is only an option for
+users who already hold credentials). Every working backend rides a
+logged-in session: OpenCLI reuses the browser's, rdt-cli imports cookies.
+"""
+
+import json
+import shutil
+import time
+from pathlib import Path
+
+from agent_reach.utils.paths import (
+    PrivatePathError,
+    read_small_text_no_follow,
+)
+
+from .base import Channel
+
+_CREDENTIAL_FILE = "~/.config/rdt-cli/credential.json"
+_CREDENTIAL_TTL_SECONDS = 7 * 86400
+_MAX_CREDENTIAL_BYTES = 1024 * 1024
+# Pinned to the 0.4.2 state — PyPI still only has 0.4.1 (upstream issue #10).
+_RDT_GIT_SOURCE = "git+https://github.com/public-clis/rdt-cli.git@5e4fb3720d5c174e976cd425ccc3b879d52cac66"
+
+class RedditChannel(Channel):
+    name = "reddit"
+    description = "Reddit 帖子和评论"
+    backends = ["OpenCLI", "rdt-cli"]
+    tier = 1  # no zero-config path exists — see module docstring
+
+    def can_handle(self, url: str) -> bool:
+        from agent_reach.utils.url import host_matches
+
+        return host_matches(url, "reddit.com", "redd.it")
+
+    def check(self, config=None):
+        """Probe candidates in order; first fully-usable backend wins."""
+        self.active_backend = None
+        findings = []
+
+        for backend in self.ordered_backends(config):
+            if backend == "OpenCLI":
+                result = self._check_opencli()
+            else:
+                result = self._check_rdt()
+            if result is None:
+                continue
+            findings.append((backend, *result))
+
+        for wanted in ("ok", "warn"):
+            for backend, status, message in findings:
+                if status == wanted:
+                    self.active_backend = backend if status == "ok" else None
+                    return status, message
+
+        if findings:
+            return "error", "\n".join(m for _, _, m in findings)
+
+        return "off", (
+            "未安装任何 Reddit 后端。注意：Reddit 没有零配置路径"
+            "（匿名 .json 已被封，官方 API 需人工审批），必须用登录态。推荐：\n"
+            "  桌面：agent-reach install --system --channels opencli\n"
+            "       （复用 Chrome 登录态，登录过 reddit.com 即可用）\n"
+            f"  服务器/存量：pipx install '{_RDT_GIT_SOURCE}'\n"
+            "       然后 `rdt login` 或手动写入 Cookie（见 doctor 提示）\n"
+            "中国大陆访问 Reddit 需要代理"
+        )
+
+    def _check_opencli(self):
+        """OpenCLI candidate. None = not installed."""
+        from agent_reach.backends import opencli_status
+
+        st = opencli_status()
+        if not st.installed:
+            return None
+        if st.broken:
+            return "error", st.hint
+        if st.ready:
+            return "warn", (
+                "OpenCLI 桥接已连接，但 Reddit 登录态和实际命令未实时验证；"
+                "Doctor 不执行平台命令，因此当前不标记为可用。"
+            )
+        return "warn", st.hint
+
+    def _check_rdt(self):
+        """Inspect rdt's saved credential without invoking its auto-refresh."""
+        if not shutil.which("rdt"):
+            return None
+
+        credential_path = Path.home() / ".config" / "rdt-cli" / "credential.json"
+        try:
+            payload = read_small_text_no_follow(
+                credential_path,
+                max_bytes=_MAX_CREDENTIAL_BYTES,
+            )
+        except PrivatePathError as exc:
+            return "warn", (
+                f"rdt-cli 已安装，但 credential.json 无法安全读取：{exc}。"
+            )
+        except OSError:
+            return "warn", (
+                "rdt-cli 已安装，但 credential.json 无法安全读取；"
+                "Doctor 未执行会自动刷新 Cookie 的 `rdt status`。"
+            )
+        if payload is None:
+            return "warn", self._rdt_login_hint()
+        try:
+            data = json.loads(payload)
+        except (UnicodeError, json.JSONDecodeError, ValueError):
+            return "warn", (
+                "rdt-cli 已安装，但保存的 credential.json 无法安全解析；"
+                "Doctor 未执行会自动刷新 Cookie 的 `rdt status`。"
+            )
+        if not isinstance(data, dict):
+            return "warn", self._rdt_login_hint()
+        cookies = data.get("cookies")
+        if not isinstance(cookies, dict) or not cookies.get("reddit_session"):
+            return "warn", self._rdt_login_hint()
+
+        saved_at = data.get("saved_at")
+        if isinstance(saved_at, (int, float)) and (
+            time.time() - saved_at > _CREDENTIAL_TTL_SECONDS
+        ):
+            return "warn", (
+                "rdt-cli 已安装，保存的 Cookie 已超过 7 天；Doctor 不会让"
+                "上游自动读取浏览器或刷新文件，请用 Cookie-Editor 明确更新。"
+            )
+        return "warn", (
+            "rdt-cli 已安装并检测到显式保存的 Reddit Cookie；Doctor 为避免"
+            "上游自动刷新浏览器 Cookie，不执行 `rdt status`，因此未实时验证。"
+        )
+
+    @staticmethod
+    def _rdt_login_hint():
+        return (
+            "rdt-cli 已安装但没有可用的显式 Cookie。请使用 Cookie-Editor：\n"
+            "  1. Chrome 应用商店安装 Cookie-Editor 扩展：\n"
+            "     https://chromewebstore.google.com/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm\n"
+            "  2. 在浏览器打开 reddit.com（确保已登录）\n"
+            "  3. 点击 Cookie-Editor 图标，找到 `reddit_session`，复制其 Value\n"
+            f"  4. 将以下内容写入 {_CREDENTIAL_FILE}：\n"
+            '     {"cookies": {"reddit_session": ""}, '
+            '"source": "manual", "username": "", '
+            '"modhash": null, "saved_at": 0, "last_verified_at": null}\n\n'
+            "Doctor 不会运行会自动读取浏览器并写文件的 `rdt status`。"
+        )
+
+
+=== XIAOHONGSHU CHANNEL ===
+# -*- coding: utf-8 -*-
+"""XiaoHongShu — multi-backend: OpenCLI / xiaohongshu-mcp / xhs-cli.
+
+Backend order encodes the recommendation, and probing order makes the
+environment split automatic: OpenCLI needs a desktop Chrome so it simply
+never probes alive on a server, where xiaohongshu-mcp (self-contained
+headless browser) takes over after an explicit Cookie-Editor import.
+xhs-cli (upstream unmaintained since
+2026-03) keeps working for existing installs as the last candidate.
+"""
+
+import json
+import shutil
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+from agent_reach.utils.paths import (
+    PrivatePathError,
+    read_small_text_no_follow,
+)
+
+from .base import Channel
+from .mcporter import McporterConfigError, inspect_mcporter_config
+
+_MCP_ENDPOINT = "http://localhost:18060/mcp"
+_MCP_INSTALL_URL = "https://github.com/xpzouying/xiaohongshu-mcp"
+_XHS_COOKIE_TTL_SECONDS = 7 * 86400
+_MAX_XHS_COOKIE_BYTES = 1024 * 1024
+
+
+def _mcp_service_reachable(timeout: int = 3) -> bool:
+    """True if the xiaohongshu-mcp HTTP service answers on localhost.
+
+    Any HTTP response counts (the MCP endpoint replies 405 to GET) —
+    we only care that the service is up. Proxies are bypassed explicitly:
+    localhost must never be routed through HTTP_PROXY.
+    """
+    req = urllib.request.Request(_MCP_ENDPOINT, method="GET")
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        opener.open(req, timeout=timeout)
+        return True
+    except urllib.error.HTTPError:
+        return True  # 405/404 etc. — service is alive
+    except Exception:
+        return False
+
+
+def format_xhs_result(data):
+    """Clean XHS API response, keeping only useful fields.
+
+    Handles both single note objects and lists of notes (search results).
+    Drastically reduces token usage by stripping structural redundancy (#134).
+    """
+    if isinstance(data, list):
+        return [_clean_note(item) for item in data]
+    if isinstance(data, dict):
+        # Handle search_feeds wrapper: {"items": [...]} or {"data": {"items": [...]}}
+        items = None
+        if "items" in data:
+            items = data["items"]
+        elif "data" in data and isinstance(data.get("data"), dict):
+            items = data["data"].get("items") or data["data"].get("notes")
+        if items and isinstance(items, list):
+            return [_clean_note(item) for item in items]
+        # Single note
+        return _clean_note(data)
+    return data
+
+
+def _clean_note(note):
+    """Extract useful fields from a single XHS note/feed item."""
+    if not isinstance(note, dict):
+        return note
+
+    # Some responses nest the note under "note_card" or "note"
+    inner = note.get("note_card") or note.get("note") or note
+
+    result = {}
+
+    # Basic info
+    for key in ("id", "note_id", "xsec_token", "title", "desc", "type", "time"):
+        if key in inner:
+            result[key] = inner[key]
+
+    # Content (may be in desc or content)
+    if "content" in inner and "desc" not in result:
+        result["content"] = inner["content"]
+
+    # Author
+    user = inner.get("user") or inner.get("author")
+    if isinstance(user, dict):
+        result["user"] = {
+            k: user[k] for k in ("nickname", "user_id", "nick_name") if k in user
+        }
+
+    # Engagement metrics
+    interact = inner.get("interact_info") or inner.get("note_interact_info") or {}
+    if isinstance(interact, dict):
+        for key in ("liked_count", "collected_count", "comment_count", "share_count"):
+            if key in interact:
+                result[key] = interact[key]
+    # Also check top-level (some API formats)
+    for key in ("liked_count", "collected_count", "comment_count", "share_count"):
+        if key in inner and key not in result:
+            result[key] = inner[key]
+
+    # Images — just URLs
+    images = inner.get("image_list") or inner.get("images_list") or []
+    if isinstance(images, list):
+        urls = []
+        for img in images:
+            if isinstance(img, dict):
+                url = img.get("url") or img.get("url_default") or img.get("original")
+                if url:
+                    urls.append(url)
+            elif isinstance(img, str):
+                urls.append(img)
+        if urls:
+            result["images"] = urls
+
+    # Tags
+    tags = inner.get("tag_list") or inner.get("tags") or []
+    if isinstance(tags, list):
+        tag_names = []
+        for t in tags:
+            if isinstance(t, dict) and "name" in t:
+                tag_names.append(t["name"])
+            elif isinstance(t, str):
+                tag_names.append(t)
+        if tag_names:
+            result["tags"] = tag_names
+
+    # Comments (if present, e.g. from get_feed_detail with comments)
+    comments = inner.get("comments") or []
+    if isinstance(comments, list) and comments:
+        result["comments"] = [_clean_comment(c) for c in comments]
+
+    return result
+
+
+def _clean_comment(comment):
+    """Extract useful fields from a comment."""
+    if not isinstance(comment, dict):
+        return comment
+    result = {}
+    if "content" in comment:
+        result["content"] = comment["content"]
+    user = comment.get("user_info") or comment.get("user")
+    if isinstance(user, dict):
+        result["user"] = user.get("nickname") or user.get("nick_name", "")
+    for key in ("like_count", "sub_comment_count"):
+        if key in comment:
+            result[key] = comment[key]
+    return result
+
+
+class XiaoHongShuChannel(Channel):
+    name = "xiaohongshu"
+    description = "小红书笔记"
+    backends = ["OpenCLI", "xiaohongshu-mcp", "xhs-cli (xiaohongshu-cli)"]
+    tier = 1
+
+    def can_handle(self, url: str) -> bool:
+        from agent_reach.utils.url import host_matches
+
+        return host_matches(url, "xiaohongshu.com", "xhslink.com")
+
+    def check(self, config=None):
+        """Probe candidates in order; first fully-usable backend wins.
+
+        If none is fully usable, the first fixable candidate (warn) is
+        reported, so the user gets one actionable prescription instead
+        of three half-relevant ones.
+        """
+        self.active_backend = None
+        findings = []  # (backend, status, message)
+
+        for backend in self.ordered_backends(config):
+            if backend == "OpenCLI":
+                result = self._check_opencli()
+            elif backend == "xiaohongshu-mcp":
+                result = self._check_mcp()
+            else:
+                result = self._check_xhs_cli()
+            if result is None:
+                continue  # not installed — not a candidate right now
+            findings.append((backend, *result))
+
+        for wanted in ("ok", "warn"):
+            for backend, status, message in findings:
+                if status == wanted:
+                    self.active_backend = backend if status == "ok" else None
+                    return status, message
+
+        if findings:  # only broken candidates left
+            return "error", "\n".join(m for _, _, m in findings)
+
+        return "off", (
+            "未安装任何小红书后端。推荐：\n"
+            "  桌面：agent-reach install --system --channels opencli\n"
+            "       （复用 Chrome 登录态，刷过小红书即零配置可用）\n"
+            f"  服务器：xiaohongshu-mcp：{_MCP_INSTALL_URL}\n"
+            "       登录只使用 Cookie-Editor 明确导出：\n"
+            "       agent-reach configure xhs-cookies（隐藏输入）"
+        )
+
+    def _check_opencli(self):
+        """OpenCLI candidate. None = not installed."""
+        from agent_reach.backends import opencli_status
+
+        st = opencli_status()
+        if not st.installed:
+            return None
+        if st.broken:
+            return "error", st.hint
+        if st.ready:
+            return "warn", (
+                "OpenCLI 桥接已连接，但小红书登录态和实际命令未实时验证；"
+                "Doctor 不执行平台命令，因此当前不标记为可用。"
+            )
+        return "warn", st.hint
+
+    def _check_mcp(self):
+        """xiaohongshu-mcp candidate. None = service not running."""
+        if not _mcp_service_reachable():
+            return None
+        if not shutil.which("mcporter"):
+            return "warn", (
+                "xiaohongshu-mcp 服务可达，但 mcporter 未安装，Doctor 未接入"
+                "该服务。先安装：npm install -g mcporter"
+            )
+        try:
+            inspection = inspect_mcporter_config()
+        except McporterConfigError as exc:
+            return "error", f"mcporter 配置检查失败：{exc}"
+        if "xiaohongshu" in inspection.server_names:
+            return "warn", (
+                "xiaohongshu-mcp 服务可达且已接入 mcporter，但 Doctor "
+                "未验证登录态，不能据此宣称笔记功能可用。若未登录，用 "
+                "Cookie-Editor 导出后运行 agent-reach configure xhs-cookies"
+            )
+        if inspection.imports_unchecked:
+            return "warn", (
+                "xiaohongshu-mcp 服务可达；mcporter 本地配置未发现"
+                " xiaohongshu，且 editor imports 未展开，Doctor 当前未验证接入。"
+            )
+        return "warn", (
+            "xiaohongshu-mcp 服务在跑但 mcporter 未接入。运行：\n"
+            f"  mcporter config add xiaohongshu {_MCP_ENDPOINT} --scope home"
+        )
+
+    def _check_xhs_cli(self):
+        """Inspect saved xhs-cli cookies without invoking browser extraction."""
+        if not shutil.which("xhs"):
+            return None
+        cookie_path = Path.home() / ".xiaohongshu-cli" / "cookies.json"
+        try:
+            payload = read_small_text_no_follow(
+                cookie_path,
+                max_bytes=_MAX_XHS_COOKIE_BYTES,
+            )
+        except PrivatePathError as exc:
+            return "warn", (
+                f"xhs-cli 已安装，但 cookies.json 无法安全读取：{exc}。"
+            )
+        except OSError:
+            return "warn", (
+                "xhs-cli 已安装，但 cookies.json 无法安全读取；"
+                "Doctor 未执行会自动提取浏览器 Cookie 的 `xhs status`。"
+            )
+        if payload is None:
+            return self._xhs_cookie_hint()
+        try:
+            data = json.loads(payload)
+        except (UnicodeError, json.JSONDecodeError, ValueError):
+            return "warn", (
+                "xhs-cli 已安装，但保存的 cookies.json 无法安全解析；"
+                "Doctor 未执行会自动提取浏览器 Cookie 的 `xhs status`。"
+            )
+        if not isinstance(data, dict) or not data.get("a1"):
+            return self._xhs_cookie_hint()
+        saved_at = data.get("saved_at")
+        if isinstance(saved_at, (int, float)) and (
+            time.time() - saved_at > _XHS_COOKIE_TTL_SECONDS
+        ):
+            return "warn", (
+                "xhs-cli 已安装，保存的 Cookie 已超过 7 天；Doctor 不会让"
+                "上游自动读取浏览器或刷新文件，请用 Cookie-Editor 明确更新。"
+            )
+        return "warn", (
+            "xhs-cli 已安装并检测到显式保存的 Cookie；Doctor 为避免上游"
+            "自动读取浏览器或改写 Cookie，不执行 `xhs status`，未实时验证。"
+        )
+
+    @staticmethod
+    def _xhs_cookie_hint():
+        return "warn", (
+            "xhs-cli 已安装但没有可用的显式 Cookie。不要运行会自动读取"
+            "浏览器的 `xhs login/status`；请迁移到 xiaohongshu-mcp，"
+            "再用 Cookie-Editor 导出并运行 "
+            "agent-reach configure xhs-cookies。"
+        )
+
+
+=== GITHUB CHANNEL ===
+# -*- coding: utf-8 -*-
+"""GitHub — check if gh CLI is available."""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+import yaml
+
+from agent_reach.probe import probe_command
+from agent_reach.utils.paths import (
+    PrivatePathError,
+    read_small_text_no_follow,
+)
+
+from .base import Channel
+
+_MAX_HOSTS_BYTES = 1024 * 1024
+_GH_READ_ONLY_ENV = {
+    # gh 2.92 creates ~/.local/state/gh/device-id even for `--version` unless
+    # telemetry is disabled. These are documented gh environment controls.
+    "GH_TELEMETRY": "false",
+    "DO_NOT_TRACK": "true",
+    "GH_NO_UPDATE_NOTIFIER": "1",
+    "GH_NO_EXTENSION_UPDATE_NOTIFIER": "1",
+}
+
+
+class GitHubConfigError(ValueError):
+    """Raised when gh credential metadata cannot be read safely."""
+
+
+def _gh_hosts_path() -> Path:
+    override = os.environ.get("GH_CONFIG_DIR")
+    if override:
+        return Path(os.path.abspath(os.path.expanduser(override))) / "hosts.yml"
+
+    xdg_config = os.environ.get("XDG_CONFIG_HOME")
+    if xdg_config:
+        return Path(xdg_config) / "gh" / "hosts.yml"
+
+    if os.name == "nt":
+        app_data = os.environ.get("APPDATA")
+        if app_data:
+            return Path(app_data) / "GitHub CLI" / "hosts.yml"
+
+    return Path.home() / ".config" / "gh" / "hosts.yml"
+
+
+def _saved_github_host_configured() -> bool:
+    """Inspect github.com's hosts.yml entry without executing gh."""
+    hosts_path = _gh_hosts_path()
+    try:
+        raw = read_small_text_no_follow(
+            hosts_path,
+            max_bytes=_MAX_HOSTS_BYTES,
+        )
+    except (OSError, PrivatePathError, UnicodeError) as exc:
+        raise GitHubConfigError("gh hosts.yml 无法安全读取") from exc
+    if raw is None:
+        return False
+    try:
+        payload = yaml.safe_load(raw)
+    except yaml.YAMLError as exc:
+        raise GitHubConfigError("gh hosts.yml 不是有效的 UTF-8 YAML") from exc
+    if payload is None:
+        return False
+    if not isinstance(payload, dict):
+        raise GitHubConfigError("gh hosts.yml 顶层必须是对象")
+
+    host = payload.get("github.com")
+    if host is None:
+        return False
+    if not isinstance(host, dict):
+        raise GitHubConfigError("gh hosts.yml 的 github.com 配置无效")
+
+    users = host.get("users")
+    if users is not None and not isinstance(users, dict):
+        raise GitHubConfigError("gh hosts.yml 的 users 配置无效")
+    return bool(host.get("oauth_token") or host.get("user") or users)
+
+
+def _explicit_github_credentials(config) -> bool:
+    if any(os.environ.get(name) for name in ("GH_TOKEN", "GITHUB_TOKEN")):
+        return True
+    if config is None:
+        return False
+    try:
+        return bool(config.get("github_token"))
+    except Exception as exc:
+        raise GitHubConfigError("Agent Reach 的 GitHub 配置无法读取") from exc
+
+
+class GitHubChannel(Channel):
+    name = "github"
+    description = "GitHub 仓库和代码"
+    backends = ["gh CLI"]
+    tier = 0
+
+    def can_handle(self, url: str) -> bool:
+        from agent_reach.utils.url import host_matches
+
+        return host_matches(url, "github.com")
+
+    def check(self, config=None):
+        self.active_backend = None
+        probe = probe_command(
+            "gh",
+            ["--version"],
+            timeout=10,
+            package="gh",
+            env=_GH_READ_ONLY_ENV,
+        )
+        if probe.status == "missing":
+            return "warn", "gh CLI 未安装。安装：https://cli.github.com"
+        if probe.status == "broken":
+            return "error", (
+                "gh 命令存在但无法执行——安装已损坏。重装即可修复：\n"
+                "  brew reinstall gh\n"
+                "或从 https://cli.github.com 重新安装 gh CLI"
+            )
+        if not probe.ok:
+            detail = probe.hint or probe.status
+            return "error", f"gh CLI 版本检查失败：{detail}"
+
+        try:
+            configured = _explicit_github_credentials(
+                config
+            ) or _saved_github_host_configured()
+        except GitHubConfigError as exc:
+            return "warn", (
+                f"gh CLI 可执行，但认证配置无法安全确认：{exc}。"
+                "Doctor 不执行会写 device-id 的 `gh auth status`，当前未验证。"
+            )
+
+        if configured:
+            return "warn", (
+                "gh CLI 可执行，且检测到显式认证配置；Doctor 不执行会写"
+                " device-id 的 `gh auth status`，因此未实时验证，未标记为可用。"
+            )
+        return "warn", (
+            "gh CLI 可执行，但未检测到显式认证配置。运行 `gh auth login` "
+            "完成登录；Doctor 不会自动执行 `gh auth status`。"
+        )
