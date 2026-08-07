@@ -1,0 +1,281 @@
+   500→  '  }\n' +
+   501→  '  if (key.length < rules.minLength) {\n' +
+   502→  '    return { valid: false, reason: "Too short" };\n' +
+   503→  '  }\n' +
+   504→  '\n' +
+   505→  '  // Step 2: Live API test\n' +
+   506→  '  try {\n' +
+   507→  '    const url = "https://generativelanguage.googleapis.com"
+   508→' +
+   509→  '      + "/v1beta/models/gemini-pro:generateContent"\n' +
+   510→  '      + "?key=" + key;\n' +
+   511→  '    const resp = await fetch(url, {\n' +
+   512→  '      method: "POST",\n' +
+   513→  '      headers: { "Content-Type": "application/json" },\n' +
+   514→  '      body: JSON.stringify({\n' +
+   515→  '        contents: [{ parts: [{ text: "Say OK" }] }]\n' +
+   516→  '      })\n' +
+   517→  '    });\n' +
+   518→  '    if (!resp.ok) {\n' +
+   519→  '      return { valid: false, reason: "API rejected key" };\n' +
+   520→  '    }\n' +
+   521→  '    return { valid: true };\n' +
+   522→  '  } catch (err) {\n' +
+   523→  '    return { valid: false, reason: "Network error" };\n' +
+   524→  '  }\n' +
+   525→  '}'
+   526→));
+   527→
+   528→bodyChildren.push(h2('Learning Exercise: Implement Two-Step Validation'));
+   529→bodyChildren.push(body(
+   530→  'Implement a two-step validation module that can be used with multiple API services. Start by defining a configuration object that maps service names to their key format rules, including prefix, minimum length, allowed characters, and a test endpoint URL. Write a generic validateKey function that accepts a service name and a key string, performs the format check using the configuration, and if the format check passes, makes a live API call to the service\'s test endpoint. Handle the case where the live test is unavailable by implementing a configurable fallback that either defaults to accepting the key with a warning or defaults to rejecting it, depending on the security posture. Add support for caching validation results so that the same key is not tested multiple times within a configurable time window. Finally, write unit tests that verify both the format check and the live validation logic using mocked HTTP responses. This exercise will give you practical experience with the pattern of combining cheap local checks with expensive but definitive remote checks, which is a fundamental pattern in security engineering.'
+   531→));
+   532→
+   533→bodyChildren.push(pageBreak());
+   534→
+   535→// ──────────────────────────────────────────────────────────────
+   536→//  CHAPTER 5: Parameter 4 - Payload Size Limits
+   537→// ──────────────────────────────────────────────────────────────
+   538→bodyChildren.push(h1('Chapter 5: Parameter 4 - Payload Size Limits'));
+   539→
+   540→bodyChildren.push(h2('The Problem: Arbitrarily Large Request Bodies'));
+   541→bodyChildren.push(body(
+   542→  'Without payload size limits, an HTTP server will accept request bodies of any size, limited only by the available memory of the server process and the patience of the client. This creates a classic denial-of-service vulnerability where an attacker can submit a request with a body that is hundreds of megabytes or even gigabytes in size, causing the server to allocate massive amounts of memory to buffer the incoming data. In a Node.js environment, where the event loop is single-threaded and memory is shared across all concurrent requests, a single oversized payload can exhaust the available heap, trigger garbage collection storms, or cause the process to crash entirely with an out-of-memory error. Even if the server does not crash, the time spent buffering and parsing an enormous payload degrades performance for all other concurrent requests, effectively slowing the service to a crawl for the duration of the attack.'
+   543→));
+   544→bodyChildren.push(body(
+   545→  'The risk is especially acute for AI agent endpoints like Eli\'s omni route, which accepts JSON request bodies containing prompts, context, and configuration data. An attacker could craft a JSON payload that is technically valid but contains deeply nested structures, extremely long string values, or arrays with millions of elements, all of which would consume disproportionate amounts of memory during parsing. The JSON.parse operation itself can be weaponized through payload structures that create deeply nested objects, leading to stack overflow errors. Additionally, even if the server survives the parsing step, the resulting data structure might be passed to downstream components like the LLM API call or the audit logging system, amplifying the resource consumption throughout the entire request processing pipeline. The absence of payload size limits is a fundamental oversight that turns the server into an amplifier for resource exhaustion attacks, and the Payload Size Limits parameter was introduced to cap this risk at the earliest possible point in the request lifecycle.'
+   546→));
+   547→
+   548→bodyChildren.push(h2('How It Works: Content-Length Check and 413 Response'));
+   549→bodyChildren.push(body(
+   550→  'The Payload Size Limits parameter is implemented as a check at the very beginning of the request handling pipeline, before any body parsing occurs. The handler reads the Content-Length header from the incoming request and compares it against a configurable limit, which is set to 10,240 bytes (10KB) by default. If the Content-Length header indicates that the request body exceeds this limit, the handler immediately returns an HTTP 413 Payload Too Large response with a JSON body explaining the limit and the actual size of the request. This approach is extremely efficient because it requires no body buffering, no parsing, and no memory allocation beyond reading a single HTTP header. The check completes in constant time and constant memory, making it immune to the very attack it is designed to prevent.'
+   551→));
+   552→bodyChildren.push(body(
+   553→  'The 10KB limit was chosen based on an analysis of the actual payload sizes that Eli\'s endpoints need to handle. A typical omni request containing a prompt, a few context documents, and configuration options rarely exceeds two kilobytes of JSON. Even with generous margins for longer prompts and additional metadata, ten kilobytes provides more than enough headroom for legitimate use cases while being small enough to prevent abuse. If a legitimate use case requires a larger payload in the future, the limit can be increased through a configuration change, but the principle of having a limit should never be removed. The 413 status code is the semantically correct HTTP response for this scenario, and it signals to well-behaved clients that they should reduce their payload size and retry. Combined with the authentication gate, this parameter ensures that only authenticated users can even attempt to submit payloads, and those payloads are bounded in size, dramatically reducing the attack surface for resource exhaustion attacks.'
+   554→));
+   555→
+   556→bodyChildren.push(h2('Code Example'));
+   557→bodyChildren.push(codeBlock(
+   558→  '// payload-guard.ts - Size limit enforcement\n' +
+   559→  'const MAX_PAYLOAD_BYTES = 10 * 1024; // 10 KB\n' +
+   560→  '\n' +
+   561→  'function enforcePayloadLimit(req, res, next) {\n' +
+   562→  '  const len = parseInt(\n' +
+   563→  '    req.headers["content-length"] || "0", 10\n' +
+   564→  '  );\n' +
+   565→  '\n' +
+   566→  '  if (len > MAX_PAYLOAD_BYTES) {\n' +
+   567→  '    res.status(413).json({\n' +
+   568→  '      error: "Payload too large",\n' +
+   569→  '      limit: MAX_PAYLOAD_BYTES + " bytes",\n' +
+   570→  '      received: len + " bytes"\n' +
+   571→  '    });\n' +
+   572→  '    return;\n' +
+   573→  '  }\n' +
+   574→  '\n' +
+   575→  '  next();\n' +
+   576→  '}'
+   577→));
+   578→
+   579→bodyChildren.push(h2('Learning Exercise: Add Payload Limits to Express'));
+   580→bodyChildren.push(body(
+   581→  'Add payload size limiting to an Express application using both a custom middleware implementation and the built-in express.json limit option. First, implement the Content-Length header check as shown in the code example, but extend it to also handle the case where the Content-Length header is missing by wrapping the body parser in a stream that counts bytes as they arrive and aborts the request if the count exceeds the limit. This handles the edge case where a malicious client sends a body that is larger than the declared Content-Length or omits the header entirely. Next, configure express.json with a limit option and compare the behavior of both approaches. Document the differences in when each check triggers and what happens to the connection in each case. Finally, add logging to your payload limit middleware that records the source IP, the requested path, the declared size, and the configured limit for every rejected request, creating an early warning system that can detect patterns of abuse before they become critical. This exercise will teach you about the nuances of HTTP body handling and the importance of defense-in-depth at the transport level.'
+   582→));
+   583→
+   584→bodyChildren.push(pageBreak());
+   585→
+   586→// ──────────────────────────────────────────────────────────────
+   587→//  CHAPTER 6: Parameter 5 - Audit Logging
+   588→// ──────────────────────────────────────────────────────────────
+   589→bodyChildren.push(h1('Chapter 6: Parameter 5 - Audit Logging'));
+   590→
+   591→bodyChildren.push(h2('The Problem: Console.log-Only, No Persistence'));
+   592→bodyChildren.push(body(
+   593→  'Before the introduction of structured audit logging, Eli\'s operational visibility depended entirely on console.log statements scattered throughout the codebase. This approach has several critical shortcomings that make it unsuitable for a production security environment. First, console output is ephemeral. Once the terminal buffer scrolls past or the process restarts, the log data is permanently lost. There is no way to review what happened yesterday, last week, or last month. Second, console.log output is unstructured, making it difficult or impossible to programmatically query for specific events, filter by severity, or aggregate statistics. A human operator must manually read through the output to find relevant information, which is impractical at any significant scale. Third, console output provides no guarantee of delivery. If the process crashes before the output buffer is flushed, the most recent log entries, which are often the most important for diagnosing the crash, may be lost.'
+   594→));
+   595→bodyChildren.push(body(
+   596→  'The absence of persistent, queryable audit logs is a particularly severe gap in a security context because security incidents often require retrospective analysis. When an intrusion is detected, the first question is always: what happened, and when? Without audit logs, there is no answer. When a key is rejected, the operator needs to know: how many times was this key submitted, from what sources, and were there other suspicious keys submitted around the same time? Without audit logs, these questions cannot be answered. When an API call fails unexpectedly, the operator needs to see the full history of requests leading up to the failure, including authentication decisions, payload sizes, and response codes. Without audit logs, the investigation relies on guesswork and speculation. The console.log approach was acceptable during early development when the system was running on a single machine with a developer watching the terminal, but it is fundamentally inadequate for a deployed service that needs to meet basic security observability requirements.'
+   597→));
+   598→
+   599→bodyChildren.push(h2('How It Works: Structured JSONL with In-Memory Buffer'));
+   600→bodyChildren.push(body(
+   601→  'The audit logging system is built around three core components: the audit() function, a JSONL file writer, and an in-memory buffer. The audit() function is the public API that the rest of the system calls to record events. It accepts an event type string, a structured data object, and an optional severity level. Each call to audit() creates a log entry object containing a timestamp in ISO 8601 format, the event type, the severity level, the structured data, and a unique entry identifier generated from a combination of the timestamp and a counter. This entry is immediately pushed into the in-memory buffer, which acts as a write-ahead cache that smooths out disk I/O and ensures that logging does not become a bottleneck for request handling.'
+   602→));
+   603→bodyChildren.push(body(
+   604→  'The JSONL format, where each line is a self-contained JSON object, was chosen for its simplicity and queryability. Unlike a monolithic JSON array, a JSONL file can be appended to without reading or rewriting the entire file, making writes extremely efficient. Each line can be parsed independently, making it easy to process the log file with standard Unix tools like grep, jq, or awk, as well as with programmatic log analysis pipelines. The in-memory buffer holds the most recent entries and serves dual purposes: it provides fast access to recent events for the /api/audit endpoint without requiring a disk read, and it provides redundancy in case the disk write fails or is delayed. The buffer is periodically flushed to disk, and on process shutdown, any remaining buffered entries are written to the log file before the process exits, ensuring that no audit data is lost during normal operations. The /api/audit endpoint allows authenticated operators to query the audit log, filter by event type or severity, and retrieve the most recent entries, providing real-time operational visibility into the system\'s security posture.'
+   605→));
+   606→
+   607→bodyChildren.push(h2('Code Example'));
+   608→bodyChildren.push(codeBlock(
+   609→  '// audit.ts - Structured audit logging system\n' +
+   610→  'const fs = require("fs");\n' +
+   611→  'const path = require("path");\n' +
+   612→  '\n' +
+   613→  'const AUDIT_FILE = path.join(process.cwd(), "audit.log");\n' +
+   614→  'const AUDIT_BUFFER_MAX = 500;\n' +
+   615→  'let auditBuffer = [];\n' +
+   616→  'let entryCounter = 0;\n' +
+   617→  '\n' +
+   618→  'function audit(event, data, level) {\n' +
+   619→  '  level = level || "info";\n' +
+   620→  '  const entry = {\n' +
+   621→  '    id: "evt_" + Date.now() + "_" + (entryCounter++),\n' +
+   622→  '    timestamp: new Date().toISOString(),\n' +
+   623→  '    event: event,\n' +
+   624→  '    level: level,\n' +
+   625→  '    data: data\n' +
+   626→  '  };\n' +
+   627→  '  auditBuffer.push(entry);\n' +
+   628→  '  if (auditBuffer.length >= AUDIT_BUFFER_MAX) {\n' +
+   629→  '    flushAuditBuffer();\n' +
+   630→  '  }\n' +
+   631→  '  return entry;\n' +
+   632→  '}\n' +
+   633→  '\n' +
+   634→  'function flushAuditBuffer() {\n' +
+   635→  '  if (auditBuffer.length === 0) return;\n' +
+   636→  '  const lines = auditBuffer.map(function(e) {\n' +
+   637→  '    return JSON.stringify(e);\n' +
+   638→  '  }).join("\n");\n' +
+   639→  '  fs.appendFileSync(AUDIT_FILE, lines + "\n");\n' +
+   640→  '  auditBuffer = [];\n' +
+   641→  '}'
+   642→));
+   643→
+   644→bodyChildren.push(h2('Learning Exercise: Build a Forensic Audit Trail'));
+   645→bodyChildren.push(body(
+   646→  'Build a standalone audit trail module that can be integrated into any Express or Node.js application. Your module should provide an audit() function with the same signature as the example, but extend it with additional features: support for multiple log files based on event severity, automatic log file rotation when a file exceeds a configurable size limit, and a query API that supports filtering by date range, event type, severity, and arbitrary data fields. Implement the query functionality using a simple in-memory index that maps field values to entry identifiers, making queries efficient without requiring a full scan of the log file. Add a compact operation that merges and compresses old log files to manage disk usage over time. Finally, create a real-time event stream using Server-Sent Events that pushes new audit entries to connected clients as they are recorded, enabling live monitoring dashboards. This exercise will teach you the fundamentals of observability engineering and give you a reusable module that you can integrate into future projects to provide professional-grade audit logging capabilities.'
+   647→));
+   648→
+   649→bodyChildren.push(pageBreak());
+   650→
+   651→// ──────────────────────────────────────────────────────────────
+   652→//  CHAPTER 7: How They Work Together
+   653→// ──────────────────────────────────────────────────────────────
+   654→bodyChildren.push(h1('Chapter 7: How They Work Together'));
+   655→
+   656→bodyChildren.push(h2('Architecture Overview'));
+   657→bodyChildren.push(body(
+   658→  'The five safety parameters are not independent, isolated controls. They form an integrated security architecture where each parameter protects a specific stage of the request lifecycle and complements the protections provided by the others. Understanding how they interact is essential for maintaining and extending the system, because modifying one parameter can affect the behavior and effectiveness of the others. The following table provides a concise reference showing each parameter, the stage it protects, the mechanism it uses, and the threat it mitigates. Together, these parameters create a security pipeline that inspects, validates, limits, and records every interaction with the system, ensuring that no request reaches the core application logic without passing through multiple security gates.'
+   659→));
+   660→
+   661→bodyChildren.push(makeTable(
+   662→  ['Parameter', 'Lifecycle Stage', 'Mechanism', 'Threat Mitigated'],
+   663→  [
+   664→    ['API Auth Gate', 'Request Entry', 'Bearer token check', 'Unauthorized access'],
+   665→    ['Key Approval Queue', 'Key Submission', 'Pending state + approval', 'Auto-injection of untrusted keys'],
+   666→    ['Fake Key Validation', 'Key Activation', 'Format check + live API test', 'Invalid or forged keys'],
+   667→    ['Payload Size Limits', 'Request Parsing', 'Content-Length header check', 'Denial-of-service via large bodies'],
+   668→    ['Audit Logging', 'All Stages', 'JSONL file + in-memory buffer', 'Lack of forensic visibility']
+   669→  ]
+   670→));
+   671→
+   672→bodyChildren.push(spacer());
+   673→
+   674→bodyChildren.push(h2('Request Lifecycle'));
+   675→bodyChildren.push(body(
+   676→  'When an incoming HTTP request arrives at Eli\'s server, it passes through a well-defined sequence of security checks before any application logic is executed. The first check is the API Authentication Gate, which runs as Next.js middleware and verifies the Bearer token in the Authorization header. If the token is missing or invalid, the request is rejected immediately with a 401 response, and the rejection is recorded in the audit log. If authentication succeeds, the request proceeds to the Payload Size Limits check, which inspects the Content-Length header and rejects the request with a 413 response if the body exceeds the 10KB limit. Again, the rejection is recorded in the audit log. If both checks pass, the request body is parsed and routed to the appropriate handler.'
+   677→));
+   678→bodyChildren.push(body(
+   679→  'For requests that require LLM calls, the handler searches the key vault for an active key for the requested service. If no active key is found, the request fails with an appropriate error. If a key is found, the handler uses it to make the API call to the external LLM service. The response from the LLM service is processed, formatted, and returned to the caller. Throughout this entire lifecycle, from initial authentication through payload validation, key lookup, API call, and response delivery, the audit logging system records every significant event. This includes the authentication decision, the payload size check, the key used for the API call, the request and response sizes, the latency of the external API call, and the final response status code. The result is a complete, timestamped record of every request from entry to exit, providing the forensic visibility needed for security monitoring, performance analysis, and incident investigation.'
+   680→));
+   681→
+   682→bodyChildren.push(h2('Key Extraction Lifecycle'));
+   683→bodyChildren.push(body(
+   684→  'The key management lifecycle follows a separate but parallel path that interacts with the request lifecycle at specific points. When a new API key is submitted, typically via an email message or a direct API call, the system first extracts the key string and the declared service name from the submission. The key is then placed in the PendingKey queue, where it waits for explicit approval. Before approval can be granted, the Fake Key Validation parameter runs its two-step check: first verifying the key format against the SERVICES_MAP configuration, and then making a live API call to confirm that the key actually works. If validation fails at either step, the key remains in the pending queue with a rejection flag and a reason code, and the submission event is recorded in the audit log.'
+   685→));
+   686→bodyChildren.push(body(
+   687→  'If validation succeeds, an authenticated operator can approve the key through the POST /api/omni?action=approve endpoint. Approval moves the key from the pending queue to the active vault, making it available for use in actual API calls. The approval event, including the operator\'s identity, the key identifier, and the timestamp, is recorded in the audit log. Once active, the key is used by the request lifecycle whenever an LLM call is needed for the corresponding service. If a key is later found to be compromised or needs to be rotated, it can be deactivated through a revocation endpoint, which removes it from the active vault and records the revocation in the audit log. Throughout this entire lifecycle, from initial extraction through validation, approval, active use, and eventual revocation, the audit log provides a complete chain of custody for every key in the system, enabling operators to answer questions like: when was this key submitted? Who approved it? How many times has it been used? When was it last validated?'
+   688→));
+   689→
+   690→bodyChildren.push(h2('Audit Log as Connective Tissue'));
+   691→bodyChildren.push(body(
+   692→  'The audit log is the connective tissue that binds all five safety parameters into a coherent security system. Every parameter generates audit events at its decision points: the auth gate logs every authentication attempt and its outcome, the key queue logs every submission, approval, and rejection, the validation system logs every format check and live test result, the payload limiter logs every size check and rejection, and the audit system itself logs its own operations including buffer flushes and file rotations. This comprehensive event stream creates a timeline that reconstructs the complete history of the system\'s security decisions, making it possible to trace any request from its arrival to its completion through every security checkpoint it passed or failed.'
+   693→));
+   694→bodyChildren.push(body(
+   695→  'The audit log\'s value extends beyond incident response. It enables proactive security monitoring by providing data that can be analyzed for patterns indicative of emerging threats. For example, a sudden spike in 401 responses from a specific IP address may indicate a brute-force authentication attempt. A cluster of key submission failures for the same service may indicate that someone is probing for valid keys. A series of 413 responses may indicate an ongoing denial-of-service attack. By making these patterns visible through structured, queryable log data, the audit log transforms security from a reactive, incident-driven process into a proactive, data-driven discipline. It is the single most important parameter for long-term security hygiene because it provides the visibility that all other parameters lack individually, and it ties their individual protections together into a system whose behavior can be understood, monitored, and improved over time.'
+   696→));
+   697→
+   698→bodyChildren.push(pageBreak());
+   699→
+   700→// ──────────────────────────────────────────────────────────────
+   701→//  CHAPTER 8: Learning Guide - Practice Projects
+   702→// ──────────────────────────────────────────────────────────────
+   703→bodyChildren.push(h1('Chapter 8: Learning Guide - Practice Projects'));
+   704→
+   705→bodyChildren.push(body(
+   706→  'This chapter provides five progressive practice projects designed to consolidate your understanding of the safety parameters described in this guidebook. Each project builds on the concepts introduced in the previous chapters and adds new complexity that prepares you for real-world security engineering challenges. The projects are ordered by difficulty, starting with a focused single-concept implementation and culminating in a comprehensive safety layer that integrates all four preceding projects into a unified system. For each project, a detailed description of the requirements is provided along with guidance on the key design decisions you will need to make. Complete all five projects to develop a thorough, practical understanding of how to build security controls that are robust, maintainable, and effective in production environments.'
+   707→));
+   708→
+   709→bodyChildren.push(h2('Project 1: Express Auth Shield'));
+   710→bodyChildren.push(body(
+   711→  'Build an Express middleware module that provides API authentication for a multi-route Express application. Your module should export a single function that accepts a configuration object with the expected token, an optional array of excluded paths, and an optional logging callback. The middleware should check the Authorization header on every request, compare the Bearer token against the configured value, and return a 401 JSON response with a standard error format if authentication fails. Excluded paths should bypass authentication entirely. The logging callback should be invoked for every authentication decision, receiving the request path, the source IP, the outcome, and the timestamp. Write comprehensive tests using a testing framework of your choice that verify correct behavior for authenticated requests, unauthenticated requests, missing headers, malformed headers, and excluded paths. This project focuses on the middleware pattern, environment-based configuration, and structured error responses, which are foundational skills for building any API security control.'
+   712→));
+   713→
+   714→bodyChildren.push(h2('Project 2: Key Pipeline'));
+   715→bodyChildren.push(body(
+   716→  'Build a key management pipeline that implements the submission, validation, approval, and activation lifecycle described in Chapters 3 and 4. Create a KeyPipeline class that manages three internal data structures: a pending queue, an active vault, and a rejection log. The class should provide methods for submitting a new key with a service identifier, listing pending keys, approving a key by its identifier, rejecting a key with a reason, and retrieving the active key for a given service. Integrate a two-step validation process that first checks the key format against a configurable rules map and then performs a live API test using a configurable test function. The test function should be injectable to facilitate testing without making real API calls. Add event emission so that external code can subscribe to lifecycle events like key.submitted, key.approved, key.rejected, and key.activated. This project teaches you how to design stateful security components with clean interfaces and extensible validation logic.'
+   717→));
+   718→
+   719→bodyChildren.push(h2('Project 3: Audit Trail'));
+   720→bodyChildren.push(body(
+   721→  'Build a standalone audit trail module based on the design described in Chapter 6. Your module should export an audit() function and a createAuditReader() function. The audit() function should accept an event type, a data object, and an optional severity level, and should write structured JSONL entries to a configurable log file. Implement an in-memory buffer with a configurable maximum size and a flush policy that writes buffered entries to disk when the buffer is full or after a configurable time interval. The createAuditReader() function should return an object with methods for querying the audit log by date range, event type, and severity level. Implement log file rotation based on file size, with a configurable maximum file size and a configurable number of retained files. Add a compact operation that merges and optionally compresses rotated files. Write integration tests that verify end-to-end behavior including writing entries, flushing the buffer, querying the log, and rotating files. This project develops your skills in persistent storage, file I/O, query interfaces, and data lifecycle management.'
+   722→));
+   723→
+   724→bodyChildren.push(h2('Project 4: Rate Limiter'));
+   725→bodyChildren.push(body(
+   726→  'Build a rate limiting middleware that protects API endpoints from abuse by enforcing request rate limits using a sliding window algorithm. Your middleware should track requests per IP address using an in-memory data structure that stores timestamps of recent requests. For each incoming request, the middleware should count the number of requests from the same IP address within the current sliding window period, which should be configurable in milliseconds. If the count exceeds a configurable maximum, the middleware should return an HTTP 429 Too Many Requests response with a JSON body that includes the limit, the remaining time until the window resets, and a Retry-After header indicating how many seconds the client should wait before retrying. Implement window cleanup to prevent memory leaks from accumulating stale entries for IPs that have stopped making requests. Add support for different rate limits for different routes, allowing more permissive limits for lightweight endpoints like health checks and stricter limits for expensive endpoints like LLM calls. This project teaches you about algorithm design for concurrent systems, HTTP status codes for rate limiting, and memory management for long-running server processes.'
+   727→));
+   728→
+   729→bodyChildren.push(h2('Project 5: Full Safety Layer'));
+   730→bodyChildren.push(body(
+   731→  'Combine all four preceding projects into a unified safety layer that can be applied to any Express application with a single function call. Create a createSafetyLayer() function that accepts a configuration object containing all necessary parameters: the API key for authentication, the payload size limit, the rate limit configuration, the audit log file path, and the key pipeline configuration. The function should return an Express router or middleware array that applies all four layers in the correct order: authentication first, then rate limiting, then payload size checking, then the application routes, with audit logging wrapping the entire pipeline to record events at every stage. The safety layer should be configurable enough to be used in different environments with different security requirements, from lenient development settings to strict production configurations. Write a demonstration application that uses the safety layer to protect a simple API with three routes: a public health check, an authenticated data endpoint, and an authenticated admin endpoint that uses the key pipeline. Add a monitoring dashboard endpoint that displays real-time statistics from the audit log, including request counts, authentication success and failure rates, rate limit violations, and payload rejections. This capstone project integrates everything you have learned into a production-ready security module that demonstrates the defense-in-depth philosophy in action.'
+   732→));
+   733→
+   734→// ══════════════════════════════════════════════════════════════
+   735→//  BUILD DOCUMENT
+   736→// ══════════════════════════════════════════════════════════════
+   737→const bodySection = {
+   738→  properties: {
+   739→    page: {
+   740→      size: { width: 11906, height: 16838, orientation: 'portrait' },
+   741→      margin: { top: 1440, bottom: 1440, left: 1701, right: 1417 }
+   742→    }
+   743→  },
+   744→  footers: {
+   745→    default: new Footer({
+   746→      children: [
+   747→        new Paragraph({
+   748→          alignment: AlignmentType.CENTER,
+   749→          spacing: { before: 100 },
+   750→          children: [
+   751→            new TextRun({
+   752→              children: [PageNumber.CURRENT],
+   753→              font: FONT,
+   754→              size: 18,
+   755→              color: C.footerColor
+   756→            })
+   757→          ]
+   758→        })
+   759→      ]
+   760→    })
+   761→  },
+   762→  children: bodyChildren
+   763→};
+   764→
+   765→const doc = new Document({
+   766→  sections: [coverSection, bodySection]
+   767→});
+   768→
+   769→// ── Write file ──
+   770→const OUTPUT = '/home/z/my-project/download/Eli-Safety-Parameter-Guidebook.docx';
+   771→
+   772→Packer.toBuffer(doc).then(function(buffer) {
+   773→  fs.writeFileSync(OUTPUT, buffer);
+   774→  console.log('Guidebook saved to: ' + OUTPUT);
+   775→  console.log('Size: ' + (buffer.length / 1024).toFixed(1) + ' KB');
+   776→}).catch(function(err) {
+   777→  console.error('Error generating docx:', err);
+   778→  process.exit(1);
+   779→});
+   780→

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVaultContext, buildVaultKnowledgeMap, getVaultStats } from '@/lib/vault-search';
+import { audit } from '@/lib/audit-log';
+
+const MAX_PAYLOAD_SIZE = 10_240; // 10KB
 
 const ELI_SYSTEM_PROMPT = `You are Eli. Not "AI Growth Intelligence" — just Eli.
 
@@ -90,6 +93,11 @@ async function callGemini(messages: Array<{ role: string; content: string }>): P
 
 export async function POST(request: NextRequest) {
   try {
+    const contentLen = parseInt(request.headers.get('content-length') || '0', 10);
+    if (contentLen > MAX_PAYLOAD_SIZE) {
+      return NextResponse.json({ error: 'Payload too large (max 10KB)' }, { status: 413 });
+    }
+
     const body = await request.json();
     const { message, history = [] } = body as {
       message: string;
@@ -159,6 +167,7 @@ export async function POST(request: NextRequest) {
     const provider = getProvider();
 
     if (provider === 'gemini') {
+      audit('llm.call', `Gemini call for chat (${message.slice(0, 50)}...)`);
       try {
         response = await callGemini(messages);
       } catch (llmError: any) {

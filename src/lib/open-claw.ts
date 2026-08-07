@@ -19,6 +19,8 @@
  *   probe all → filter by skip-set → sort by penalty+latency → round-robin tiebreak
  */
 
+import { audit } from './audit-log';
+
 // ─── Types ────────────────────────────────────────────────────────
 
 export interface ClawInbox {
@@ -61,6 +63,19 @@ export interface ProviderHealth {
   tier: 0 | 1 | 2;     // Agent-Reach: zero-config / free-key / complex
 }
 
+export interface PendingKey {
+  id: string;
+  service: string;
+  key: string;
+  envVar: string;
+  extractedAt: number;
+  inboxId: string;
+  inboxEmail: string;
+  status: 'pending' | 'approved' | 'rejected';
+  validatedAt?: number;
+  validationError?: string;
+}
+
 export interface ClawState {
   inboxes: ClawInbox[];
   totalGenerated: number;
@@ -69,6 +84,7 @@ export interface ClawState {
   lastKeyExtracted: string | null;
   providerStats: Record<string, { generated: number; errors: number; emailsRead: number }>;
   providerHealth: Record<ProviderName, ProviderHealth>;  // from Agent-Reach: probe-don't-guess
+  pendingKeys: PendingKey[];
 }
 
 // ─── Browser Automation Types (browser-use pattern) ─────────────
@@ -111,6 +127,13 @@ const OI_BASE = 'https://api.openinbox.io';
 // Actually test each provider before using it. Catches stale endpoints.
 
 const PROBE_TIMEOUT = 10_000;
+
+// Service patterns for key format validation
+const SERVICES_MAP: Record<string, { pattern: RegExp }> = {
+  gemini: { pattern: /^(AIza|AQ\.)/ },
+  openai: { pattern: /^sk-/ },
+  anthropic: { pattern: /^sk-ant-/ },
+};
 
 async function probeGuerrilla(): Promise<ProviderHealth> {
   const start = Date.now();
@@ -371,9 +394,21 @@ export class OpenClaw {
   private totalKeysExtracted = 0;
   private lastKeyExtracted: string | null = null;
   private pollTimer: ReturnType<typeof setInterval> | null = null;
-  private keyCallback: ((service: string, key: string, envVar: string) => void) | null = null;
+  private keyCallback: ((service: string, key: string, envVar: string, pendingId: string) => void) | null = null;
   private providerHealth: Record<ProviderName, ProviderHealth>;
-  private roundRobinIdx = 0;  // OmniKey: round-robin across equal-penalty providers
+  private roundRobinIdx = 0;
+  private pendingKeys: PendingKey[] = [];
+  private autoApproveKeys = false; // Tier 1: default OFF — keys require manual approval
+
+  /**
+   * Enable/disable auto-approval of extracted keys.
+   * When OFF (default): keys go to pending queue, require POST /api/omni?action=approve
+   * When ON: keys are validated and auto-injected (legacy behavior)
+   */
+  setAutoApprove(enabled: boolean) {
+    this.autoApproveKeys = enabled;
+    console.log(`[CLAW] Auto-approve ${enabled ? 'ENABLED' : 'DISABLED'} — keys will ${enabled ? 'auto-inject' : 'require approval'}`);
+  }
 
   constructor(config: Partial<ClawConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -534,15 +569,39 @@ export class OpenClaw {
       this.totalEmailsRead += emails.length;
       this.stats[inbox.provider].emailsRead += emails.length;
 
-      // Auto-extract keys from new emails
+      // Auto-extract keys from new emails — Tier 1: pending queue + validation
       for (const email of emails) {
         const keys = extractKeysFromEmail(email);
         for (const k of keys) {
           console.log(`[CLAW] KEY EXTRACTED [${k.service}]: ${k.key.slice(0, 12)}... from ${inbox.email}`);
           this.totalKeysExtracted++;
           this.lastKeyExtracted = k.key;
-          process.env[k.envVar] = k.key;
-          this.keyCallback?.(k.service, k.key, k.envVar);
+
+          const pendingId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+          const pending: PendingKey = {
+            id: pendingId,
+            service: k.service,
+            key: k.key,
+            envVar: k.envVar,
+            extractedAt: Date.now(),
+            inboxId: inbox.id,
+            inboxEmail: inbox.email,
+            status: 'pending',
+          };
+          this.pendingKeys.push(pending);
+          if (this.pendingKeys.length > 20) this.pendingKeys = this.pendingKeys.slice(-20);
+
+          audit('key.extracted', `${k.service} key from ${inbox.email}`, {
+            pendingId, keyPreview: k.key.slice(0, 12) + '...', inboxId: inbox.id,
+          });
+
+          if (this.autoApproveKeys) {
+            // Auto-approve: validate then inject
+            await this.validateAndInject(pending);
+          }
+
+          // Notify callback (with pendingId so caller can approve/reject)
+          this.keyCallback?.(k.service, k.key, k.envVar, pendingId);
         }
       }
 
@@ -666,6 +725,84 @@ export class OpenClaw {
   }
 
   /**
+   * Validate a key by making a test API call, then inject into process.env.
+   * Returns true if valid, false if rejected.
+   */
+  async validateAndInject(pending: PendingKey): Promise<boolean> {
+    try {
+      // Quick format check first (cheaper than API call)
+      const svc = SERVICES_MAP[pending.service];
+      if (svc?.pattern && !svc.pattern.test(pending.key)) {
+        pending.status = 'rejected';
+        pending.validationError = 'Format mismatch';
+        pending.validatedAt = Date.now();
+        audit('key.rejected', `${pending.service} key failed format check`, { pendingId: pending.id });
+        return false;
+      }
+
+      // For Gemini keys, make a test call
+      if (pending.service === 'gemini' || pending.envVar === 'GEMINI_API_KEY') {
+        try {
+          const { GoogleGenerativeAI } = await import('@google/generative-ai');
+          const genAI = new GoogleGenerativeAI(pending.key);
+          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+          const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: 'Say OK' }] }],
+          });
+          const text = result?.response?.text();
+          if (!text || text.length === 0) throw new Error('Empty response');
+        } catch (err) {
+          pending.status = 'rejected';
+          pending.validationError = (err as Error).message?.slice(0, 200);
+          pending.validatedAt = Date.now();
+          audit('key.rejected', `${pending.service} key failed validation: ${(err as Error).message?.slice(0, 100)}`, {
+            pendingId: pending.id,
+          });
+          return false;
+        }
+      }
+
+      // Passed validation — inject
+      pending.status = 'approved';
+      pending.validatedAt = Date.now();
+      process.env[pending.envVar] = pending.key;
+      audit('key.approved', `${pending.service} key validated and injected`, { pendingId: pending.id });
+      return true;
+    } catch (err) {
+      pending.status = 'rejected';
+      pending.validationError = (err as Error).message;
+      pending.validatedAt = Date.now();
+      audit('key.rejected', `${pending.service} key validation error: ${(err as Error).message?.slice(0, 100)}`, {
+        pendingId: pending.id,
+      });
+      return false;
+    }
+  }
+
+  /** Manually approve a pending key (validates first) */
+  async approvePendingKey(pendingId: string): Promise<boolean> {
+    const pending = this.pendingKeys.find(k => k.id === pendingId && k.status === 'pending');
+    if (!pending) return false;
+    return this.validateAndInject(pending);
+  }
+
+  /** Manually reject a pending key */
+  rejectPendingKey(pendingId: string): boolean {
+    const pending = this.pendingKeys.find(k => k.id === pendingId && k.status === 'pending');
+    if (!pending) return false;
+    pending.status = 'rejected';
+    pending.validatedAt = Date.now();
+    pending.validationError = 'Manual rejection';
+    audit('key.rejected', `${pending.service} key manually rejected`, { pendingId });
+    return true;
+  }
+
+  /** Get all pending keys */
+  getPendingKeys(): PendingKey[] {
+    return this.pendingKeys.filter(k => k.status === 'pending');
+  }
+
+  /**
    * Get full state (Agent-Reach: sensitive key redaction)
    */
   getState(): ClawState {
@@ -682,6 +819,10 @@ export class OpenClaw {
         : null,
       providerStats: { ...this.stats },
       providerHealth: { ...this.providerHealth },
+      pendingKeys: this.pendingKeys.map(k => ({
+        ...k,
+        key: `${k.key.slice(0, 8)}...${k.key.slice(-4)}`, // redact in state
+      })),
     };
   }
 

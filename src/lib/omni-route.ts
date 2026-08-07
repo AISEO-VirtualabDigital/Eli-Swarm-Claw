@@ -18,6 +18,7 @@
  */
 
 import { getOpenClaw, OpenClaw, ClawInbox } from './open-claw';
+import { audit } from './audit-log';
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -175,10 +176,9 @@ export class OmniRoute {
 
     this.claw = getOpenClaw();
 
-    // Claw key delivery → auto-inject
-    this.claw.onKey((service, key, envVar) => {
-      console.log(`[OMNI] Claw delivered key [${service}] → injecting`);
-      this.injectKey(service, key, `${envVar}`);
+    // Claw key delivery — notify but don't auto-inject (Tier 1: approval queue)
+    this.claw.onKey((service, key, envVar, pendingId) => {
+      console.log(`[OMNI] Claw extracted key [${service}] → pending approval (${pendingId})`);
       this.skipProviders.clear();
     });
 
@@ -316,6 +316,7 @@ export class OmniRoute {
   }
 
   injectKey(service: string, key: string, source?: string): OmniKey {
+    audit('key.injected', `Manual ${service} key from ${source || 'manual'}`, { keyPreview: key.slice(0, 12) + '...' });
     const svc = SERVICES[service];
     const now = Date.now();
 

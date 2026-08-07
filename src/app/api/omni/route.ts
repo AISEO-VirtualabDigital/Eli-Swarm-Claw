@@ -18,6 +18,20 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getOmniRoute } from '@/lib/omni-route';
+import { getOpenClaw } from '@/lib/open-claw';
+import { audit } from '@/lib/audit-log';
+
+const MAX_PAYLOAD_SIZE = 10_240; // 10KB
+
+function getClientIp(request: NextRequest): string {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+}
+
+function enforcePayloadLimit(request: NextRequest): boolean {
+  const len = parseInt(request.headers.get('content-length') || '0', 10);
+  if (len > MAX_PAYLOAD_SIZE) return false;
+  return true;
+}
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -211,13 +225,19 @@ export async function GET(request: NextRequest) {
 // ─── POST ───────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
+  if (!enforcePayloadLimit(request)) {
+    return NextResponse.json({ error: 'Payload too large (max 10KB)' }, { status: 413 });
+  }
+
   const body = await request.json().catch(() => ({}));
   const { action } = body as { action?: string };
   const omni = getOmniRoute();
+  const ip = getClientIp(request);
 
   try {
     // ── Force rotation ──
     if (!action || action === 'rotate') {
+      audit('key.rotation', `Force rotate requested`, { ip });
       const service = (body as { service?: string }).service || 'gemini';
       const newKey = await omni.rotate(service);
       if (!newKey) {
@@ -295,8 +315,62 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ action: 'usage-recorded' });
     }
 
+    // ── Tier 1: Approve pending key ──
+    if (action === 'approve') {
+      const { pendingId } = body as { pendingId: string };
+      if (!pendingId) {
+        return NextResponse.json({ error: 'pendingId is required' }, { status: 400 });
+      }
+      const claw = getOpenClaw();
+      const valid = await claw.approvePendingKey(pendingId);
+      if (!valid) {
+        return NextResponse.json({ action: 'approve-failed', message: 'Key not found, already processed, or failed validation' }, { status: 400 });
+      }
+      return NextResponse.json({ action: 'approved', pendingId });
+    }
+
+    // ── Tier 1: Reject pending key ──
+    if (action === 'reject') {
+      const { pendingId } = body as { pendingId: string };
+      if (!pendingId) {
+        return NextResponse.json({ error: 'pendingId is required' }, { status: 400 });
+      }
+      const claw = getOpenClaw();
+      const rejected = claw.rejectPendingKey(pendingId);
+      if (!rejected) {
+        return NextResponse.json({ action: 'reject-failed', message: 'Key not found or already processed' }, { status: 400 });
+      }
+      return NextResponse.json({ action: 'rejected', pendingId });
+    }
+
+    // ── Tier 1: Get pending keys ──
+    if (action === 'pending') {
+      const claw = getOpenClaw();
+      const pending = claw.getPendingKeys();
+      return NextResponse.json({
+        action: 'pending-keys',
+        count: pending.length,
+        keys: pending.map(k => ({
+          id: k.id,
+          service: k.service,
+          keyPreview: k.key.slice(0, 8) + '...',
+          inboxEmail: k.inboxEmail,
+          extractedAt: k.extractedAt,
+        })),
+      });
+    }
+
+    // ── Tier 1: Toggle auto-approve mode ──
+    if (action === 'auto-approve') {
+      const { enabled } = body as { enabled: boolean };
+      const claw = getOpenClaw();
+      claw.setAutoApprove(enabled !== false);
+      audit('key.auto-approve', `Auto-approve ${enabled !== false ? 'enabled' : 'disabled'}`, { ip });
+      return NextResponse.json({ action: 'auto-approve-set', enabled: enabled !== false });
+    }
+
     return NextResponse.json(
-      { error: `Unknown action: ${action}. Use: rotate, inject, inbox, check, usage` },
+      { error: `Unknown action: ${action}. Use: rotate, inject, inbox, check, usage, approve, reject, pending, auto-approve` },
       { status: 400 }
     );
   } catch (err: any) {
