@@ -183,6 +183,14 @@ ${containmentHits > 0 ? `Also recovered ${containmentHits} pattern memories from
       }
     }
 
+    // OmniKey/OmniRoute: attach decision headers for routing transparency
+    const omniHeaders = (() => {
+      try {
+        const { getOmniRoute } = require('@/lib/omni-route');
+        return getOmniRoute().getDecisionHeaders();
+      } catch { return {}; }
+    })();
+
     return NextResponse.json({
       response: response || 'I hit a wall. Try again.',
       provider: provider === 'gemini' ? 'gemini-2.0-flash' : 'vault-fallback',
@@ -193,6 +201,8 @@ ${containmentHits > 0 ? `Also recovered ${containmentHits} pattern memories from
       })),
       vaultChunks: sources.length,
       containmentHits,
+    }, {
+      headers: omniHeaders,
     });
   } catch (error) {
     console.error('Eli chat error:', error);

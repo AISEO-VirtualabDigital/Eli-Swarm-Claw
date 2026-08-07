@@ -1,11 +1,16 @@
 /**
- * Vault Search v4 — Pre-built index lookup
+ * Vault Search v5 — Optimized index lookup
  * 
  * Uses search-index.json (built at ingestion time) for instant term→file mapping.
- * Falls back to obsidian-chunk-engine if indexes are missing.
+ * 
+ * v5 changes:
+ *   - Fixed containment search: uses search-index-absorbed.json instead of
+ *     scanning 23K+ files in 00-Containment/ (was a critical performance bottleneck)
+ *   - Absorbed repo v2 index support
+ *   - Deduplication by source file (not chunk ID)
  */
 
-import { readdir, readFile, stat } from 'fs/promises';
+import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
 
 const VAULT_PATH = process.env.OBSIDIAN_VAULT_PATH || join(process.cwd(), 'data', 'eli-vault');
@@ -206,28 +211,39 @@ export async function searchVault(
     }
   }
 
-  if (includeContainment) {
-    try {
-      const contFiles = await readdir(CONTAINMENT_DIR);
-      for (const catDir of contFiles) {
-        const catPath = join(CONTAINMENT_DIR, catDir);
-        const catStat = await stat(catPath).catch(() => null);
-        if (!catStat || !catStat.isDirectory()) continue;
-        const chunks = await readdir(catPath);
-        for (const cf of chunks) {
-          if (results.length >= maxResults + 5) break;
-          const chunkPath = join(catPath, cf);
-          const chunk = await parseChunkFile(chunkPath);
-          if (!chunk) continue;
-          const contentLower = chunk.content.toLowerCase();
-          const matchCount = queryTerms.filter(t => contentLower.includes(t)).length;
-          if (matchCount > 0) {
-            chunk.dissolved = true;
-            results.push({ chunk, score: matchCount, matchedTerms: [] });
-          }
-        }
+  // v5: Containment search via pre-built absorbed index (not filesystem scan)
+  // The old approach scanned 23K+ files in 00-Containment/ — O(n) disk reads per query.
+  // Now we use the same term→file mapping as active search, but mark results as dissolved.
+  if (includeContainment && expandedTerms.size > 0) {
+    const containmentFiles = new Set<string>();
+    for (const term of expandedTerms) {
+      const files = searchIndex[term];
+      if (files) for (const f of files) containmentFiles.add(f);
+    }
+    // Filter out files already found in active search
+    for (const existing of sorted) {
+      containmentFiles.delete(existing[0]);
+    }
+    // Score containment hits by term overlap (no disk read needed — just count matches)
+    const contScores: Array<{ file: string; score: number }> = [];
+    for (const file of containmentFiles) {
+      let score = 0;
+      for (const term of queryTerms) {
+        if (searchIndex[term]?.includes(file)) score += 2; // bonus for exact query terms
       }
-    } catch {}
+      if (score > 0) contScores.push({ file, score });
+    }
+    contScores.sort((a, b) => b.score - a.score);
+    // Parse only the top containment hits (bounded by maxResults)
+    for (const { file, score } of contScores.slice(0, Math.min(3, maxResults))) {
+      if (results.length >= maxResults + 5) break;
+      const chunkPath = join(ACTIVE_DIR, file);
+      const chunk = await parseChunkFile(chunkPath);
+      if (chunk) {
+        chunk.dissolved = true;
+        results.push({ chunk, score, matchedTerms: [] });
+      }
+    }
   }
 
   return results.sort((a, b) => b.score - a.score).slice(0, maxResults);

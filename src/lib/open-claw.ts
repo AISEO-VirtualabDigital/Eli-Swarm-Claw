@@ -1,16 +1,22 @@
 /**
- * Open Claw Engine — Infinite Email Generator + Autonomous Reader
+ * Open Claw Engine v2 — Infinite Email Generator + Autonomous Reader
  * 
  * "Open Claw" = self-sufficient, zero-cost, multi-provider email system.
- * The claw reaches out through multiple free services to generate and read
- * temporary emails without any API keys or payment.
+ * 
+ * Wired patterns:
+ *   OmniKey — penalty tracker with decay, round-robin, skip-set on failure
+ *   OmniMail — provider resolution chain, retryable error classification
+ *   Agent-Reach — probe-don't-guess health checks
+ *   OmniRoute (diegosouzapw) — provider adapter abstraction
+ *   browser-use — decoupled browser task generation
  * 
  * Providers:
  *   1. Guerrilla Mail (primary) — session-based, instant, 1hr TTL, no registration
  *   2. mail.tm (secondary) — account-based, JWT auth, @web-library.net
  *   3. OpenInbox (tertiary) — creation-only (free), can't read without paid key
  * 
- * The claw auto-failovers between providers. If one fails, it slices to the next.
+ * Provider resolution chain (OmniMail pattern):
+ *   probe all → filter by skip-set → sort by penalty+latency → round-robin tiebreak
  */
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -412,23 +418,30 @@ export class OpenClaw {
     ).join(' | '));
   }
 
-  async getBestProvider(): Promise<ProviderName> {
+  async getBestProvider(skipProviders?: Set<string>): Promise<ProviderName> {
     const stale = Object.values(this.providerHealth).every(h => Date.now() - h.lastProbeAt > 120_000);
     if (stale) await this.probeAllProviders();
 
-    const sorted = Object.entries(this.providerHealth)
-      .filter(([, h]) => h.status === 'ok' && h.consecutiveFailures < 3)
+    // OmniMail: provider resolution chain — filter by skip-set, then sort
+    const candidates = Object.entries(this.providerHealth)
+      .filter(([name, h]) => h.status === 'ok' && h.consecutiveFailures < 3)
+      .filter(([name]) => !skipProviders?.has(name))
       .sort(([, a], [, b]) => a.penalty - b.penalty || a.latencyMs - b.latencyMs);
 
-    if (sorted.length > 0) {
-      const bestPenalty = sorted[0][1].penalty;
-      const topTier = sorted.filter(([, h]) => h.penalty === bestPenalty);
+    if (candidates.length > 0) {
+      const bestPenalty = candidates[0][1].penalty;
+      const topTier = candidates.filter(([, h]) => h.penalty === bestPenalty);
       const idx = this.roundRobinIdx % topTier.length;
       this.roundRobinIdx++;
       return topTier[idx][0] as ProviderName;
     }
 
-    // Fallback: try providers with lowest consecutive failures
+    // OmniMail: fallback — ignore skip-set, use lowest consecutive failures
+    if (skipProviders?.size) {
+      console.warn(`[CLAW] All providers in skip-set, falling back to best available`);
+      return this.getBestProvider();
+    }
+
     const fallback = Object.entries(this.providerHealth)
       .sort(([, a], [, b]) => a.consecutiveFailures - b.consecutiveFailures);
     return (fallback[0]?.[0] || 'guerrilla') as ProviderName;
@@ -486,7 +499,12 @@ export class OpenClaw {
     } catch (err) {
       this.recordProviderResult(targetProvider, false);
       this.stats[targetProvider].errors++;
-      console.warn(`[CLAW] ${targetProvider} generation failed:`, (err as Error).message);
+      // OmniMail: classify error for upstream handling
+      const errMsg = (err as Error).message || '';
+      const retryable = [429, 408, 500, 502, 503, 504].some(c => errMsg.includes(String(c)))
+        || /timeout|econnrefused|econnreset/i.test(errMsg);
+      console.warn(`[CLAW] ${targetProvider} generation failed (${retryable ? 'retryable' : 'non-retryable'}):`, errMsg);
+      (err as any)._clawRetryable = retryable;
       throw err;
     }
   }
