@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVaultContext, buildVaultKnowledgeMap, getVaultStats } from '@/lib/vault-search';
 import { audit } from '@/lib/audit-log';
+import {
+  MAX_PAYLOAD_CHAT, MAX_MESSAGE_LENGTH, MAX_HISTORY_MESSAGES,
+  sanitizeInput, sanitizePromptInjection, checkRateLimit, RATE_LIMIT_CHAT,
+} from '@/lib/safety-gate';
 
-const MAX_PAYLOAD_SIZE = 10_240; // 10KB
+const MAX_PAYLOAD_SIZE = MAX_PAYLOAD_CHAT;
 
 const ELI_SYSTEM_PROMPT = `You are Eli. Not "AI Growth Intelligence" — just Eli.
 
@@ -91,11 +95,19 @@ async function callGemini(messages: Array<{ role: string; content: string }>): P
 
 // ─── Chat Endpoint ────────────────────────────────────────────
 
+function getClientIp(request: NextRequest): string {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+}
+
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+
   try {
+    // ─── Payload size check ──────────────────────────────────────
     const contentLen = parseInt(request.headers.get('content-length') || '0', 10);
     if (contentLen > MAX_PAYLOAD_SIZE) {
-      return NextResponse.json({ error: 'Payload too large (max 10KB)' }, { status: 413 });
+      audit('chat.blocked', `Payload too large: ${contentLen} bytes from ${ip}`, { ip, size: contentLen });
+      return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
     }
 
     const body = await request.json();
@@ -108,12 +120,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
+    // ─── Input sanitization (Tier 1) ────────────────────────────
+    const cleanMessage = sanitizeInput(message, MAX_MESSAGE_LENGTH);
+    if (!cleanMessage) {
+      return NextResponse.json({ error: 'Message is empty after sanitization' }, { status: 400 });
+    }
+
+    // ─── Prompt injection detection (Tier 1) ────────────────────
+    const { clean, detected } = sanitizePromptInjection(cleanMessage);
+    if (detected) {
+      audit('prompt.injection.detected', `Possible prompt injection from ${ip}: ${cleanMessage.slice(0, 100)}`, { ip, messagePreview: cleanMessage.slice(0, 100) });
+    }
+
+    // ─── History sanitization ───────────────────────────────────
+    const sanitizedHistory = history
+      .slice(-MAX_HISTORY_MESSAGES)
+      .map(h => ({
+        role: h.role,
+        content: sanitizeInput(h.content || '', MAX_MESSAGE_LENGTH),
+      }))
+      .filter(h => h.content.length > 0);
+
     // ─── Retrieve from vault (micro-chunk engine) ──────────
     let context = '';
     let sources: Array<{ title: string; source: string; category: string }> = [];
     let containmentHits = 0;
     try {
-      const vaultResult = await getVaultContext(message, {
+      const vaultResult = await getVaultContext(clean, {
         maxResults: 12,
         searchContainment: true,
       });
@@ -153,21 +186,21 @@ export async function POST(request: NextRequest) {
       { role: 'system', content: systemContent },
     ];
 
-    const recentHistory = history.slice(-6);
+    const recentHistory = sanitizedHistory.slice(-6);
     for (const h of recentHistory) {
       messages.push({
         role: h.role === 'eli' ? 'assistant' : 'user',
         content: h.content,
       });
     }
-    messages.push({ role: 'user', content: message });
+    messages.push({ role: 'user', content: clean });
 
     // ─── Call LLM ──────────────────────────────────────────
     let response = '';
     const provider = getProvider();
 
     if (provider === 'gemini') {
-      audit('llm.call', `Gemini call for chat (${message.slice(0, 50)}...)`);
+      audit('llm.call', `Gemini call for chat (${clean.slice(0, 50)}...)`, { ip });
       try {
         response = await callGemini(messages);
       } catch (llmError: any) {
@@ -178,6 +211,7 @@ export async function POST(request: NextRequest) {
           const retryable = [429, 500, 502, 503, 504].some(c => (llmError?.message || '').includes(String(c)))
             || /timeout|quota|rate.?limit/i.test(llmError?.message || '');
           getOmniRoute().recordResult(retryable ? 'repair_required' : 'replan_required', llmError);
+          audit('llm.failure', `Gemini call failed: ${(llmError as any)?.message?.slice(0, 100)}`, { ip });
         } catch {}
         response = '';
       }
@@ -218,6 +252,7 @@ ${containmentHits > 0 ? `Also recovered ${containmentHits} pattern memories from
     });
   } catch (error) {
     console.error('Eli chat error:', error);
+    audit('chat.error', `Unhandled error: ${(error as Error).message?.slice(0, 100)}`, { ip });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

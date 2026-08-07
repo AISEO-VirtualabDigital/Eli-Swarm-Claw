@@ -19,12 +19,13 @@
  *   - vault.query     — Vault search executed
  */
 
+import { MAX_AUDIT_MEMORY } from './safety-gate';
 import { appendFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 
 const LOG_DIR = join(process.cwd(), 'data', 'audit');
 const LOG_FILE = join(LOG_DIR, 'audit.jsonl');
-const MAX_IN_MEMORY = 500;
+const MAX_IN_MEMORY = MAX_AUDIT_MEMORY;
 
 export interface AuditEntry {
   ts: string;           // ISO timestamp

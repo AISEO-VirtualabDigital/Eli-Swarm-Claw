@@ -20,6 +20,7 @@
  */
 
 import { audit } from './audit-log';
+import { KEY_PATTERNS as CENTRALIZED_KEY_PATTERNS, MAX_PENDING_KEYS, INBOX_TTL_MS } from './safety-gate';
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -114,7 +115,7 @@ const DEFAULT_CONFIG: ClawConfig = {
   maxInboxes: 10,
   maxPollAttempts: 12,
   pollDelayMs: 5000,
-  inboxTtlMs: 55 * 60 * 1000,
+  inboxTtlMs: INBOX_TTL_MS,
 };
 
 // ─── Provider Base URLs (must be before probes) ──────────────────
@@ -128,11 +129,11 @@ const OI_BASE = 'https://api.openinbox.io';
 
 const PROBE_TIMEOUT = 10_000;
 
-// Service patterns for key format validation
+// Service patterns — use centralized patterns from safety-gate for consistency
 const SERVICES_MAP: Record<string, { pattern: RegExp }> = {
-  gemini: { pattern: /^(AIza|AQ\.)/ },
-  openai: { pattern: /^sk-/ },
-  anthropic: { pattern: /^sk-ant-/ },
+  gemini:    { pattern: CENTRALIZED_KEY_PATTERNS.gemini.pattern },
+  openai:    { pattern: CENTRALIZED_KEY_PATTERNS.openai.pattern },
+  anthropic: { pattern: CENTRALIZED_KEY_PATTERNS.anthropic.pattern },
 };
 
 async function probeGuerrilla(): Promise<ProviderHealth> {
@@ -500,7 +501,7 @@ export class OpenClaw {
   /**
    * Register a callback for when a key is extracted
    */
-  onKey(callback: (service: string, key: string, envVar: string) => void) {
+  onKey(callback: (service: string, key: string, envVar: string, pendingId: string) => void) {
     this.keyCallback = callback;
   }
 
@@ -589,7 +590,7 @@ export class OpenClaw {
             status: 'pending',
           };
           this.pendingKeys.push(pending);
-          if (this.pendingKeys.length > 20) this.pendingKeys = this.pendingKeys.slice(-20);
+          if (this.pendingKeys.length > MAX_PENDING_KEYS) this.pendingKeys = this.pendingKeys.slice(-MAX_PENDING_KEYS);
 
           audit('key.extracted', `${k.service} key from ${inbox.email}`, {
             pendingId, keyPreview: k.key.slice(0, 12) + '...', inboxId: inbox.id,

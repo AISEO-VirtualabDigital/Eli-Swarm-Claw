@@ -124,3 +124,27 @@ Stage Summary:
 - Penalty system: providers auto-demoted on failure, auto-recovered on success
 - Sensitive redaction: keys masked in all state responses
 - Pending: full rebuild + deploy to VPS
+---
+Task ID: 3
+Agent: main
+Task: Implement Tier 1 safety parameters + create guidebook + learning guide
+
+Work Log:
+- Read all 10 API routes, omni-route.ts, open-claw.ts, middleware.ts, audit-log.ts
+- Created src/lib/safety-gate.ts — centralized safety constants (payload limits, rate limits, input sanitization, prompt injection detection, key validation, route capability scoping)
+- Updated src/middleware.ts — added per-IP sliding-window rate limiting with per-route limits, health endpoint exemption
+- Updated src/app/api/eli-chat/route.ts — input sanitization, prompt injection detection, history sanitization, IP-based audit logging
+- Updated src/app/api/omni/route.ts — key format validation before injection using validateKeyFormat()
+- Updated src/app/api/health/route.ts — added getSafetySummary() exposing all safety parameters
+- Updated src/lib/open-claw.ts — centralized key patterns from safety-gate, centralized config constants
+- Updated src/lib/audit-log.ts — centralized MAX_AUDIT_MEMORY from safety-gate
+- Fixed deploy.py — corrected deploy path from /root/eli to /opt/eli/app, fixed atomic swap, fixed tarball creation from standalone build
+- Created Eli-Safety-Guidebook.docx — 10 parameters documented with code references + 7 hands-on learning exercises
+- Verified build clean, deployed to production, confirmed safety summary live at /api/health
+
+Stage Summary:
+- 10 Tier 1 safety parameters implemented and documented
+- Centralized safety-gate.ts is single source of truth (no magic numbers in routes)
+- Guidebook at /home/z/my-project/download/Eli-Safety-Guidebook.docx
+- Deploy script fixed (was deploying to wrong path)
+- Production health endpoint now exposes full safety configuration

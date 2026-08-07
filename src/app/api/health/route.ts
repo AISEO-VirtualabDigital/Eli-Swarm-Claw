@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getVaultStats } from '@/lib/vault-search';
+import { getSafetySummary } from '@/lib/safety-gate';
 
 export async function GET() {
   const start = Date.now();
@@ -11,6 +12,13 @@ export async function GET() {
     vaultOk = (vaultStats?.totalChunks || 0) > 0;
   } catch {
     vaultOk = false;
+  }
+
+  let safety = {};
+  try {
+    safety = getSafetySummary();
+  } catch (e) {
+    safety = { error: 'safety-gate unavailable' };
   }
 
   return NextResponse.json({
@@ -26,5 +34,6 @@ export async function GET() {
       engine: vaultStats?.engine || 'unknown',
     },
     provider: process.env.GEMINI_API_KEY ? 'gemini-2.0-flash' : 'vault-fallback',
+    safety,
   });
 }

@@ -20,8 +20,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOmniRoute } from '@/lib/omni-route';
 import { getOpenClaw } from '@/lib/open-claw';
 import { audit } from '@/lib/audit-log';
+import {
+  MAX_PAYLOAD_OMNI, validateKeyFormat,
+} from '@/lib/safety-gate';
 
-const MAX_PAYLOAD_SIZE = 10_240; // 10KB
+const MAX_PAYLOAD_SIZE = MAX_PAYLOAD_OMNI;
 
 function getClientIp(request: NextRequest): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
@@ -259,13 +262,20 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // ── Manual key injection ──
+    // ── Manual key injection (with format validation) ──
     if (action === 'inject') {
       const { service, key } = body as { service: string; key: string };
       if (!service || !key) {
         return NextResponse.json({ error: 'service and key are required' }, { status: 400 });
       }
+      // Tier 1: Validate key format before injection
+      const validation = validateKeyFormat(service, key);
+      if (!validation.valid) {
+        audit('key.inject.blocked', `Invalid key format for ${service}: ${validation.reason}`, { ip, service });
+        return NextResponse.json({ error: `Invalid key: ${validation.reason}` }, { status: 400 });
+      }
       const newKey = omni.injectKey(service, key);
+      audit('key.injected', `Validated ${service} key injected`, { ip, service, keyPreview: maskKey(key) });
       return NextResponse.json({
         action: 'injected',
         service: newKey.service,
