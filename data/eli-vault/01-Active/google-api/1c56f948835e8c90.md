@@ -1,0 +1,11 @@
+---
+id: 1c56f948835e8c90
+source: "google-drive-index-README.md"
+"title: Google Drive Index README"
+category: google-api
+skillTags: []
+containmentHash: e77bc27ed0a08f7da7dc
+createdAt: 1786051355778
+embeddingSig: "aria:hidden:true|flash:flash:flash|flash:flash:warn|flash:full:aria|flash:stale:session|flash:warn:flash|full:aria:hidden|lass:stale:session|session:flash:flash|session:flash:stale|stale:session:flash|warn:flash:full"
+---
+lass=\"js-stale-session-flash stale-session-flash flash flash-warn flash-full\">\n  \n        <svg aria-hidden=\"true\" data-component=\"Octicon\" height=\"16\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" data-view-component=\"true\" class=\"octicon octicon-alert\">\n    <path d=\"M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75

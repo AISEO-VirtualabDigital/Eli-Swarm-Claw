@@ -1,0 +1,11 @@
+---
+id: 9f7494febadfcd4c
+source: "rust-scraper-README.md"
+"title: Rust Scraper README"
+category: scraping
+skillTags: []
+containmentHash: 7594af1296a027ca9723
+createdAt: 1786051357972
+embeddingSig: "class:u003e:u003c|element:u003cspan:class|span:u003e:element|span:u003e:u003cspan|span:u003evalue:u003cspan|u003c:span:u003e|u003c:span:u003evalue|u003cspan:class:u003e|u003e:element:u003cspan|u003e:u003c:span|u003e:u003cspan:class"
+---
+\"pl-en\\\"\\u003e!\\u003c/span\\u003e\\u003cspan class=\\\"pl-kos\\\"\\u003e(\\u003c/span\\u003e\\u003cspan class=\\\"pl-s\\\"\\u003e\\\"li\\\"\\u003c/span\\u003e\\u003cspan class=\\\"pl-kos\\\"\\u003e,\\u003c/span\\u003e element\\u003cspan class=\\\"pl-kos\\\"\\u003e.\\u003c/span\\u003evalue\\u003cspan

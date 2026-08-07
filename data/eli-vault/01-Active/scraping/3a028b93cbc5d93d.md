@@ -1,0 +1,11 @@
+---
+id: 3a028b93cbc5d93d
+source: "schemacrawler-README.md"
+"title: Schemacrawler README"
+category: scraping
+skillTags: []
+containmentHash: 2ef52afd7ce0beb4f38f
+createdAt: 1786051358400
+embeddingSig: "cell:small:screen|class:react:directory|colspan:class:react|directory:name:cell|folder:class:react|mobile:folder:class|name:cell:small|react:directory:filename|react:directory:name|screen:colspan:class|small:screen:colspan|truncate:mobile:folder"
+---
+ow truncate-for-mobile\" id=\"folder-row-13\"><td class=\"react-directory-row-name-cell-small-screen\" colspan=\"2\"><div class=\"react-directory-filename-column\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-file-directory-fill icon-directory\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\"

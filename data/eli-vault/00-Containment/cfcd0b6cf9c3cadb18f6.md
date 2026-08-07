@@ -1,0 +1,11 @@
+---
+id: 6328b9c503650177
+source: "rust-scraper-README.md"
+"title: Rust Scraper README"
+category: scraping
+skillTags: []
+containmentHash: cfcd0b6cf9c3cadb18f6
+createdAt: 1786051357972
+embeddingSig: "anonymous:modulepreload:href|assets:lazy:react|crossorigin:anonymous:modulepreload|github:githubassets:assets|githubassets:assets:lazy|href:https:github|https:github:githubassets|lazy:react:partial|link:crossorigin:anonymous|modulepreload:href:https|react:partial:marketing|riority:link:crossorigin"
+---
+riority=\"low\">\n<link crossorigin=\"anonymous\" rel=\"modulepreload\" href=\"https://github.githubassets.com/assets/lazy-react-partial-marketing-header-e59678451e1d945e.js\" fetchpriority=\"low\">\n<link crossorigin=\"anonymous\" rel=\"modulepreload\" href=\"https://github.githubassets.com/assets/marketing-header-af3a8441807cc5c0.js\"

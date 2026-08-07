@@ -1,0 +1,11 @@
+---
+id: 8a47ebaf21ceb03c
+source: "design-resources-devs-README.md"
+"title: Design Resources Devs README"
+category: web-design
+skillTags: []
+containmentHash: 9af0d2c9e1e726c3d304
+createdAt: 1786051353122
+embeddingSig: "class:octicon:octicon|component:true:class|data:view:component|graph:path:75v13|ight:viewbox:version|octicon:graph:path|octicon:octicon:graph|true:class:octicon|version:width:data|view:component:true|viewbox:version:width|width:data:view"
+---
+ight=\"16\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" data-view-component=\"true\" class=\"octicon octicon-graph\">\n    <path d=\"M1.5 1.75V13.5h13.75a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75V1.75a.75.75 0 0 1 1.5 0Zm14.28 2.53-5.25 5.25a.75.75 0 0 1-1.06 0L7 7.06 4.28 9.78a.751.751 0 0 1-1.042-.018.751.751 0 0

@@ -1,0 +1,11 @@
+---
+id: 6fef7c01ca47cccc
+source: "design-resources-devs-README.md"
+"title: Design Resources Devs README"
+category: web-design
+skillTags: []
+containmentHash: 6b79a256f77259347118
+createdAt: 1786051353122
+embeddingSig: "accessiblity:table:u003e|cmarkdown:accessiblity:table|table:u003e:u003ctable|u003ctable:u003e:u003cthead|u003cth:u003ewebsite:u003c|u003cthead:u003e:u003ctr|u003ctr:u003e:u003cth|u003e:u003ctable:u003e|u003e:u003cth:u003ewebsite|u003e:u003cthead:u003e|u003e:u003ctr:u003e|u003ewebsite:u003c:u003e"
+---
+cmarkdown-accessiblity-table\\u003e\\u003ctable\\u003e\\n\\u003cthead\\u003e\\n\\u003ctr\\u003e\\n\\u003cth\\u003eWebsite                           \\u003c/th\\u003e\\n\\u003cth\\u003eDescription\\u003c/th\\u003e\\n\\u003c/tr\\u003e\\n\\u003c/thead\\u003e\\n\\u003ctbody\\u003e\\n\\u003ctr\\u003e\\n\\u003ctd\\u003e\\u003ca

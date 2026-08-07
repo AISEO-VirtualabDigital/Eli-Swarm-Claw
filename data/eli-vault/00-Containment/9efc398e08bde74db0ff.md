@@ -1,0 +1,11 @@
+---
+id: 834adda1badb42cb
+source: "design-resources-devs-README.md"
+"title: Design Resources Devs README"
+category: web-design
+skillTags: []
+containmentHash: 9efc398e08bde74db0ff
+createdAt: 1786051353122
+embeddingSig: "back:u003c:u003e|class:markdown:heading|contents:u003e:back|href:table:contents|markdown:heading:auto|table:contents:u003e|u003c:u003e:u003c|u003c:u003e:u003cdiv|u003cdiv:class:markdown|u003e:back:u003c|u003e:u003c:u003e|u003e:u003cdiv:class"
+---
+a href=\\\"#table-of-contents\\\"\\u003e↥ Back To Top\\u003c/a\\u003e\\u003c/b\\u003e\\n\\u003c/div\\u003e\\n\\u003cdiv class=\\\"markdown-heading\\\" dir=\\\"auto\\\"\\u003e\\u003ch2 tabindex=\\\"-1\\\" class=\\\"heading-element\\\" dir=\\\"auto\\\"\\u003eVectors \\u0026amp; Clip Art\\u003c/h2\\u003e\\u003ca

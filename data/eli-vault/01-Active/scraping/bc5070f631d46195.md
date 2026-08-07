@@ -1,0 +1,14 @@
+---
+id: bc5070f631d46195
+source: "schemacrawler-README.md"
+"title: Schemacrawler README"
+category: scraping
+skillTags: ["tool"]
+containmentHash: 5ed4d2c5bebeffda43a1
+createdAt: 1786051358400
+embeddingSig: "database:schema:discovery|discovery:comprehension:tool|e308a5c8640eea41c8b21d8b8dc83c2bd537723eabbca23:visitor:payload|eyjyzwzlcnjlcii6iiisinjlcxvlc3rfawqioii0mjfdojfdmke5mdo1rde4rta6nuu1mjqyojzbnzi0mdc4iiwidmlzaxrvcl9pzci6ijkwmtu4mjywmte4nzm0otmxmtiilcjyzwdpb25fzwrnzsi6innlysisinjlz2lvbl9yzw5kzxiioijzzweifq:title:github|free:database:schema|github:schemacrawler:schemacrawler|payload:eyjyzwzlcnjlcii6iiisinjlcxvlc3rfawqioii0mjfdojfdmke5mdo1rde4rta6nuu1mjqyojzbnzi0mdc4iiwidmlzaxrvcl9pzci6ijkwmtu4mjywmte4nzm0otmxmtiilcjyzwdpb25fzwrnzsi6innlysisinjlz2lvbl9yzw5kzxiioijzzweifq:title|schema:discovery:comprehension|schemacrawler:free:database|schemacrawler:schemacrawler:free|title:github:schemacrawler|visitor:payload:eyjyzwzlcnjlcii6iiisinjlcxvlc3rfawqioii0mjfdojfdmke5mdo1rde4rta6nuu1mjqyojzbnzi0mdc4iiwidmlzaxrvcl9pzci6ijkwmtu4mjywmte4nzm0otmxmtiilcjyzwdpb25fzwrnzsi6innlysisinjlz2lvbl9yzw5kzxiioijzzweifq"
+---
+e308a5c8640eea41c8b21d8b8dc83c2bd537723eabbca23",
+      "visitor-payload": "eyJyZWZlcnJlciI6IiIsInJlcXVlc3RfaWQiOiI0MjFDOjFDMkE5MDo1RDE4RTA6NUU1MjQyOjZBNzI0MDc4IiwidmlzaXRvcl9pZCI6IjkwMTU4MjYwMTE4NzM0OTMxMTIiLCJyZWdpb25fZWRnZSI6InNlYSIsInJlZ2lvbl9yZW5kZXIiOiJzZWEifQ=="
+    },
+    "title": "GitHub - schemacrawler/SchemaCrawler: Free database schema discovery and comprehension tool",

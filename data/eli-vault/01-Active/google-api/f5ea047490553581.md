@@ -1,0 +1,11 @@
+---
+id: f5ea047490553581
+source: "google-drive-index-README.md"
+"title: Google Drive Index README"
+category: google-api
+skillTags: []
+containmentHash: 1ed9964eabec1c39d4be
+createdAt: 1786051355778
+embeddingSig: "042l9:path:class|bottom:path:042l9|button:type:button|class:navdropdown:module|container:l2yei:button|l2yei:button:type|module:container:l2yei|navdropdown:module:container|path:042l9:path|path:class:navdropdown|text:bottom:path"
+---
+ign:text-bottom\"><path d=\"M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z\"></path></svg></a></div></div></div></li><li><div class=\"NavDropdown-module__container__l2YeI\"><button type=\"button\"

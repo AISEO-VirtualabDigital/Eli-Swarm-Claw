@@ -1,0 +1,11 @@
+---
+id: 9b6f658da1d94b2b
+source: "goindex-drive-README.md"
+"title: Goindex Drive README"
+category: knowledge
+skillTags: []
+containmentHash: b599fe01ed071fead3da
+createdAt: 1786051355466
+embeddingSig: "contact:quot:href|github:tags:dotcom|href:https:support|https:support:github|label:quot:quot|quot:href:https|quot:label:quot|quot:quot:text|quot:text:contact|support:github:tags|tags:dotcom:footer|text:contact:quot"
+---
+ot;,&quot;label&quot;:&quot;text:contact&quot;}\" href=\"https://support.github.com?tags=dotcom-footer\" data-view-component=\"true\" class=\"Link--secondary Link\">Contact</a>\n          </li>\n\n          <li class=\"mx-2\">\n  <cookie-consent-link data-catalyst=\"\">\n    <button type=\"button\" class=\"Link--secondary underline-on-hover

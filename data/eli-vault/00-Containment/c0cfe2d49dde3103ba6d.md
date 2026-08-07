@@ -1,0 +1,11 @@
+---
+id: 6d30e0c2081c6c5b
+source: "design-resources-devs-README.md"
+"title: Design Resources Devs README"
+category: web-design
+skillTags: []
+containmentHash: c0cfe2d49dde3103ba6d
+createdAt: 1786051353122
+embeddingSig: "32px:class:sidebarcontributors|avatargriditem:z4kq5:class|avatarsize:regular:32px|class:link:link|class:sidebarcontributors:module|link:9zwdx:data|link:link:9zwdx|module:avatargriditem:z4kq5|regular:32px:class|sidebarcontributors:module:avatargriditem|tyle:avatarsize:regular|z4kq5:class:link"
+---
+tyle=\"--avatarSize-regular: 32px;\"></a></li><li class=\"SidebarContributors-module__avatarGridItem__z4kQ5\"><a class=\"prc-Link-Link-9ZwDx\" data-component=\"Link\" data-hovercard-url=\"/users/bakermeoe/hovercard\" data-hovercard-type=\"user\" octo-click=\"hovercard-link-click\" octo-dimensions=\"link_type:self\" aria-keyshortcuts=\"Alt+ArrowUp\"

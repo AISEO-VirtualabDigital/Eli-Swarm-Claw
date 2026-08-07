@@ -1,0 +1,11 @@
+---
+id: 7de9c194d70dda9b
+source: "goindex-drive-README.md"
+"title: Goindex Drive README"
+category: knowledge
+skillTags: []
+containmentHash: fcf5a8cd3e6b2c9649ec
+createdAt: 1786051355466
+embeddingSig: "011z:path:class|062v4:25c0:25h2|25c0:25h2:688l|25h2:688l:011z|25h9:25v6h:75a1|25v1:5zm6:062v4|25v6h:75a1:25v1|5zm6:062v4:25c0|688l:011z:path|75a1:25v1:5zm6|class:overflow:hidden|path:class:overflow"
+---
+12.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z\"></path></svg><div class=\"overflow-hidden\"><div class=\"react-directory-filename-cell\"><div class=\"react-directory-truncate\"><a title=\"README.md\" aria-label=\"README.md, (File)\"

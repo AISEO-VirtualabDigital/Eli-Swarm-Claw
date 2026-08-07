@@ -1,0 +1,11 @@
+---
+id: 4f9bd1a7c5bf06ee
+source: "google-maps-scraper-omkar-README.md"
+"title: Google Maps Scraper Omkar README"
+category: google-api
+skillTags: []
+containmentHash: 20ff24b6a5d59ce1748b
+createdAt: 1786051356419
+embeddingSig: "104a:177zm7:75v2|177zm7:75v2:992l2|215a8:458l1:358a|358a:75v2:104a|392l:path:span|458l1:358a:75v2|75v2:104a:177zm7|75v2:992l2:812a|812a:392l:path|992l2:812a:392l|path:span:span|span:span:data"
+---
+1.215 1.215a8.002 8.002 0 1 1-1.6 5.685.75.75 0 1 1 1.493-.154 6.5 6.5 0 1 0 1.18-4.458l1.358 1.358A.25.25 0 0 1 3.896 6H.25A.25.25 0 0 1 0 5.75V2.104a.25.25 0 0 1 .427-.177ZM7.75 4a.75.75 0 0 1 .75.75v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5A.75.75 0 0 1 7.75 4Z\"></path></svg></span><span data-component=\"text\"

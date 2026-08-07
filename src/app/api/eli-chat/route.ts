@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getKnowledgeContext, buildKnowledgeMap } from '@/lib/knowledge-search';
+import { getVaultContext, buildVaultKnowledgeMap, getVaultStats } from '@/lib/vault-search';
 
 const ELI_SYSTEM_PROMPT = `You are Eli. Not "AI Growth Intelligence" — just Eli.
 
@@ -21,10 +21,10 @@ How you talk:
 - You say "here's what I'd do" not "here are some recommendations"
 - You don't say "certainly!" or "I'd be happy to help!" — ever
 - You don't introduce yourself unless asked
-- When citing sources from your knowledge base, weave them in naturally: "the KE workflow doc breaks this into 4 tiers..." not "[Source 3: keyword-research-workflow.md]"
+- When citing sources from your vault, weave them in naturally: "the KE workflow doc breaks this into 4 tiers..." not "[Source 3: keyword-research-workflow.md]"
 
 What you know:
-You have 170+ files across 35+ categories — SEO tools, AI agents, SaaS architecture, keyword research pipelines, automation workflows, web design, cloud infra, agency marketing methodologies, paid media strategy, AEO/GEO optimization, and VirtuaLab's entire strategic playbook. When you use something from your library, reference it like you just read it, not like you're citing a paper.
+You have a micro-chunk vault with 24,000+ knowledge chunks across 18+ categories — SEO tools, AI agents, SaaS architecture, keyword research pipelines, automation workflows, web design, cloud infra, agency marketing methodologies, paid media strategy, AEO/GEO optimization, and VirtuaLab's entire strategic playbook. Your vault uses skill containment — meaning every pattern, process, and capability is permanently recorded even if individual sources change.
 
 You also have deep knowledge from:
 - Agency-grade marketing methodology (12-part strategy flow, 24 specialist roles)
@@ -36,13 +36,14 @@ You also have deep knowledge from:
 
 Your job: Make VirtuaLab grow. Every conversation should leave the person with something they can actually do.`;
 
-// ─── LLM Provider Abstraction ─────────────────────────────────────
-type LLMProvider = 'gemini' | 'zai-sdk';
+// ─── LLM Provider ─────────────────────────────────────────────
+
+type LLMProvider = 'gemini' | 'fallback';
 
 function getProvider(): LLMProvider {
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (geminiKey && geminiKey.length > 10) return 'gemini';
-  return 'zai-sdk';
+  const key = process.env.GEMINI_API_KEY;
+  if (key && key.length > 10) return 'gemini';
+  return 'fallback';
 }
 
 async function callGemini(messages: Array<{ role: string; content: string }>): Promise<string> {
@@ -50,11 +51,13 @@ async function callGemini(messages: Array<{ role: string; content: string }>): P
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-  // Gemini uses 'user' and 'model' roles. System prompt goes via systemInstruction.
   const systemMsg = messages.find(m => m.role === 'system');
   const conversationMessages = messages
     .filter(m => m.role !== 'system')
-    .map(m => ({ role: m.role === 'assistant' ? 'model' as const : 'user' as const, parts: [{ text: m.content }] }));
+    .map(m => ({
+      role: m.role === 'assistant' ? 'model' as const : 'user' as const,
+      parts: [{ text: m.content }],
+    }));
 
   const result = await model.generateContent({
     systemInstruction: systemMsg?.content || '',
@@ -64,20 +67,7 @@ async function callGemini(messages: Array<{ role: string; content: string }>): P
   return result.response.text();
 }
 
-async function callZaiSDK(messages: Array<{ role: string; content: string }>): Promise<string> {
-  const ZAI = (await import('z-ai-web-dev-sdk')).default;
-  const zai = await ZAI.create();
-  const result = await zai.chat.completions.create({
-    model: 'llama',
-    messages: messages as any,
-  });
-
-  if (typeof result === 'string') return result;
-  if (result?.choices?.[0]?.message?.content) return result.choices[0].message.content;
-  if (result?.content) return result.content;
-  if (result?.response) return result.response;
-  return JSON.stringify(result);
-}
+// ─── Chat Endpoint ────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
   try {
@@ -91,33 +81,51 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    // Search knowledge base for relevant context
-    const { context, sources } = await getKnowledgeContext(message);
-
-    // Get knowledge map for background awareness (compact)
-    let knowledgeMap = '';
+    // ─── Retrieve from vault (micro-chunk engine) ──────────
+    let context = '';
+    let sources: Array<{ title: string; source: string; category: string }> = [];
+    let containmentHits = 0;
     try {
-      knowledgeMap = await buildKnowledgeMap();
-    } catch {
-      knowledgeMap = 'Knowledge map unavailable.';
+      const vaultResult = await getVaultContext(message, {
+        maxResults: 12,
+        searchContainment: true,
+      });
+      context = vaultResult.context;
+      sources = vaultResult.sources;
+      containmentHits = vaultResult.containmentHits;
+      console.log(`[VAULT] context=${context.length ? context.slice(0,80) : 'empty'} sources=${sources.length} hits=${containmentHits}`);
+    } catch (vaultErr: any) {
+      console.error('[VAULT ERROR]', vaultErr?.message || vaultErr);
     }
 
-    // Build the system message with knowledge context
-    const systemContent = `${ELI_SYSTEM_PROMPT}
+    // ─── Get vault knowledge map ───────────────────────────
+    let vaultMap = '';
+    try {
+      vaultMap = await buildVaultKnowledgeMap();
+      console.log('[VAULT] map length:', vaultMap.length);
+    } catch (mapErr: any) {
+      console.error('[VAULT MAP ERROR]', mapErr?.message || mapErr);
+    }
 
----
-BACKGROUND KNOWLEDGE MAP:
-${knowledgeMap}
----
+    // ─── Build system message ──────────────────────────────
+    let systemContent = [
+      ELI_SYSTEM_PROMPT,
+      '',
+      '---',
+      'VAULT KNOWLEDGE MAP:',
+      vaultMap,
+      '---',
+    ].join('\n') + (context || '\n(No specific vault chunks matched this query.)');
 
-${context}`;
+    if (containmentHits > 0) {
+      systemContent += `\n\n[Containment: ${containmentHits} pattern memories recovered from dissolved knowledge]`;
+    }
 
-    // Build conversation messages for the LLM
+    // ─── Build conversation ────────────────────────────────
     const messages: Array<{ role: string; content: string }> = [
       { role: 'system', content: systemContent },
     ];
 
-    // Add recent conversation history (last 6 turns)
     const recentHistory = history.slice(-6);
     for (const h of recentHistory) {
       messages.push({
@@ -125,59 +133,59 @@ ${context}`;
         content: h.content,
       });
     }
-
-    // Add current user message
     messages.push({ role: 'user', content: message });
 
-    // Call LLM via configured provider
+    // ─── Call LLM ──────────────────────────────────────────
     let response = '';
     const provider = getProvider();
 
-    try {
-      if (provider === 'gemini') {
+    if (provider === 'gemini') {
+      try {
         response = await callGemini(messages);
+      } catch (llmError) {
+        console.error('Gemini call failed:', llmError);
+        response = '';
+      }
+    }
+
+    // Fallback: chunk-sourced response if no LLM
+    if (!response) {
+      if (sources.length > 0) {
+        response = `I found **${sources.length} relevant sources** in my vault for your query.
+
+${sources.map((s, i) => `${i + 1}. **${s.title}** — ${s.category}`).join('\n')}
+
+${containmentHits > 0 ? `Also recovered ${containmentHits} pattern memories from containment.\n` : ''}Let me know which area you'd like me to dive deeper into.`;
       } else {
-        response = await callZaiSDK(messages);
-      }
-    } catch (llmError) {
-      console.error(`LLM call failed (${provider}):`, llmError);
-
-      // If Gemini fails and we have ZAI, try fallback
-      if (provider === 'gemini') {
-        try {
-          console.log('Falling back to z-ai-web-dev-sdk...');
-          response = await callZaiSDK(messages);
-        } catch (fallbackError) {
-          console.error('Fallback LLM also failed:', fallbackError);
-          response = '';
-        }
-      }
-
-      // Ultimate fallback: knowledge-sourced answer
-      if (!response) {
-        response = `I found **${sources.length} relevant sources** in my knowledge base for your query.
-
-${sources.length > 0
-  ? sources.map((s, i) => `${i + 1}. **${s.title}** — ${s.category}`).join('\n')
-  : 'No direct matches found.'}
-
-${sources.length > 0
-  ? '\nLet me know which area you\'d like me to dive deeper into.'
-  : '\nCould you rephrase your question? I have 170+ files across 35 categories to search through.'}`;
+        response = `Nothing in my vault matches that yet. I have 24,000+ chunks across 18 categories — try rephrasing?`;
       }
     }
 
     return NextResponse.json({
-      response: response || 'I encountered an issue generating a response. Please try again.',
-      provider,
+      response: response || 'I hit a wall. Try again.',
+      provider: provider === 'gemini' ? 'gemini-2.0-flash' : 'vault-fallback',
       sources: sources.map((s) => ({
         title: s.title,
         source: s.source,
         category: s.category,
       })),
+      vaultChunks: sources.length,
+      containmentHits,
     });
   } catch (error) {
     console.error('Eli chat error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}
+
+// ─── Health / Stats endpoint ───────────────────────────────────
+
+export async function GET() {
+  const stats = await getVaultStats();
+  return NextResponse.json({
+    status: 'ok',
+    vault: stats,
+    provider: getProvider(),
+    timestamp: Date.now(),
+  });
 }

@@ -1,0 +1,11 @@
+---
+id: 5acdab4ef01e177e
+source: "design-resources-devs-README.md"
+"title: Design Resources Devs README"
+category: web-design
+skillTags: []
+containmentHash: 6b2c19697ac10447500e
+createdAt: 1786051353122
+embeddingSig: "12c0:75h17:75v4a1|13h5:25a1:75zm|25a1:75zm:12c0|2h13:75v7:13h5|75c3:2h13:75v7|75h17:75v4a1:75h3|75h3:25a1:75zm5|75v4a1:75h3:25a1|75v7:13h5:25a1|75zm:12c0:75h17|bottom:path:75c3|path:75c3:2h13"
+---
+xt-bottom\"><path d=\"M3.5 3.75C3.5 2.784 4.284 2 5.25 2h13.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 18.75 13H5.25a1.75 1.75 0 0 1-1.75-1.75Zm-2 12c0-.966.784-1.75 1.75-1.75h17.5c.966 0 1.75.784 1.75 1.75v4a1.75 1.75 0 0 1-1.75 1.75H3.25a1.75 1.75 0 0 1-1.75-1.75ZM5.25 3.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h13.5a.25.25 0 0 0

@@ -1,0 +1,11 @@
+---
+id: efbfaca78a5f36b1
+source: "design-resources-devs-README.md"
+"title: Design Resources Devs README"
+category: web-design
+skillTags: []
+containmentHash: aead4d26a1232dfec620
+createdAt: 1786051353122
+embeddingSig: "05a2:5zm10:708a2|5zm10:708a2:9h8zm5|708a2:9h8zm5:25h3|75v12:05a2:5zm10|color:muted:path|muted:path:75v12|octicon:repo:color|path:75v12:05a2|repo:color:muted"
+---
+octicon-repo color-fg-muted mr-2 tmp-mr-2\">\n    <path d=\"M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1

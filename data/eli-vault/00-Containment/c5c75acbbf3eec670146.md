@@ -1,0 +1,11 @@
+---
+id: bcf36ccabac039ce
+source: "google-drive-index-README.md"
+"title: Google Drive Index README"
+category: google-api
+skillTags: []
+containmentHash: c5c75acbbf3eec670146
+createdAt: 1786051355778
+embeddingSig: "block:overflow:visible|currentcolor:display:inline|display:inline:block|fill:currentcolor:display|height:fill:currentcolor|inline:block:overflow|overflow:visible:style|style:vertical:align|vertical:align:text|viewbox:width:height|visible:style:vertical|width:height:fill"
+---
+viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align:text-bottom\"><path d=\"M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5

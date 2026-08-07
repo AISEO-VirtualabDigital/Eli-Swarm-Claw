@@ -1,0 +1,11 @@
+---
+id: 344f30b3057a6bb1
+source: "low-level-design-primer-README.md"
+"title: Low Level Design Primer README"
+category: web-design
+skillTags: []
+containmentHash: acbfd555bca0e7aa3edb
+createdAt: 1786051357067
+embeddingSig: "brand:text:module|module:text:antialiased|module:text:muted|module:text:p1wy|muted:re6mh:primer|p1wy:primer:brand|primer:brand:text|re6mh:primer:brand|text:antialiased:tyoxs|text:module:text|text:muted:re6mh|text:p1wy:primer"
+---
+JD Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--200____P1wy Primer_Brand__Text-module__Text--antialiased___TYoXS NavLink-module__subtitle__X4gkW\">Enforce quality at merge</span></div></a></li></ul></div></li><li><div class=\"NavGroup-module__group__W8SqJ\"><span class=\"Primer_Brand__Text-module__Text___XeGJJ

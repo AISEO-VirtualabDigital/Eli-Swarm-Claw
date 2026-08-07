@@ -1,0 +1,11 @@
+---
+id: eca9c1ca610cbf20
+source: "design-resources-devs-README.md"
+"title: Design Resources Devs README"
+category: web-design
+skillTags: []
+containmentHash: c034a8a517989af8b749
+createdAt: 1786051353122
+embeddingSig: "align:right:auto|auto:u003e:u003cb|href:table:contents|right:auto:u003e|table:contents:u003e|table:u003e:u003cdiv|u003ca:href:table|u003cb:u003e:u003ca|u003cdiv:align:right|u003e:u003ca:href|u003e:u003cb:u003e|u003e:u003cdiv:align"
+---
+ity-table\\u003e\\n\\u003cdiv align=\\\"right\\\" dir=\\\"auto\\\"\\u003e\\n    \\u003cb\\u003e\\u003ca href=\\\"#table-of-contents\\\"\\u003e↥ Back To Top\\u003c/a\\u003e\\u003c/b\\u003e\\n\\u003c/div\\u003e\\n\\u003cdiv class=\\\"markdown-heading\\\" dir=\\\"auto\\\"\\u003e\\u003ch2 tabindex=\\\"-1\\\" class=\\\"heading-element\\\"

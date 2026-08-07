@@ -1,0 +1,11 @@
+---
+id: df06053eadc7d9ae
+source: "schemacrawler-README.md"
+"title: Schemacrawler README"
+category: scraping
+skillTags: []
+containmentHash: 85c19d535d9f7e51fe67
+createdAt: 1786051358400
+embeddingSig: "75c2:586c:513l2|align:text:bottom|block:overflow:visible|bottom:path:75c2|display:inline:block|inline:block:overflow|overflow:visible:style|path:75c2:586c|style:vertical:align|text:bottom:path|vertical:align:text|visible:style:vertical"
+---
+r\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align:text-bottom\"><path d=\"M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75

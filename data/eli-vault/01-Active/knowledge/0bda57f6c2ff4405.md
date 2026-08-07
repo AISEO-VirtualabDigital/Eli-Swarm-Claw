@@ -1,0 +1,11 @@
+---
+id: 0bda57f6c2ff4405
+source: "goindex-drive-README.md"
+"title: Goindex Drive README"
+category: knowledge
+skillTags: []
+containmentHash: 9cb7baca4c08c94fba44
+createdAt: 1786051355466
+embeddingSig: "auth:header:quot|click:quot:event|data:hydro:click|header:quot:data|hydro:click:quot|label:quot:quot|link:auth:header|quot:data:hydro|quot:label:quot|quot:quot:sign|quot:sign:link|sign:link:auth"
+---
+uot;,&quot;label&quot;:&quot;sign_in_link_auth_cta_header&quot;}\" data-hydro-click=\"{&quot;event_type&quot;:&quot;authentication.click&quot;,&quot;payload&quot;:{&quot;location_in_page&quot;:&quot;site header menu&quot;,&quot;repository_id&quot;:null,&quot;auth_type&quot;:&quot;SIGN_UP&quot;,&quot;originating_url&quot;:&quot;https://github.com/ls

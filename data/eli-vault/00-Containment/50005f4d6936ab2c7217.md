@@ -1,0 +1,11 @@
+---
+id: daa6c970dc2bfc00
+source: "wp-cpt-trigger-page.md"
+"title: WP CPT Trigger"
+category: knowledge
+skillTags: ["process", "tool"]
+containmentHash: 50005f4d6936ab2c7217
+createdAt: 1786051359712
+embeddingSig: "assumed:that:trunk|correct:stable:stable|points:correct:stable|provided:assumed:that|readme:points:correct|should:specify:trunk|specify:trunk:that|stable:provided:assumed|stable:should:specify|stable:stable:provided|that:trunk:stable|trunk:stable:should"
+---
+'s `readme.txt` points to the correct stable tag. If no stable tag is provided, it is assumed that trunk is stable, but you should specify "trunk" if that's where you put the stable version, in order to eliminate any doubt. == Installation == This section describes how to install the plugin and get it working. e.g. 1. Upload `wp-cpt-trigger-activepieces.php` to the `/wp-content/plugins/` directory 1.

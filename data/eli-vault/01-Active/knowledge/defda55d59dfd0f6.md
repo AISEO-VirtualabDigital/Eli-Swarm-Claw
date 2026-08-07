@@ -1,0 +1,11 @@
+---
+id: defda55d59dfd0f6
+source: "getpublii-themes.json"
+"title: Getpublii Themes"
+category: knowledge
+skillTags: []
+containmentHash: ae100103f71e7914de01
+createdAt: 1786051354814
+embeddingSig: "19lia:criuleni:dondu|criuleni:dondu:u0219eni|dondu:u0219eni:drochia|drochia:u0103sari:edine|edine:u021b:u0103le|flore:u0219ti:u0103g|u0103le:u0219ti:flore|u0103sari:edine:u021b|u0219eni:drochia:u0103sari|u0219ti:flore:u0219ti|u0219ti:u0103g:u0103uzia|u021b:u0103le:u0219ti"
+---
+19lia\",\"CR\":\"Criuleni\",\"DN\":\"Dondu\\u0219eni\",\"DR\":\"Drochia\",\"DB\":\"Dub\\u0103sari\",\"ED\":\"Edine\\u021b\",\"FL\":\"F\\u0103le\\u0219ti\",\"FR\":\"Flore\\u0219ti\",\"GE\":\"UTA G\\u0103g\\u0103uzia\",\"GL\":\"Glodeni\",\"HN\":\"H\\u00eence\\u0219ti\",\"IL\":\"Ialoveni\",\"LV\":\"Leova\",\"NS\":\"Nisporeni\",\"OC\":\"Ocni\\u021ba\",

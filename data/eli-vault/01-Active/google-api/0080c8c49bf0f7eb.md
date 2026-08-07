@@ -1,0 +1,11 @@
+---
+id: 0080c8c49bf0f7eb
+source: "google-maps-scraper-omkar-README.md"
+"title: Google Maps Scraper Omkar README"
+category: google-api
+skillTags: []
+containmentHash: ba59dfab46bb44c8a72c
+createdAt: 1786051356419
+embeddingSig: "033l1:737c:984v|0zm2:477c:273s1|234a:033l1:737c|273l13:327zm:273s1|273l3:327z:path|273s1:273l13:327zm|273s1:273l3:327z|327z:path:span|327zm:273s1:273l3|477c:273s1:273l13|737c:984v:0zm2|984v:0zm2:477c"
+---
+78 4.5H1.75a.75.75 0 0 1 0-1.5h2.234a.249.249 0 0 0 .125-.033l1.288-.737c.265-.15.564-.23.869-.23h.984V.75a.75.75 0 0 1 1.5 0Zm2.945 8.477c.285.135.718.273 1.305.273s1.02-.138 1.305-.273L13 6.327Zm-10 0c.285.135.718.273 1.305.273s1.02-.138 1.305-.273L3 6.327Z\"></path></svg><span>MIT license</span></a></div><h3 class=\"sr-only

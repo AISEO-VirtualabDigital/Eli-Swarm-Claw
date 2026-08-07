@@ -1,0 +1,11 @@
+---
+id: 1f00b685d7afdf8a
+source: "design-resources-devs-README.md"
+"title: Design Resources Devs README"
+category: web-design
+skillTags: []
+containmentHash: 6e4ae7a6e16cafafa485
+createdAt: 1786051353122
+embeddingSig: "button:copilot:immersive|copilot:immersive:embedded|deferred:payload:copilot|draggable:copilot:immersive|embedded:deferred:payload|embedded:draggable:copilot|embedded:header:button|header:button:copilot|immersive:embedded:deferred|immersive:embedded:draggable|immersive:embedded:header|payload:copilot:immersive"
+---
+t_immersive_embedded_deferred_payload\",\"copilot_immersive_embedded_draggable\",\"copilot_immersive_embedded_header_button\",\"copilot_immersive_embedded_implicit_references\",\"copilot_immersive_embedded_skip_copilot_api_token_for_dotcom_context\",\"copilot_immersive_file_block_transition_open\",\"copilot_immersive_file_preview_keep_mounted\",\"c

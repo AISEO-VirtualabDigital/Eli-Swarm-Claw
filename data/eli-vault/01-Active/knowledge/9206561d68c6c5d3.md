@@ -1,0 +1,22 @@
+---
+id: 9206561d68c6c5d3
+source: "goindex-drive-README.md"
+"title: Goindex Drive README"
+category: knowledge
+skillTags: []
+containmentHash: c3bb1e6fefee2a596d3d
+createdAt: 1786051355466
+embeddingSig: "37518:d6afe95f0284d711:crossorigin|40062:4f8cb7ed6c71e45f:crossorigin|4f8cb7ed6c71e45f:crossorigin:anonymous|anonymous:https:github|assets:37518:d6afe95f0284d711|assets:40062:4f8cb7ed6c71e45f|crossorigin:anonymous:https|d6afe95f0284d711:crossorigin:anonymous|github:githubassets:assets|githubassets:assets:37518|githubassets:assets:40062|https:github:githubassets"
+---
+{
+          "crossorigin": "anonymous"
+        },
+        "https://github.githubassets.com/assets/37518-d6afe95f0284d711.js": {
+          "crossorigin": "anonymous"
+        },
+        "https://github.githubassets.com/assets/40062-4f8cb7ed6c71e45f.js": {
+          "crossorigin": "anonymous"
+        },
+        "https://github.githubassets.com/assets/41301-76817f9d7e13e973.js": {
+          "crossorigin": "anonymous"
+        },

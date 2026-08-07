@@ -1,0 +1,14 @@
+---
+id: 3f8a82e501c69beb
+source: "frontend-design-checklist-README.md"
+"title: Frontend Design Checklist README"
+category: web-design
+skillTags: []
+containmentHash: d71bdb8bd31e6b2cceb3
+createdAt: 1786051354212
+embeddingSig: "a0e79d42204379f0b5e076e626b5fd0f5edf4393b41c9e0:visitor:payload|checklist:creative:designers|checklist:design:checklist|design:checklist:creative|design:checklist:design|eyjyzwzlcnjlcii6iiisinjlcxvlc3rfawqioiiyrkvdojfdoee2mzo1qzk1otk6nuremjbeojzbnzi0mdq3iiwidmlzaxrvcl9pzci6ijcwodqzmte4njuxoduxntcxoteilcjyzwdpb25fzwrnzsi6innlysisinjlz2lvbl9yzw5kzxiioijzzweifq:title:github|front:design:checklist|github:thedaviddias:front|payload:eyjyzwzlcnjlcii6iiisinjlcxvlc3rfawqioiiyrkvdojfdoee2mzo1qzk1otk6nuremjbeojzbnzi0mdq3iiwidmlzaxrvcl9pzci6ijcwodqzmte4njuxoduxntcxoteilcjyzwdpb25fzwrnzsi6innlysisinjlz2lvbl9yzw5kzxiioijzzweifq:title|thedaviddias:front:design|title:github:thedaviddias|visitor:payload:eyjyzwzlcnjlcii6iiisinjlcxvlc3rfawqioiiyrkvdojfdoee2mzo1qzk1otk6nuremjbeojzbnzi0mdq3iiwidmlzaxrvcl9pzci6ijcwodqzmte4njuxoduxntcxoteilcjyzwdpb25fzwrnzsi6innlysisinjlz2lvbl9yzw5kzxiioijzzweifq"
+---
+a0e79d42204379f0b5e076e626b5fd0f5edf4393b41c9e0",
+      "visitor-payload": "eyJyZWZlcnJlciI6IiIsInJlcXVlc3RfaWQiOiIyRkVDOjFDOEE2Mzo1Qzk1OTk6NUREMjBEOjZBNzI0MDQ3IiwidmlzaXRvcl9pZCI6IjcwODQzMTE4NjUxODUxNTcxOTEiLCJyZWdpb25fZWRnZSI6InNlYSIsInJlZ2lvbl9yZW5kZXIiOiJzZWEifQ=="
+    },
+    "title": "GitHub - thedaviddias/Front-End-Design-Checklist: 💎 The Design Checklist for Creative Web Designers and Patient Front-End Developers",

@@ -1,0 +1,11 @@
+---
+id: 6500a938e41405df
+source: "google-drive-index-README.md"
+"title: Google Drive Index README"
+category: google-api
+skillTags: []
+containmentHash: 2fb8c7da70ea61cfaf70
+createdAt: 1786051355778
+embeddingSig: "copilot:navlink:module|currentcolor:display:inline|display:inline:block|fill:currentcolor:display|height:fill:currentcolor|icon:ltgnm:viewbox|inline:block:overflow|ltgnm:viewbox:width|module:icon:ltgnm|navlink:module:icon|viewbox:width:height|width:height:fill"
+---
+copilot NavLink-module__icon__ltGNM\" viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align:text-bottom\"><path d=\"M23.922 16.992c-.861 1.495-5.859 5.023-11.922 5.023-6.063 0-11.061-3.528-11.922-5.023A.641.641 0 0 1 0 16.736v-2.869a.841.841 0 0 1

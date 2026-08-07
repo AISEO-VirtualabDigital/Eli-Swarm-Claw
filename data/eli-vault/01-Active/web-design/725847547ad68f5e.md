@@ -1,0 +1,11 @@
+---
+id: 725847547ad68f5e
+source: "responsive-web-design-README.md"
+"title: Responsive Web Design README"
+category: web-design
+skillTags: []
+containmentHash: fd7cbbea5bd1599ac4ba
+createdAt: 1786051357682
+embeddingSig: "antialiased:tyoxs:primer|brand:text:module|module:text:antialiased|module:text:weight|primer:brand:text|rwhei:navlink:module|semibold:rwhei:navlink|text:antialiased:tyoxs|text:module:text|text:weight:semibold|tyoxs:primer:brand|weight:semibold:rwhei"
+---
+mer_Brand__Text-module__Text--antialiased___TYoXS Primer_Brand__Text-module__Text--weight-semibold___RwHEI NavLink-module__title__Q7t0p\">Codespaces</span><span class=\"Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--mona-sans___a8XJD Primer_Brand__Text-module__Text--muted___rE6mh

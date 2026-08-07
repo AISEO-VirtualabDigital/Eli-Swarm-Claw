@@ -1,0 +1,11 @@
+---
+id: f0a2eff90d9c5c3f
+source: "responsive-web-design-README.md"
+"title: Responsive Web Design README"
+category: web-design
+skillTags: []
+containmentHash: f7bcec6a22e142285c59
+createdAt: 1786051357682
+embeddingSig: "aria:hidden:true|chevron:right:navdropdown|class:octicon:octicon|component:octicon:aria|data:component:octicon|false:class:octicon|focusable:false:class|hidden:true:focusable|octicon:aria:hidden|octicon:chevron:right|octicon:octicon:chevron|true:focusable:false"
+---
+g data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-chevron-right NavDropdown-module__buttonIcon__Tkl8_\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align:text-bottom\"><path d=\"M6.22 3.22a.75.75 0 0 1 1.06 0l4.25

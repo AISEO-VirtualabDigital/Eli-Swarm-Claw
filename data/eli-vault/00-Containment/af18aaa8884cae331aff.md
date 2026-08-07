@@ -1,0 +1,11 @@
+---
+id: b738deefefa75f33
+source: "schemacrawler-README.md"
+"title: Schemacrawler README"
+category: scraping
+skillTags: []
+containmentHash: af18aaa8884cae331aff
+createdAt: 1786051358400
+embeddingSig: "1e2327:meta:name|color:content:1e2327|color:scheme:content|content:1e2327:meta|favicon:meta:name|favicons:favicon:meta|meta:name:color|meta:name:theme|name:color:scheme|name:theme:color|scheme:content:light|theme:color:content"
+---
+favicons/favicon\">\n\n<meta name=\"theme-color\" content=\"#1e2327\">\n<meta name=\"color-scheme\" content=\"light dark\">\n\n\n  <link rel=\"manifest\" href=\"/manifest.json\" crossorigin=\"use-credentials\">\n\n  <link rel=\"stylesheet\" type=\"text/css\" href=\"https://github.githubassets.com/assets/38963.7583cfaf3c04ef32.module.css\"

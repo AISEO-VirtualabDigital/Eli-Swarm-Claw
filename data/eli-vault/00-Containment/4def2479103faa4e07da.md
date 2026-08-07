@@ -1,0 +1,11 @@
+---
+id: f71bafed7deaf6ed
+source: "frontend-design-checklist-README.md"
+"title: Frontend Design Checklist README"
+category: web-design
+skillTags: []
+containmentHash: 4def2479103faa4e07da
+createdAt: 1786051354212
+embeddingSig: "auto:u003e:u003ca|path:u003e:u003c|target:blank:noopener|u003c:path:u003e|u003c:u003e:u003c|u003c:u003e:u003cp|u003ca:target:blank|u003cp:auto:u003e|u003e:u003c:path|u003e:u003c:u003e|u003e:u003ca:target|u003e:u003cp:auto"
+---
+8 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z\\\"\\u003e\\u003c/path\\u003e\\u003c/svg\\u003e\\u003c/a\\u003e\\u003c/div\\u003e\\n\\u003cp dir=\\\"auto\\\"\\u003e\\u003ca target=\\\"_blank\\\" rel=\\\"noopener noreferrer\\\" href=\\\"/thedaviddias/Front-End-Design-Checklist/blob/master/images/grid-system.png\\\"\\u003e\\u003cimg

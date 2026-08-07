@@ -1,0 +1,11 @@
+---
+id: 77599c63b0597da3
+source: "design-resources-devs-README.md"
+"title: Design Resources Devs README"
+category: web-design
+skillTags: []
+containmentHash: b7a6816d4dabf4cafaff
+createdAt: 1786051353122
+embeddingSig: "9zwdx:data:component|arcontributors:module:avatargriditem|avatargriditem:z4kq5:class|class:link:link|component:link:data|data:component:link|data:hovercard:users|link:9zwdx:data|link:data:hovercard|link:link:9zwdx|module:avatargriditem:z4kq5|z4kq5:class:link"
+---
+arContributors-module__avatarGridItem__z4kQ5\"><a class=\"prc-Link-Link-9ZwDx\" data-component=\"Link\" data-hovercard-url=\"/users/bradtraversy/hovercard\" data-hovercard-type=\"user\" octo-click=\"hovercard-link-click\" octo-dimensions=\"link_type:self\" aria-keyshortcuts=\"Alt+ArrowUp\" href=\"/bradtraversy\" data-discover=\"true\"><img

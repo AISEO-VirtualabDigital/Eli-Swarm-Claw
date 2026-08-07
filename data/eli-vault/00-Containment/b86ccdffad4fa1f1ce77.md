@@ -1,0 +1,11 @@
+---
+id: 53a8c4e4b4efa701
+source: "responsive-web-design-README.md"
+"title: Responsive Web Design README"
+category: web-design
+skillTags: []
+containmentHash: b86ccdffad4fa1f1ce77
+createdAt: 1786051357682
+embeddingSig: "2yai6:items:span|button:label:fwkx3|class:button:label|class:internalvisuallyhidden:2yai6|fwkx3:span:more|internalvisuallyhidden:2yai6:items|items:span:span|label:fwkx3:span|more:span:class|span:class:internalvisuallyhidden|span:more:span|span:span:span"
+---
+class=\"prc-Button-Label-FWkx3\"><span>More<span class=\"prc-src-InternalVisuallyHidden-2YaI6\"> items</span></span></span></span><span data-component=\"trailingAction\" class=\"prc-Button-Visual-YNt2F prc-Button-VisualWrap-E4cnq\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-triangle-down\"

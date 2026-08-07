@@ -1,0 +1,11 @@
+---
+id: 4ecbf61fce9c8df3
+source: "rust-scraper-README.md"
+"title: Rust Scraper README"
+category: scraping
+skillTags: []
+containmentHash: ae295d772d478f20ffb9
+createdAt: 1786051357972
+embeddingSig: "button:label:fwkx3|class:button:label|code:span:span|component:text:class|data:component:text|data:component:trailingvisual|fwkx3:code:span|label:fwkx3:code|path:span:span|span:data:component|span:span:data|text:class:button"
+---
+a.75.75 0 0 1 0-1.06Z\"></path></svg></span><span data-component=\"text\" class=\"prc-Button-Label-FWkx3\">Code</span><span data-component=\"trailingVisual\" class=\"prc-Button-Visual-YNt2F prc-Button-VisualWrap-E4cnq\"><svg data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-triangle-down\" viewBox=\"0 0 16

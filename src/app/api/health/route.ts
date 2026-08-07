@@ -1,26 +1,30 @@
 import { NextResponse } from 'next/server';
-import { getKnowledgeIndex } from '@/lib/knowledge-search';
+import { getVaultStats } from '@/lib/vault-search';
 
 export async function GET() {
   const start = Date.now();
-  let knowledgeOk = false;
-  let knowledgeFiles = 0;
+  let vaultOk = false;
+  let vaultStats: any = null;
 
   try {
-    const chunks = await getKnowledgeIndex(false);
-    knowledgeFiles = chunks.length;
-    knowledgeOk = chunks.length > 0;
+    vaultStats = await getVaultStats();
+    vaultOk = (vaultStats?.totalChunks || 0) > 0;
   } catch {
-    knowledgeOk = false;
+    vaultOk = false;
   }
 
   return NextResponse.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime_ms: Date.now() - start,
-    knowledge: {
-      ok: knowledgeOk,
-      files: knowledgeFiles,
+    vault: {
+      ok: vaultOk,
+      totalChunks: vaultStats?.totalChunks || 0,
+      activeChunks: vaultStats?.activeChunks || 0,
+      skills: vaultStats?.skills || 0,
+      categories: Object.keys(vaultStats?.categories || {}).length,
+      engine: vaultStats?.engine || 'unknown',
     },
+    provider: process.env.GEMINI_API_KEY ? 'gemini-2.0-flash' : 'vault-fallback',
   });
 }

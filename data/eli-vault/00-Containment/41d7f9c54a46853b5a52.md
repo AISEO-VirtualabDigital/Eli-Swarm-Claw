@@ -1,0 +1,11 @@
+---
+id: db192eef11ac1aae
+source: "low-level-design-primer-README.md"
+"title: Low Level Design Primer README"
+category: web-design
+skillTags: []
+containmentHash: 41d7f9c54a46853b5a52
+createdAt: 1786051357067
+embeddingSig: "215zm11:path:span|74a6:922l3:215zm11|922l3:215zm11:path|class:headersearch:module|headersearch:module:hng0o|headersearch:module:placeholder|module:placeholder:xwpyw|path:span:class|placeholder:xwpyw:type|span:class:headersearch|type:class:headersearch|xwpyw:type:class"
+---
+10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z\"></path></svg><span class=\"HeaderSearch-module__placeholder__xWpYW\">Type <kbd class=\"HeaderSearch-module__kbd__HNG0o\">/</kbd> to search</span></button><div

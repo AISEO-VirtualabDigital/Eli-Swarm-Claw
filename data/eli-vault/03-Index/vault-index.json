@@ -1,0 +1,42 @@
+{
+  "totalChunks": 24331,
+  "activeChunks": 24331,
+  "dissolvedChunks": 0,
+  "skills": 8,
+  "categories": {
+    "ai-agent": 808,
+    "automation": 374,
+    "seo": 2841,
+    "knowledge": 3640,
+    "web-design": 7724,
+    "content": 84,
+    "scraping": 2749,
+    "ecommerce": 106,
+    "eli-core": 117,
+    "obsidian": 681,
+    "saas": 644,
+    "infra": 55,
+    "crm": 16,
+    "security": 30,
+    "database": 28,
+    "google-api": 3211,
+    "project-mgmt": 18,
+    "social": 1205
+  },
+  "skillTags": {
+    "process": 1018,
+    "capability": 1053,
+    "metric": 2251,
+    "pattern": 846,
+    "tool": 4466,
+    "strategy": 285,
+    "code": 1015,
+    "warning": 204
+  },
+  "totalFiles": 171,
+  "totalSourceChars": 7249200,
+  "avgChunkSize": 298,
+  "lastIngestion": 1786051359774,
+  "vaultPath": "/home/z/my-project/data/eli-vault",
+  "engine": "micro-chunk-containment-v2"
+}

@@ -1,0 +1,11 @@
+---
+id: c4ea2bf317035942
+source: "design-resources-devs-README.md"
+"title: Design Resources Devs README"
+category: web-design
+skillTags: []
+containmentHash: 46b2e3bdad20e74c0acd
+createdAt: 1786051353122
+embeddingSig: "content:eyjyzwzlcnjlcii6iiisinjlcxvlc3rfawqioii4mjvcojffodncntoym0u1n0q6mze0oeu0ojzbnzi0mdjbiiwidmlzaxrvcl9pzci6ijc4mdczndk1mdkwmtk4mte4odiilcjyzwdpb25fzwrnzsi6indlc3r1cziilcjyzwdpb25fcmvuzgvyijoid2vzdhvzmij9:data|data:pjax:transient|eyjyzwzlcnjlcii6iiisinjlcxvlc3rfawqioii4mjvcojffodncntoym0u1n0q6mze0oeu0ojzbnzi0mdjbiiwidmlzaxrvcl9pzci6ijc4mdczndk1mdkwmtk4mte4odiilcjyzwdpb25fzwrnzsi6indlc3r1cziilcjyzwdpb25fcmvuzgvyijoid2vzdhvzmij9:data:pjax|meta:name:visitor|name:visitor:hmac|name:visitor:payload|payload:content:eyjyzwzlcnjlcii6iiisinjlcxvlc3rfawqioii4mjvcojffodncntoym0u1n0q6mze0oeu0ojzbnzi0mdjbiiwidmlzaxrvcl9pzci6ijc4mdczndk1mdkwmtk4mte4odiilcjyzwdpb25fzwrnzsi6indlc3r1cziilcjyzwdpb25fcmvuzgvyijoid2vzdhvzmij9|pjax:transient:true|transient:true:meta|true:meta:name|visitor:payload:content"
+---
+transient=\"true\"><meta name=\"visitor-payload\" content=\"eyJyZWZlcnJlciI6IiIsInJlcXVlc3RfaWQiOiI4MjVCOjFFODNCNToyM0U1N0Q6MzE0OEU0OjZBNzI0MDJBIiwidmlzaXRvcl9pZCI6Ijc4MDczNDk1MDkwMTk4MTE4ODIiLCJyZWdpb25fZWRnZSI6Indlc3R1czIiLCJyZWdpb25fcmVuZGVyIjoid2VzdHVzMiJ9\" data-pjax-transient=\"true\"><meta name=\"visitor-hmac\"

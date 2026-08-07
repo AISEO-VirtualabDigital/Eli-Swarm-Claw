@@ -1,0 +1,11 @@
+---
+id: fe2af9070fbb45de
+source: "goindex-drive-README.md"
+"title: Goindex Drive README"
+category: knowledge
+skillTags: []
+containmentHash: 6099975166b9e9e6ec1d
+createdAt: 1786051355466
+embeddingSig: "0b2d4628b2:cloning:class|class:react:directory|cloning:class:react|commit:relative:time|component:relativetime:tense|data:component:relativetime|directory:commit:relative|react:directory:commit|relative:time:data|relativetime:tense:past|tense:past:datetime|time:data:component"
+---
+0b2d4628b2\">cloning</a></div></div></td><td><div class=\"react-directory-commit-age\"><relative-time data-component=\"RelativeTime\" tense=\"past\" datetime=\"2019-11-28T17:10:40.000Z\" title=\"Nov 28, 2019, 5:10 PM UTC\">Nov 28, 2019</relative-time></div></td></tr><tr class=\"react-directory-row undefined\" id=\"folder-row-4\"><td

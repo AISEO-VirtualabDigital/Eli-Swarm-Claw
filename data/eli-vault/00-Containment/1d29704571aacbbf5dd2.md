@@ -1,0 +1,11 @@
+---
+id: bf04a78ece70be5c
+source: "google-drive-index-README.md"
+"title: Google Drive Index README"
+category: google-api
+skillTags: []
+containmentHash: 1d29704571aacbbf5dd2
+createdAt: 1786051355778
+embeddingSig: "bold:name:span|class:directorycontent:module|class:text:bold|colspan:class:directorycontent|directorycontent:module:fusbo|fusbo:span:class|module:fusbo:span|name:span:class|name:span:colspan|span:class:text|span:colspan:class|text:bold:name"
+---
+s=\"text-bold\">Name</span></th><th colspan=\"1\" class=\"DirectoryContent-module__Box_1__fuSBO\"><span class=\"text-bold\">Name</span></th><th class=\"hide-sm\"><div class=\"width-fit prc-Truncate-Truncate-2G1eo\" data-inline=\"true\" title=\"Last commit message\" style=\"--truncate-max-width:125px\"><span class=\"text-bold\">Last commit

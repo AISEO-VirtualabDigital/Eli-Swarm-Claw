@@ -1,0 +1,11 @@
+---
+id: 7a77e35bafec9d7a
+source: "frontend-design-checklist-README.md"
+"title: Frontend Design Checklist README"
+category: web-design
+skillTags: []
+containmentHash: dafeb487e8f2d977d3b2
+createdAt: 1786051354212
+embeddingSig: "033l:737c:162l2|162l2:692a:838l|692a:838l:45c4|737c:162l2:692a|838l:45c4:11a4|984a:033l:737c"
+---
+6.5a.75.75 0 0 1 0-1.5h2.5V3.5h-.984a.245.245 0 0 0-.124.033l-1.289.737c-.265.15-.564.23-.869.23h-.162l2.112 4.692a.75.75 0 0 1-.154.838l-.53-.53.529.531-.001.002-.002.002-.006.006-.016.015-.045.04c-.21.176-.441.327-.686.45C4.556 10.78 3.88 11 3 11a4.498 4.498 0 0 1-2.023-.454 3.544 3.544 0 0

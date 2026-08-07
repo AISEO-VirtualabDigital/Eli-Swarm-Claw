@@ -1,0 +1,11 @@
+---
+id: 811deabac5dc98c4
+source: "low-level-design-primer-README.md"
+"title: Low Level Design Primer README"
+category: web-design
+skillTags: []
+containmentHash: 11a52be4d85e7eb16871
+createdAt: 1786051357067
+embeddingSig: "011z:path:class|062v4:25c0:25h2|25c0:25h2:688l|25h2:688l:011z|25h9:25v6h:75a1|25v1:5zm6:062v4|25v6h:75a1:25v1|5zm6:062v4:25c0|688l:011z:path|75a1:25v1:5zm6|class:overflow:hidden|path:class:overflow"
+---
+12.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z\"></path></svg><div class=\"overflow-hidden\"><div class=\"react-directory-filename-cell\"><div class=\"react-directory-truncate\"><a title=\"questions.md\" aria-label=\"questions.md, (File)\"

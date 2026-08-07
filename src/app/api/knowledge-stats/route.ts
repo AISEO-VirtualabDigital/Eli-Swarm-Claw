@@ -1,33 +1,32 @@
 import { NextResponse } from 'next/server';
-import { getKnowledgeIndex } from '@/lib/knowledge-search';
+import { getVaultStats } from '@/lib/vault-search';
 
 export async function GET() {
   try {
-    const chunks = await getKnowledgeIndex(true); // force refresh
+    const index = await getVaultStats();
 
-    // Group by category and count
-    const categoryMap: Record<string, number> = {};
-    let totalSize = 0;
-
-    for (const chunk of chunks) {
-      categoryMap[chunk.category] = (categoryMap[chunk.category] || 0) + 1;
-      totalSize += chunk.charCount;
+    if (!index) {
+      return NextResponse.json({
+        totalFiles: 0,
+        totalCategories: 0,
+        totalSizeMB: '0',
+        categories: [],
+        engine: 'none',
+      });
     }
 
-    // Sort categories by count descending
-    const categories = Object.entries(categoryMap)
-      .map(([key, count]) => ({
-        key,
-        count,
-      }))
+    const categories = Object.entries(index.categories || {})
+      .map(([key, count]: [string, any]) => ({ key, count: Number(count) }))
       .sort((a, b) => b.count - a.count);
 
     return NextResponse.json({
-      totalFiles: chunks.length,
+      totalFiles: index.totalChunks || 0,
       totalCategories: categories.length,
-      totalSizeBytes: totalSize,
-      totalSizeMB: (totalSize / 1024 / 1024).toFixed(1),
+      totalSizeMB: index.totalSourceChars ? (index.totalSourceChars / 1024 / 1024).toFixed(1) : '0',
       categories,
+      engine: index.engine || 'unknown',
+      skills: index.skills || 0,
+      skillTags: index.skillTags || {},
     });
   } catch (error) {
     console.error('Knowledge stats error:', error);

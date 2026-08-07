@@ -1,0 +1,11 @@
+---
+id: a465142ea68d2297
+source: "design-resources-devs-README.md"
+"title: Design Resources Devs README"
+category: web-design
+skillTags: []
+containmentHash: df7b3ea3af39f9cd8ab2
+createdAt: 1786051353122
+embeddingSig: "aria:labelledby:folders|class:directorycontent:module|class:table:module|directorycontent:module:overviewheaderrow|files:thead:class|folders:files:thead|hzkiq:aria:labelledby|labelledby:folders:files|module:hzkiq:aria|table:class:table|table:module:hzkiq|thead:class:directorycontent"
+---
+les</h2><table class=\"Table-module__Box__HZKiQ\" aria-labelledby=\"folders-and-files\"><thead class=\"DirectoryContent-module__OverviewHeaderRow__hOrKy Table-module__Box_1__VacXC\"><tr class=\"Table-module__Box_2__PBp9s\"><th colspan=\"2\" class=\"DirectoryContent-module__Box__iC_5e\"><span class=\"text-bold\">Name</span></th><th colspan=\"1\"

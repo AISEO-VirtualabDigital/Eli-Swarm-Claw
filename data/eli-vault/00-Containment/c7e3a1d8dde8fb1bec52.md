@@ -1,0 +1,11 @@
+---
+id: dca6cd02d9e65739
+source: "rust-scraper-README.md"
+"title: Rust Scraper README"
+category: scraping
+skillTags: []
+containmentHash: c7e3a1d8dde8fb1bec52
+createdAt: 1786051357972
+embeddingSig: "brand:text:module|module:text:antialiased|module:text:muted|module:text:p1wy|muted:re6mh:primer|p1wy:primer:brand|primer:brand:text|re6mh:primer:brand|text:antialiased:tyoxs|text:module:text|text:muted:re6mh|text:p1wy:primer"
+---
+JD Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--200____P1wy Primer_Brand__Text-module__Text--antialiased___TYoXS NavLink-module__subtitle__X4gkW\">Enforce quality at merge</span></div></a></li></ul></div></li><li><div class=\"NavGroup-module__group__W8SqJ\"><span class=\"Primer_Brand__Text-module__Text___XeGJJ

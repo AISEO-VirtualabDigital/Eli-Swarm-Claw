@@ -1,0 +1,11 @@
+---
+id: d4b7fb811ab1ad5a
+source: "goindex-drive-README.md"
+"title: Goindex Drive README"
+category: knowledge
+skillTags: []
+containmentHash: 9d0a88a75269c04bed68
+createdAt: 1786051355466
+embeddingSig: "aria:hidden:true|component:octicon:height|data:component:octicon|dismiss:error:aria|error:aria:hidden|height:viewbox:version|hidden:true:data|octicon:height:viewbox|true:data:component|version:width:data|viewbox:version:width|width:data:view"
+---
+Dismiss error\">\n      <svg aria-hidden=\"true\" data-component=\"Octicon\" height=\"16\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" data-view-component=\"true\" class=\"octicon octicon-x\">\n    <path d=\"M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326

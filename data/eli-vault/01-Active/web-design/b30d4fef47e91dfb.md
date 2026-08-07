@@ -1,0 +1,11 @@
+---
+id: b30d4fef47e91dfb
+source: "design-resources-devs-README.md"
+"title: Design Resources Devs README"
+category: web-design
+skillTags: []
+containmentHash: 703e72c35dfd59050bf8
+createdAt: 1786051353122
+embeddingSig: "aria:hidden:true|height:aria:hidden|hidden:true:u003e|true:u003e:u003cpath|u003e:u003cpath:25a3|width:height:aria"
+---
+on=\\\"1.1\\\" width=\\\"16\\\" height=\\\"16\\\" aria-hidden=\\\"true\\\"\\u003e\\u003cpath d=\\\"m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0

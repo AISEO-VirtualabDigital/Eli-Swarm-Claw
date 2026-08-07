@@ -1,0 +1,11 @@
+---
+id: 1e200c2b0ecafaf6
+source: "goindex-drive-README.md"
+"title: Goindex Drive README"
+category: knowledge
+skillTags: []
+containmentHash: 6d19e39225b47c4f92e7
+createdAt: 1786051355466
+embeddingSig: "042l6:path:button|215l8:042l6:path|734l9:215l8:042l6|alert:class:flash|aria:atomic:true|atomic:true:role|button:aria:atomic|class:flash:alert|flash:alert:message|path:button:aria|role:alert:class|true:role:alert"
+---
+0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z\"></path>\n</svg>\n    </button>\n    <div aria-atomic=\"true\" role=\"alert\" class=\"js-flash-alert\">\n      \n      <div>{{ message }}</div>\n\n    </div>\n

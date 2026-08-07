@@ -1,0 +1,11 @@
+---
+id: 1afd83a4dc872d66
+source: "getpublii-analytics-docs.md"
+"title: Publii Google Analytics Docs"
+category: knowledge
+skillTags: ["tool"]
+containmentHash: c2c8febea89af9d87a0e
+createdAt: 1786051354696
+embeddingSig: "cmss:like:wordpress|compare:publii:with|dynamic:cmss:like|functionality:publii:others|growth:functionality:publii|others:compare:publii|publii:others:compare|publii:with:dynamic|site:growth:functionality|solutions:site:growth|tive:solutions:site|with:dynamic:cmss"
+---
+tive solutions for site growth and functionality. Publii vs Others Compare Publii with dynamic CMSs like WordPress, Joomla, and Drupal. Products Marketplace Professionally designed and coded themes and plugins. Themes Free and premium, beautifully-designed templates. Plugins Expand your site with your favorite tools and apps. Services Get help building your site from our web development services.

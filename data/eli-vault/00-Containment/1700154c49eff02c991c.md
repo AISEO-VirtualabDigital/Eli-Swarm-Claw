@@ -1,0 +1,11 @@
+---
+id: 1d157a8c8ced8cbc
+source: "frontend-design-checklist-README.md"
+"title: Frontend Design Checklist README"
+category: web-design
+skillTags: []
+containmentHash: 1700154c49eff02c991c
+createdAt: 1786051354212
+embeddingSig: "003e:u003c:u003e|auto:u003e:u003ca|blank:noopener:noreferrer|noopener:noreferrer:href|target:blank:noopener|u003c:u003e:u003c|u003c:u003e:u003cp|u003ca:target:blank|u003cp:auto:u003e|u003e:u003c:u003e|u003e:u003ca:target|u003e:u003cp:auto"
+---
+003e\\u003c/a\\u003e\\u003c/div\\u003e\\n\\u003cp dir=\\\"auto\\\"\\u003e\\u003ca target=\\\"_blank\\\" rel=\\\"noopener noreferrer\\\" href=\\\"/thedaviddias/Front-End-Design-Checklist/blob/master/images/forms.png\\\"\\u003e\\u003cimg src=\\\"/thedaviddias/Front-End-Design-Checklist/raw/master/images/forms.png\\\" alt=\\\"Forms\\\"

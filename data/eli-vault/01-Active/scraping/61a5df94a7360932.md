@@ -1,0 +1,11 @@
+---
+id: 61a5df94a7360932
+source: "schemacrawler-README.md"
+"title: Schemacrawler README"
+category: scraping
+skillTags: []
+containmentHash: 761db1ad68eab0d6ae7e
+createdAt: 1786051358400
+embeddingSig: "aria:hidden:true|class:octicon:octicon|component:octicon:aria|data:component:octicon|false:class:octicon|file:color:muted|focusable:false:class|hidden:true:focusable|octicon:aria:hidden|octicon:file:color|octicon:octicon:file|true:focusable:false"
+---
+g data-component=\"Octicon\" aria-hidden=\"true\" focusable=\"false\" class=\"octicon octicon-file color-fg-muted\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" display=\"inline-block\" overflow=\"visible\" style=\"vertical-align:text-bottom\"><path d=\"M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914

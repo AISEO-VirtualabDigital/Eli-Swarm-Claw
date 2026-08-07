@@ -1,0 +1,11 @@
+---
+id: fdbafad27d3e47ac
+source: "getpublii-themes.json"
+"title: Getpublii Themes"
+category: knowledge
+skillTags: []
+containmentHash: 25712b8c0ed4ed9f2e6f
+createdAt: 1786051354814
+embeddingSig: "carlos:u00f1ez:campo|gallen:thurgau:ticino|general:carlos:u00f1ez|schwyz:solothurn:gallen|solothurn:gallen:thurgau|thurgau:ticino:valais|ticino:valais:vaud|u00e9n:general:carlos|u00f1ez:campo:antofagasta|u00fcrich:u00e9n:general|valais:vaud:u00fcrich|vaud:u00fcrich:u00e9n"
+---
+SZ\":\"Schwyz\",\"SO\":\"Solothurn\",\"SG\":\"St. Gallen\",\"TG\":\"Thurgau\",\"TI\":\"Ticino\",\"UR\":\"Uri\",\"VS\":\"Valais\",\"VD\":\"Vaud\",\"ZG\":\"Zug\",\"ZH\":\"Z\\u00fcrich\"},\"CL\":{\"CL-AI\":\"Ais\\u00e9n del General Carlos Iba\\u00f1ez del Campo\",\"CL-AN\":\"Antofagasta\",\"CL-AP\":\"Arica y Parinacota\",\"CL-AR\":\"La

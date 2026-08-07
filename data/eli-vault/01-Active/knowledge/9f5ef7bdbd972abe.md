@@ -1,0 +1,11 @@
+---
+id: 9f5ef7bdbd972abe
+source: "getpublii-themes.json"
+"title: Getpublii Themes"
+category: knowledge
+skillTags: []
+containmentHash: d5bc00ce4b2db77000fb
+createdAt: 1786051354814
+embeddingSig: "ke16:kisii:ke17|ke17:kisumu:ke18|ke18:kitui:ke19|ke19:kwale:ke20|ke20:laikipia:ke21|ke21:lamu:ke22|kirinyaga:ke16:kisii|kisii:ke17:kisumu|kisumu:ke18:kitui|kitui:ke19:kwale|kwale:ke20:laikipia|laikipia:ke21:lamu"
+---
+Kirinyaga\",\"KE16\":\"Kisii\",\"KE17\":\"Kisumu\",\"KE18\":\"Kitui\",\"KE19\":\"Kwale\",\"KE20\":\"Laikipia\",\"KE21\":\"Lamu\",\"KE22\":\"Machakos\",\"KE23\":\"Makueni\",\"KE24\":\"Mandera\",\"KE25\":\"Marsabit\",\"KE26\":\"Meru\",\"KE27\":\"Migori\",\"KE28\":\"Mombasa\",\"KE29\":\"Murang\\u2019a\",\"KE30\":\"Nairobi
