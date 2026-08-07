@@ -115,7 +115,9 @@ Environment=KEYWORD_DIR=/opt/eli/data/keyword-research
 Environment=OBSIDIAN_VAULT_PATH=/opt/eli/data/eli-vault
 Environment=PORT=3000
 Environment=GEMINI_API_KEY=${GEMINI_API_KEY:-}
+Environment=GEMINI_PROXY=${GEMINI_PROXY:-}
 Environment=OPENINBOX_API_KEY=${OPENINBOX_API_KEY:-}
+Environment=ELI_API_KEY=${ELI_API_KEY:-}
 Environment=ELI_INTRO_VIDEO_URL=${ELI_INTRO_VIDEO_URL:-}
 ExecStart=/root/.bun/bin/bun .next/standalone/server.js
 Restart=always

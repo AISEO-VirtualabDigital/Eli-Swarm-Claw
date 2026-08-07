@@ -55,8 +55,34 @@ function getProvider(): LLMProvider {
   return 'fallback';
 }
 
+// ─── Proxy support (bypasses region blocks on HK/China/UAE servers) ──
+// Set GEMINI_PROXY=http://ip:port or socks5://ip:port in .env
+// Falls back to direct fetch if proxy is not set or fails.
+
+let proxyDispatcher: any = undefined;
+
+async function getProxyDispatcher() {
+  if (proxyDispatcher !== undefined) return proxyDispatcher;
+
+  const proxyUrl = process.env.GEMINI_PROXY;
+  if (!proxyUrl) {
+    proxyDispatcher = null; // cached: no proxy configured
+    return null;
+  }
+
+  try {
+    const { ProxyAgent } = await import('undici');
+    proxyDispatcher = new ProxyAgent(proxyUrl);
+    console.log(`[GEMINI] Proxy enabled: ${proxyUrl.replace(/:\/\/:.*@/, '://***@')}`);
+  } catch (err) {
+    console.error('[GEMINI] Failed to create proxy agent:', (err as Error).message);
+    proxyDispatcher = null;
+  }
+
+  return proxyDispatcher;
+}
+
 async function callGemini(messages: Array<{ role: string; content: string }>): Promise<string> {
-  const { GoogleGenerativeAI } = await import('@google/generative-ai');
   let key = process.env.GEMINI_API_KEY;
 
   // Try Omni Route key if direct key fails
@@ -69,9 +95,6 @@ async function callGemini(messages: Array<{ role: string; content: string }>): P
 
   if (!key) throw new Error('No Gemini API key available');
 
-  const genAI = new GoogleGenerativeAI(key);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
   const systemMsg = messages.find(m => m.role === 'system');
   const conversationMessages = messages
     .filter(m => m.role !== 'system')
@@ -80,10 +103,35 @@ async function callGemini(messages: Array<{ role: string; content: string }>): P
       parts: [{ text: m.content }],
     }));
 
-  const result = await model.generateContent({
-    systemInstruction: systemMsg?.content || '',
+  const requestBody = {
+    systemInstruction: { parts: [{ text: systemMsg?.content || '' }] },
     contents: conversationMessages,
-  });
+    generationConfig: { temperature: 0.8 },
+  };
+
+  // Check if proxy is configured — use raw fetch via undici proxy
+  const dispatcher = await getProxyDispatcher();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+
+  const fetchOpts: any = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestBody),
+  };
+  if (dispatcher) fetchOpts.dispatcher = dispatcher;
+
+  const res = await fetch(url, fetchOpts);
+  const data = await res.json();
+
+  if (!res.ok) {
+    const errMsg = data?.error?.message || `HTTP ${res.status}`;
+    const err = new Error(errMsg) as any;
+    err.status = res.status;
+    throw err;
+  }
+
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('Empty response from Gemini');
 
   // Record usage for rotation tracking
   try {
@@ -91,7 +139,7 @@ async function callGemini(messages: Array<{ role: string; content: string }>): P
     getOmniRoute().recordUsage();
   } catch {}
 
-  return result.response.text();
+  return text;
 }
 
 // ─── Chat Endpoint ────────────────────────────────────────────
