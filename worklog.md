@@ -23,3 +23,28 @@ Stage Summary:
 - Prompt injection now BLOCKS (returns 400) instead of just flagging
 - Two PDF deliverables in /download/: safety guidebook + hands-on learning guide
 - Production health endpoint confirms: rateLimitingActive=true, promptInjectionBlocking=true
+
+---
+Task ID: 2
+Agent: Main
+Task: Air LLM fallback, proxy support, landing page redesign, GitHub push
+
+Work Log:
+- Discovered Gemini API region-blocked from HK server (free tier quota=0)
+- Added GEMINI_PROXY env var support with undici ProxyAgent for future proxy routing
+- Built air-llm.ts: multi-provider LLM fallback (Groq > OpenRouter > Z-AI SDK)
+- Integrated Air LLM into eli-chat route as real fallback (Gemini > Air LLM > vault sources)
+- Added serverExternalPackages for z-ai-web-dev-sdk and undici in next.config.ts
+- Redesigned landing page: default view is now Chat (was Dashboard)
+- Added hero section with Eli's personality, suggestion chips, purple focus glow on input
+- Updated dashboard title, footer branding, chat placeholder text
+- Restored lost files (safety-gate.ts, omni-route.ts, open-claw.ts, middleware.ts, audit-log.ts, omni/route.ts, vault-sync/route.ts, audit/route.ts) after build cleanup
+- Pushed clean repo to GitHub: github.com/AISEO-VirtualabDigital/Eli-Swarm-Claw
+- Set ELI_API_KEY in .env
+
+Stage Summary:
+- Eli now has a REAL brain even without Gemini — Z-AI SDK works as fallback from any region
+- Optional: add GROQ_API_KEY or OPENROUTER_API_KEY for better/faster responses
+- Optional: set GEMINI_PROXY when a proxy is available to re-enable Gemini
+- Landing page now introduces Eli as a character first, not a dashboard
+- All code is on GitHub — user can clone and deploy from their PC
