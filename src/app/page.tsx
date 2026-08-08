@@ -469,7 +469,7 @@ function DashboardView() {
   return (
     <div className="animate-fadeIn space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-[#1e293b] mb-1">Welcome back, Operator</h1>
+        <h1 className="text-xl font-bold text-[#1e293b] mb-1">Eli's Dashboard</h1>
         <p className="text-sm text-[#64748b]">
           Eli's growth intelligence overview — {files} knowledge files, {keywords} keywords, {skills} skills loaded.
         </p>
@@ -816,10 +816,18 @@ function KeywordsView() {
 }
 
 // ─── Chat View ──────────────────────────────────────────────────
+const SUGGESTION_CHIPS = [
+  "What's our SEO strategy for home services?",
+  'Analyze keyword gaps in our niche',
+  'What does the vault say about AEO?',
+  'Build me a content calendar for next month',
+];
+
 function ChatView({ onProviderChange }: { onProviderChange: (p: string) => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -829,17 +837,13 @@ function ChatView({ onProviderChange }: { onProviderChange: (p: string) => void 
 
   useEffect(() => { scrollToBottom(); }, [messages, isLoading, scrollToBottom]);
 
-  useEffect(() => {
-    setMessages([{ id: 'welcome', role: 'eli', content: ELI_WELCOME, timestamp: new Date() }]);
-  }, []);
-
-  const handleSend = async () => {
-    const trimmed = input.trim();
+  const handleSend = async (overrideMessage?: string) => {
+    const trimmed = (overrideMessage || input).trim();
     if (!trimmed || isLoading) return;
 
     const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: 'user', content: trimmed, timestamp: new Date() };
+    if (!overrideMessage) setInput('');
     setMessages((prev) => [...prev, userMsg]);
-    setInput('');
     setIsLoading(true);
 
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -875,6 +879,10 @@ function ChatView({ onProviderChange }: { onProviderChange: (p: string) => void 
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
+  const handleSuggestionClick = (text: string) => {
+    handleSend(text);
+  };
+
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
     const ta = e.target;
@@ -903,71 +911,107 @@ function ChatView({ onProviderChange }: { onProviderChange: (p: string) => void 
         </div>
       </div>
 
-      <ScrollArea className="flex-1 px-4 md:px-6 py-4">
-        <div className="max-w-3xl mx-auto space-y-4">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`animate-slideUp flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-2xl px-4 py-3 text-sm leading-relaxed ${
-                msg.role === 'user' ? 'rounded-2xl rounded-tr-sm text-white' : 'rounded-2xl rounded-tl-sm text-[#1e293b]'
-              }`}
-              style={msg.role === 'user'
-                ? { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 4px 15px rgba(124,58,237,0.15)' }
-                : { backgroundColor: '#ffffff', border: '1px solid #e2e8f0' }
-              }>
-                {msg.role === 'eli' && (
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="text-[10px] font-semibold text-[#7c3aed]">ELI</span>
-                    <span className="text-[10px] text-[#64748b]">
-                      {msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                    </span>
-                  </div>
-                )}
-                <div className="text-[#1e293b]/90">
-                  {msg.role === 'eli' ? <EliMarkdown content={msg.content} /> : renderUserContent(msg.content)}
-                </div>
-                {msg.sources && msg.sources.length > 0 && (
-                  <div className="mt-3 pt-2 flex flex-wrap gap-1.5" style={{ borderTop: '1px solid #e2e8f0' }}>
-                    {msg.sources.map((src, idx) => (
-                      <div key={idx} className="flex items-center gap-1 text-[10px] text-[#64748b] hover:text-[#2563eb] transition-colors cursor-default px-2 py-1 rounded-md"
-                        style={{ backgroundColor: '#f1f5f9' }}>
-                        <ExternalLink className="w-2.5 h-2.5" />
-                        <span className="truncate max-w-[160px]">{src.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {isLoading && (
-            <div className="flex justify-start animate-fadeIn">
-              <div className="rounded-2xl rounded-tl-sm px-4 py-3" style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0' }}>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-semibold text-[#7c3aed] mr-1">ELI</span>
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#7c3aed] animate-bounce-dot" style={{ animationDelay: '0ms' }} />
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#7c3aed] animate-bounce-dot" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#7c3aed] animate-bounce-dot" style={{ animationDelay: '300ms' }} />
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
+      {messages.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 animate-fadeIn">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold text-white mb-6 animate-pulse-glow"
+            style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 8px 32px rgba(124,58,237,0.25)' }}>
+            E
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#1e293b] mb-3 text-center">
+            Hey, I'm <span style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Eli</span>.
+          </h1>
+          <p className="text-sm md:text-base text-[#64748b] text-center max-w-lg mb-10 leading-relaxed">
+            Your AI growth intelligence at VirtuaLab Digital. I know SEO, content strategy,
+            keyword research, and automation — and I actually have opinions about all of it.
+          </p>
+          <div className="flex flex-wrap justify-center gap-2.5 max-w-xl">
+            {SUGGESTION_CHIPS.map((chip) => (
+              <button
+                key={chip}
+                onClick={() => handleSuggestionClick(chip)}
+                disabled={isLoading}
+                className="group text-xs text-[#4c1d95] bg-[#f5f3ff] hover:bg-[#ede9fe] border border-[#e9d5ff] hover:border-[#c4b5fd] px-3.5 py-2.5 rounded-full transition-all duration-200 hover:shadow-md hover:shadow-purple-100 cursor-pointer text-left max-w-[300px] leading-relaxed"
+              >
+                <span className="opacity-60 group-hover:opacity-100 mr-1.5">→</span>
+                {chip}
+              </button>
+            ))}
+          </div>
         </div>
-      </ScrollArea>
+      ) : (
+        <ScrollArea className="flex-1 px-4 md:px-6 py-4">
+          <div className="max-w-3xl mx-auto space-y-4">
+            {messages.map((msg) => (
+              <div key={msg.id} className={`animate-slideUp flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-2xl px-4 py-3 text-sm leading-relaxed ${
+                  msg.role === 'user' ? 'rounded-2xl rounded-tr-sm text-white' : 'rounded-2xl rounded-tl-sm text-[#1e293b]'
+                }`}
+                style={msg.role === 'user'
+                  ? { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 4px 15px rgba(124,58,237,0.15)' }
+                  : { backgroundColor: '#ffffff', border: '1px solid #e2e8f0' }
+                }>
+                  {msg.role === 'eli' && (
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="text-[10px] font-semibold text-[#7c3aed]">ELI</span>
+                      <span className="text-[10px] text-[#64748b]">
+                        {msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                      </span>
+                    </div>
+                  )}
+                  <div className="text-[#1e293b]/90">
+                    {msg.role === 'eli' ? <EliMarkdown content={msg.content} /> : renderUserContent(msg.content)}
+                  </div>
+                  {msg.sources && msg.sources.length > 0 && (
+                    <div className="mt-3 pt-2 flex flex-wrap gap-1.5" style={{ borderTop: '1px solid #e2e8f0' }}>
+                      {msg.sources.map((src, idx) => (
+                        <div key={idx} className="flex items-center gap-1 text-[10px] text-[#64748b] hover:text-[#2563eb] transition-colors cursor-default px-2 py-1 rounded-md"
+                          style={{ backgroundColor: '#f1f5f9' }}>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span className="truncate max-w-[160px]">{src.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {isLoading && (
+              <div className="flex justify-start animate-fadeIn">
+                <div className="rounded-2xl rounded-tl-sm px-4 py-3" style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0' }}>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-semibold text-[#7c3aed] mr-1">ELI</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#7c3aed] animate-bounce-dot" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#7c3aed] animate-bounce-dot" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#7c3aed] animate-bounce-dot" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+      )}
 
       <div className="flex-shrink-0 p-4 md:px-6" style={{ borderTop: '1px solid #e2e8f0' }}>
-        <div className="flex items-end gap-3 max-w-3xl mx-auto rounded-xl p-2 transition-all duration-200"
-          style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <div className="flex items-end gap-3 max-w-3xl mx-auto rounded-xl p-2 transition-all duration-300"
+          style={{
+            backgroundColor: '#ffffff',
+            border: isFocused ? '1.5px solid #a78bfa' : '1px solid #e2e8f0',
+            boxShadow: isFocused
+              ? '0 0 0 3px rgba(124,58,237,0.08), 0 4px 16px rgba(124,58,237,0.1)'
+              : '0 1px 3px rgba(0,0,0,0.06)',
+          }}>
           <textarea ref={textareaRef} value={input} onChange={handleTextareaChange} onKeyDown={handleKeyDown}
-            placeholder="Ask Eli anything about growth..." rows={1}
+            onFocus={() => setIsFocused(true)} onBlur={() => setIsFocused(false)}
+            placeholder="Ask Eli anything..." rows={1}
             className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-[#1e293b] placeholder:text-[#94a3b8] py-2 px-2 min-h-[36px] max-h-[160px]"
             style={{ scrollbarWidth: 'none' }} />
-          <Button size="icon" disabled={!input.trim() || isLoading} onClick={handleSend}
-            className="flex-shrink-0 w-9 h-9 rounded-lg transition-all duration-200"
+          <Button size="icon" disabled={!input.trim() || isLoading} onClick={() => handleSend()}
+            className="flex-shrink-0 w-9 h-9 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
             style={{
               background: input.trim() && !isLoading ? 'linear-gradient(135deg, #7c3aed, #6d28d9)' : '#e2e8f0',
-              boxShadow: input.trim() && !isLoading ? '0 0 15px rgba(124,58,237,0.2)' : 'none',
+              boxShadow: input.trim() && !isLoading ? '0 0 20px rgba(124,58,237,0.3)' : 'none',
               cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
             }}>
             <Send className="w-4 h-4 text-[#ffffff]" />
@@ -1063,7 +1107,7 @@ function BetaView({ title, description, icon: Icon }: { title: string; descripti
 
 // ─── Main Page ──────────────────────────────────────────────────
 export default function Home() {
-  const [activeView, setActiveView] = useState<ViewId>('dashboard');
+  const [activeView, setActiveView] = useState<ViewId>('chat');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [provider, setProvider] = useState('');

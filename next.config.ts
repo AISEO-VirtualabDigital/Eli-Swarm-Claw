@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: true,
+  // Externalize Node-only modules that can't be bundled by webpack
+  serverExternalPackages: ['z-ai-web-dev-sdk', 'undici'],
   // Security headers for production
   async headers() {
     return [

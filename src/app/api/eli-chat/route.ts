@@ -46,7 +46,7 @@ Your job: Make VirtuaLab grow. Every conversation should leave the person with s
 
 // ─── LLM Provider ─────────────────────────────────────────────
 
-type LLMProvider = 'gemini' | 'fallback';
+type LLMProvider = 'gemini' | 'air-llm' | 'fallback';
 
 function getProvider(): LLMProvider {
   const key = process.env.GEMINI_API_KEY;
@@ -262,8 +262,9 @@ export async function POST(request: NextRequest) {
 
     // ─── Call LLM ──────────────────────────────────────────
     let response = '';
-    const provider = getProvider();
+    let provider: LLMProvider = getProvider();
 
+    // Try Gemini first
     if (provider === 'gemini') {
       audit('llm.call', `Gemini call for chat (${clean.slice(0, 50)}...)`, { ip });
       try {
@@ -282,7 +283,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fallback: chunk-sourced response if no LLM
+    // Try Air LLM fallback
+    if (!response) {
+      try {
+        const { callAirLLM, getAirLLMProvider } = await import('@/lib/air-llm');
+        console.log('[AIR-LLM] Gemini unavailable, trying Air LLM fallback...');
+        response = await callAirLLM(messages);
+        provider = 'air-llm';
+        audit('llm.air-llm', `Air LLM (${getAirLLMProvider()}) succeeded for chat`, { ip });
+      } catch (airErr: any) {
+        console.error('[AIR-LLM] All providers failed:', (airErr as Error)?.message);
+        response = '';
+      }
+    }
+
+    // Final fallback: chunk-sourced response if no LLM
     if (!response) {
       if (sources.length > 0) {
         response = `I found **${sources.length} relevant sources** in my vault for your query.
@@ -304,7 +319,7 @@ ${containmentHits > 0 ? `Also recovered ${containmentHits} pattern memories from
 
     return NextResponse.json({
       response: response || 'I hit a wall. Try again.',
-      provider: provider === 'gemini' ? 'gemini-2.0-flash' : 'vault-fallback',
+      provider: provider === 'gemini' ? 'gemini-2.0-flash' : provider === 'air-llm' ? 'air-llm' : 'vault-fallback',
       sources: sources.map((s) => ({
         title: s.title,
         source: s.source,
@@ -326,10 +341,19 @@ ${containmentHits > 0 ? `Also recovered ${containmentHits} pattern memories from
 
 export async function GET() {
   const stats = await getVaultStats();
+
+  // Air LLM availability
+  let airLLM: { provider: string; providers: Array<{ provider: string; available: boolean }> } | undefined;
+  try {
+    const { getAirLLMProvider, getAirLLMStats } = await import('@/lib/air-llm');
+    airLLM = { provider: getAirLLMProvider(), providers: getAirLLMStats() };
+  } catch {}
+
   return NextResponse.json({
     status: 'ok',
     vault: stats,
     provider: getProvider(),
+    airLLM,
     timestamp: Date.now(),
   });
 }

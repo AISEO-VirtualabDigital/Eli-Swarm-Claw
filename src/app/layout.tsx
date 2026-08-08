@@ -73,7 +73,7 @@ export default function RootLayout({
           >
             VirtuaLab Digital
           </a>{" "}
-          &mdash; Eli MicroSaaS
+          &mdash; Eli — VirtuaLab Digital
         </footer>
       </body>
     </html>
