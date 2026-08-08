@@ -57,7 +57,7 @@ ssh "$REMOTE" bash -s <<REMOTE_SETUP
 set -e
 
 # Create deploy directory structure
-mkdir -p $DEPLOY_DIR/{data/uploads/knowledge-sources,data/uploads/docs,data/uploads/design,data/uploads/zips,db,logs}
+mkdir -p $DEPLOY_DIR/{data/uploads/knowledge-sources,data/uploads/docs,data/uploads/design,data/uploads/zips,data/eli-os-delivery,db,logs}
 
 # Install bun if missing
 if ! command -v bun &>/dev/null; then
@@ -84,6 +84,16 @@ rsync -az --delete \
 log "  Syncing knowledge base..."
 rsync -az --delete \
   data/uploads/knowledge-sources/ "$REMOTE:$DEPLOY_DIR/data/uploads/knowledge-sources/"
+
+# Sync docs (strategic planning, Claude conversations)
+log "  Syncing docs..."
+rsync -az \
+  data/uploads/docs/ "$REMOTE:$DEPLOY_DIR/data/uploads/docs/"
+
+# Sync Eli OS delivery (skill templates, integration notes)
+log "  Syncing Eli OS skill templates..."
+rsync -az \
+  data/eli-os-delivery/ "$REMOTE:$DEPLOY_DIR/data/eli-os-delivery/"
 
 # Sync database
 log "  Syncing database..."

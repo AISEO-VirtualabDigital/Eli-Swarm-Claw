@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVaultContext, buildVaultKnowledgeMap, getVaultStats } from '@/lib/vault-search';
+import { getObsidianContext, getObsidianStats } from '@/lib/obsidian-connector';
 import { audit } from '@/lib/audit-log';
 import {
   MAX_PAYLOAD_CHAT, MAX_MESSAGE_LENGTH, MAX_HISTORY_MESSAGES,
@@ -223,6 +224,20 @@ export async function POST(request: NextRequest) {
       console.error('[VAULT ERROR]', vaultErr?.message || vaultErr);
     }
 
+    // ─── Retrieve from Obsidian live knowledge sources ──────
+    let obsidianContext = '';
+    let obsidianSources: Array<{ title: string; source: string; category: string; sourceType: string }> = [];
+    let obsidianTotalChunks = 0;
+    try {
+      const obsResult = await getObsidianContext(clean, { maxResults: 8 });
+      obsidianContext = obsResult.context;
+      obsidianSources = obsResult.sources;
+      obsidianTotalChunks = obsResult.totalAvailable;
+      console.log(`[OBSIDIAN] context=${obsidianContext.length ? obsidianContext.slice(0,80) : 'empty'} sources=${obsidianSources.length} totalChunks=${obsidianTotalChunks}`);
+    } catch (obsErr: any) {
+      console.error('[OBSIDIAN ERROR]', obsErr?.message || obsErr);
+    }
+
     // ─── Get vault knowledge map ───────────────────────────
     let vaultMap = '';
     try {
@@ -232,19 +247,38 @@ export async function POST(request: NextRequest) {
       console.error('[VAULT MAP ERROR]', mapErr?.message || mapErr);
     }
 
-    // ─── Build system message ──────────────────────────────
-    let systemContent = [
+    // ─── Build system message with ALL knowledge ──────────
+    const knowledgeSections: string[] = [
       ELI_SYSTEM_PROMPT,
       '',
       '---',
       'VAULT KNOWLEDGE MAP:',
       vaultMap,
       '---',
-    ].join('\n') + (context || '\n(No specific vault chunks matched this query.)');
+    ];
+
+    // Vault micro-chunk context
+    if (context) {
+      knowledgeSections.push('');
+      knowledgeSections.push('VAULT CHUNK MATCHES:');
+      knowledgeSections.push(context);
+    } else {
+      knowledgeSections.push('\n(No specific vault chunks matched this query.)');
+    }
+
+    // Obsidian live knowledge context
+    if (obsidianContext) {
+      knowledgeSections.push('');
+      knowledgeSections.push('OBSIDIAN LIVE KNOWLEDGE:');
+      knowledgeSections.push(obsidianContext);
+      knowledgeSections.push(`\n[Obsidian: ${obsidianSources.length} sources from ${obsidianTotalChunks} total indexed chunks across 170+ knowledge files]`);
+    }
 
     if (containmentHits > 0) {
-      systemContent += `\n\n[Containment: ${containmentHits} pattern memories recovered from dissolved knowledge]`;
+      knowledgeSections.push(`\n[Containment: ${containmentHits} pattern memories recovered from dissolved knowledge]`);
     }
+
+    const systemContent = knowledgeSections.join('\n');
 
     // ─── Build conversation ────────────────────────────────
     const messages: Array<{ role: string; content: string }> = [
@@ -317,15 +351,19 @@ ${containmentHits > 0 ? `Also recovered ${containmentHits} pattern memories from
       omniHeaders = getOmniRoute().getDecisionHeaders();
     } catch {}
 
+    // Merge Obsidian sources into the response
+    const allSources = [
+      ...sources.map(s => ({ title: s.title, source: s.source, category: s.category, sourceType: 'vault' as const })),
+      ...obsidianSources.map(s => ({ title: s.title, source: s.source, category: s.category, sourceType: s.sourceType as string })),
+    ];
+
     return NextResponse.json({
       response: response || 'I hit a wall. Try again.',
       provider: provider === 'gemini' ? 'gemini-2.0-flash' : provider === 'air-llm' ? 'air-llm' : 'vault-fallback',
-      sources: sources.map((s) => ({
-        title: s.title,
-        source: s.source,
-        category: s.category,
-      })),
+      sources: allSources,
       vaultChunks: sources.length,
+      obsidianChunks: obsidianSources.length,
+      obsidianTotalChunks,
       containmentHits,
     }, {
       headers: omniHeaders,
@@ -349,9 +387,16 @@ export async function GET() {
     airLLM = { provider: getAirLLMProvider(), providers: getAirLLMStats() };
   } catch {}
 
+  // Obsidian connector stats
+  let obsidian: any = undefined;
+  try {
+    obsidian = await getObsidianStats();
+  } catch {}
+
   return NextResponse.json({
     status: 'ok',
     vault: stats,
+    obsidian,
     provider: getProvider(),
     airLLM,
     timestamp: Date.now(),

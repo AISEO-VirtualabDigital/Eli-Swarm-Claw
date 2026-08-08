@@ -69,7 +69,9 @@ interface ChatMessage {
   id: string;
   role: 'user' | 'eli';
   content: string;
-  sources?: Array<{ title: string; source: string; category: string }>;
+  sources?: Array<{ title: string; source: string; category: string; sourceType?: string }>;
+  obsidianChunks?: number;
+  vaultChunks?: number;
   timestamp: Date;
 }
 
@@ -439,22 +441,26 @@ function DashboardView() {
   const [stats, setStats] = useState<KnowledgeStats | null>(null);
   const [kwData, setKwData] = useState<{ totalDatasets: number; totalKeywords: number } | null>(null);
   const [skillsCount, setSkillsCount] = useState<number>(0);
+  const [obsidianStats, setObsidianStats] = useState<{ totalSources: number; totalChunks: number; categories: Record<string, number>; sourceTypes: Record<string, number> } | null>(null);
 
   useEffect(() => {
     fetch('/api/knowledge-stats').then(r => r.json()).then(setStats).catch(() => {});
     fetch('/api/keywords').then(r => r.json()).then(d => setKwData({ totalDatasets: d.totalDatasets, totalKeywords: d.totalKeywords })).catch(() => {});
     fetch('/api/skills').then(r => r.json()).then(d => setSkillsCount(d.total || 0)).catch(() => {});
+    fetch('/api/obsidian-sync?action=stats').then(r => r.json()).then(setObsidianStats).catch(() => {});
   }, []);
 
   const files = stats?.totalFiles || 0;
   const categories = stats?.totalCategories || 0;
   const keywords = kwData?.totalKeywords || 0;
   const skills = skillsCount;
+  const obsSources = obsidianStats?.totalSources || 0;
+  const obsChunks = obsidianStats?.totalChunks || 0;
 
   const METRICS = [
     { label: 'Knowledge Files', value: files, icon: Database, color: '#2563eb', glowClass: 'glow-cyan' },
     { label: 'Categories', value: categories, icon: FolderOpen, color: '#7c3aed', glowClass: 'glow-purple' },
-    { label: 'Keywords', value: keywords, icon: Tag, color: '#059669', glowClass: 'glow-green' },
+    { label: 'Obsidian Sources', value: obsSources, icon: BookOpen, color: '#059669', glowClass: 'glow-green' },
     { label: 'SEO Skills', value: skills, icon: Wrench, color: '#d97706', glowClass: 'glow-amber' },
   ];
 
@@ -471,7 +477,7 @@ function DashboardView() {
       <div>
         <h1 className="text-xl font-bold text-[#1e293b] mb-1">Eli's Dashboard</h1>
         <p className="text-sm text-[#64748b]">
-          Eli's growth intelligence overview — {files} knowledge files, {keywords} keywords, {skills} skills loaded.
+          Eli's growth intelligence — {files} vault files, {obsSources} Obsidian sources ({obsChunks} live chunks), {keywords} keywords, {skills} skills.
         </p>
       </div>
 
@@ -503,6 +509,57 @@ function DashboardView() {
           );
         })}
       </div>
+
+      {/* Obsidian Knowledge Connector Status */}
+      {obsidianStats && obsidianStats.totalSources > 0 && (
+        <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0' }}>
+          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #e2e8f0' }}>
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-[#059669]" />
+              <h2 className="text-sm font-semibold text-[#1e293b]">Obsidian Knowledge Connector</h2>
+              <Badge variant="secondary" className="text-[9px] font-medium"
+                style={{ backgroundColor: '#05966915', color: '#059669', border: '1px solid #05966930' }}>
+                LIVE
+              </Badge>
+            </div>
+            <Badge variant="secondary" className="text-[10px]"
+              style={{ backgroundColor: '#f1f5f9', color: '#64748b' }}>
+              {obsidianStats.totalChunks} chunks
+            </Badge>
+          </div>
+          <div className="px-5 py-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+              <div className="rounded-lg p-2.5" style={{ backgroundColor: '#f8fafc' }}>
+                <div className="text-lg font-bold text-[#1e293b]">{obsidianStats.totalSources}</div>
+                <div className="text-[10px] text-[#64748b]">Sources</div>
+              </div>
+              <div className="rounded-lg p-2.5" style={{ backgroundColor: '#f8fafc' }}>
+                <div className="text-lg font-bold text-[#1e293b]">{obsidianStats.totalChunks}</div>
+                <div className="text-[10px] text-[#64748b]">Indexed Chunks</div>
+              </div>
+              <div className="rounded-lg p-2.5" style={{ backgroundColor: '#f8fafc' }}>
+                <div className="text-lg font-bold text-[#1e293b]">{Object.keys(obsidianStats.categories || {}).length}</div>
+                <div className="text-[10px] text-[#64748b]">Categories</div>
+              </div>
+              <div className="rounded-lg p-2.5" style={{ backgroundColor: '#f8fafc' }}>
+                <div className="text-[10px] text-[#64748b] leading-tight">{Object.entries(obsidianStats.sourceTypes || {}).map(([k, v]) => `${v} ${k}`).join(', ')}</div>
+                <div className="text-[10px] text-[#64748b] mt-0.5">Source Types</div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(obsidianStats.categories || {})
+                .sort(([, a], [, b]) => (b as number) - (a as number))
+                .slice(0, 8)
+                .map(([cat, count]) => (
+                  <span key={cat} className="text-[10px] px-2 py-1 rounded-md"
+                    style={{ backgroundColor: '#f1f5f9', color: '#475569' }}>
+                    {CATEGORY_META[cat]?.emoji || ''} {cat} ({count})
+                  </span>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top Knowledge Categories */}
       {topCategories.length > 0 && (
@@ -863,7 +920,10 @@ function ChatView({ onProviderChange }: { onProviderChange: (p: string) => void 
       const eliMsg: ChatMessage = {
         id: `eli-${Date.now()}`, role: 'eli',
         content: data.response || 'I encountered an issue processing your request.',
-        sources: data.sources, timestamp: new Date(),
+        sources: data.sources,
+        obsidianChunks: data.obsidianChunks || 0,
+        vaultChunks: data.vaultChunks || 0,
+        timestamp: new Date(),
       };
       setMessages((prev) => [...prev, eliMsg]);
     } catch {
@@ -962,14 +1022,33 @@ function ChatView({ onProviderChange }: { onProviderChange: (p: string) => void 
                     {msg.role === 'eli' ? <EliMarkdown content={msg.content} /> : renderUserContent(msg.content)}
                   </div>
                   {msg.sources && msg.sources.length > 0 && (
-                    <div className="mt-3 pt-2 flex flex-wrap gap-1.5" style={{ borderTop: '1px solid #e2e8f0' }}>
-                      {msg.sources.map((src, idx) => (
-                        <div key={idx} className="flex items-center gap-1 text-[10px] text-[#64748b] hover:text-[#2563eb] transition-colors cursor-default px-2 py-1 rounded-md"
-                          style={{ backgroundColor: '#f1f5f9' }}>
-                          <ExternalLink className="w-2.5 h-2.5" />
-                          <span className="truncate max-w-[160px]">{src.title}</span>
-                        </div>
-                      ))}
+                    <div className="mt-3 pt-2" style={{ borderTop: '1px solid #e2e8f0' }}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[9px] font-semibold text-[#94a3b8] uppercase tracking-wider">Sources</span>
+                        {(msg.obsidianChunks ?? 0) > 0 && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-medium"
+                            style={{ backgroundColor: '#05966915', color: '#059669', border: '1px solid #05966930' }}>
+                            +{msg.obsidianChunks} Obsidian
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {msg.sources.map((src, idx) => {
+                          const isObsidian = src.sourceType && src.sourceType !== 'vault';
+                          return (
+                            <div key={idx} className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-colors cursor-default"
+                              style={{
+                                backgroundColor: isObsidian ? '#05966908' : '#f1f5f9',
+                                color: isObsidian ? '#059669' : '#64748b',
+                                border: isObsidian ? '1px solid #05966920' : 'none',
+                              }}>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                              <span className="truncate max-w-[160px]">{src.title}</span>
+                              {isObsidian && <span className="text-[8px] opacity-60">OBS</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
